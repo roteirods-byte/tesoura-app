@@ -5,30 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tesoura - v2</title>
 
-  <!-- PWA -->
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0b1220" />
+  <!-- Forçar navegador a NÃO usar cache -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 
-  <link rel="stylesheet" href="./app/css/ui.css" />
+  <link rel="stylesheet" href="./app/css/ui.css?v=3" />
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Config + Core -->
-  <script src="./app/js/config.js"></script>
-  <script src="./app/js/supabaseClient.js"></script>
-  <script src="./app/js/auth.js"></script>
+  <script src="./app/js/config.js?v=3"></script>
+  <script src="./app/js/supabaseClient.js?v=3"></script>
+  <script src="./app/js/auth.js?v=3"></script>
 
   <!-- Panels -->
-  <script src="./app/js/panels/jogadores.js"></script>
-  <script src="./app/js/panels/controle_geral.js"></script>
-  <script src="./app/js/panels/mensalidade.js"></script>
-  <script src="./app/js/panels/caixa.js"></script>
-  <script src="./app/js/panels/gols.js"></script>
-  <script src="./app/js/panels/banco_dados.js"></script>
+  <script src="./app/js/panels/jogadores.js?v=3"></script>
+  <script src="./app/js/panels/controle_geral.js?v=3"></script>
+  <script src="./app/js/panels/mensalidade.js?v=3"></script>
+  <script src="./app/js/panels/caixa.js?v=3"></script>
+  <script src="./app/js/panels/gols.js?v=3"></script>
+  <script src="./app/js/panels/banco_dados.js?v=3"></script>
 
   <!-- App -->
-  <script src="./app/js/app.js"></script>
+  <script src="./app/js/app.js?v=3"></script>
 </head>
 
 <body>
@@ -53,54 +54,42 @@
   </div>
 
   <main class="container">
-    <!-- 1) JOGADORES (MIGRADO) -->
+    <!-- CARIMBO: se você ver isso, atualizou de verdade -->
+    <div class="card" style="border-color: rgba(255,138,0,.7); margin-bottom:12px">
+      <b style="color: var(--accent)">VERSÃO ATUALIZADA (SEM CACHE) — v3</b>
+      <div class="muted" style="margin-top:6px">Se esta caixa aparecer, o navegador parou de mostrar a versão antiga.</div>
+    </div>
+
     <section class="section active" data-section="jogadores">
       <div data-panel="jogadores"></div>
     </section>
 
-    <!-- 2) PRESENÇA / ESCALAÇÃO (ainda não migrado aqui) -->
     <section class="section" data-section="presenca_escalacao">
       <div class="card">
         <h2 style="margin:0 0 6px 0; font-size:16px; color: var(--accent)">Presença / Escalação</h2>
-        <p class="muted" style="margin:0">Painel já revisado. Próximo passo: migrar para esta v2.</p>
+        <p class="muted" style="margin:0">Painel revisado. Migraremos depois.</p>
       </div>
     </section>
 
-    <!-- 3) CONTROLE GERAL -->
     <section class="section" data-section="controle_geral">
       <div data-panel="controle_geral"></div>
     </section>
 
-    <!-- 4) MENSALIDADE -->
     <section class="section" data-section="mensalidade">
       <div data-panel="mensalidade"></div>
     </section>
 
-    <!-- 5) CAIXA -->
     <section class="section" data-section="caixa">
       <div data-panel="caixa"></div>
     </section>
 
-    <!-- 6) GOLS -->
     <section class="section" data-section="gols">
       <div data-panel="gols"></div>
     </section>
 
-    <!-- 7) BANCO DE DADOS -->
     <section class="section" data-section="banco_dados">
       <div data-panel="banco_dados"></div>
     </section>
-
-    <p class="muted" style="margin:14px 0 0 0; font-size:12px">
-      Dica: para “instalar” no celular: abrir no Chrome → menu ⋮ → “Adicionar à tela inicial”.
-    </p>
   </main>
-
-  <script>
-    // Service worker (PWA)
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js").catch(console.warn);
-    }
-  </script>
 </body>
 </html>
