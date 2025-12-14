@@ -19,7 +19,8 @@
   <script src="./app/js/supabaseClient.js"></script>
   <script src="./app/js/auth.js"></script>
 
-  <!-- Panels (migrar 1 por 1) -->
+  <!-- Panels -->
+  <script src="./app/js/panels/jogadores.js"></script>
   <script src="./app/js/panels/controle_geral.js"></script>
   <script src="./app/js/panels/mensalidade.js"></script>
   <script src="./app/js/panels/caixa.js"></script>
@@ -29,6 +30,7 @@
   <!-- App -->
   <script src="./app/js/app.js"></script>
 </head>
+
 <body>
   <div class="topbar">
     <div class="brand container">
@@ -51,37 +53,40 @@
   </div>
 
   <main class="container">
-    <!-- Jogadores / Presença-Escalação ficam "blindados" e serão encaixados após sua autorização -->
+    <!-- 1) JOGADORES (MIGRADO) -->
     <section class="section active" data-section="jogadores">
-      <div class="card">
-        <h2 style="margin:0 0 6px 0; font-size:16px; color: var(--accent)">Jogadores</h2>
-        <p class="muted" style="margin:0">Painel já revisado. Próximo passo: migrar o código do arquivo atual para dentro desta estrutura.</p>
-      </div>
+      <div data-panel="jogadores"></div>
     </section>
 
+    <!-- 2) PRESENÇA / ESCALAÇÃO (ainda não migrado aqui) -->
     <section class="section" data-section="presenca_escalacao">
       <div class="card">
         <h2 style="margin:0 0 6px 0; font-size:16px; color: var(--accent)">Presença / Escalação</h2>
-        <p class="muted" style="margin:0">Painel já revisado. Próximo passo: migrar o código do arquivo atual para dentro desta estrutura.</p>
+        <p class="muted" style="margin:0">Painel já revisado. Próximo passo: migrar para esta v2.</p>
       </div>
     </section>
 
+    <!-- 3) CONTROLE GERAL -->
     <section class="section" data-section="controle_geral">
       <div data-panel="controle_geral"></div>
     </section>
 
+    <!-- 4) MENSALIDADE -->
     <section class="section" data-section="mensalidade">
       <div data-panel="mensalidade"></div>
     </section>
 
+    <!-- 5) CAIXA -->
     <section class="section" data-section="caixa">
       <div data-panel="caixa"></div>
     </section>
 
+    <!-- 6) GOLS -->
     <section class="section" data-section="gols">
       <div data-panel="gols"></div>
     </section>
 
+    <!-- 7) BANCO DE DADOS -->
     <section class="section" data-section="banco_dados">
       <div data-panel="banco_dados"></div>
     </section>
