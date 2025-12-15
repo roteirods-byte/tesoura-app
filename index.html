@@ -10,26 +10,28 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="stylesheet" href="./app/css/ui.css?v=3" />
+  <link rel="stylesheet" href="./app/css/ui.css?v=4" />
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Config + Core -->
-  <script src="./app/js/config.js?v=3"></script>
-  <script src="./app/js/supabaseClient.js?v=3"></script>
-  <script src="./app/js/auth.js?v=3"></script>
+  <script src="./app/js/config.js?v=4"></script>
+  <script src="./app/js/supabaseClient.js?v=4"></script>
+  <script src="./app/js/auth.js?v=4"></script>
 
   <!-- Panels -->
-  <script src="./app/js/panels/jogadores.js?v=3"></script>
-  <script src="./app/js/panels/controle_geral.js?v=3"></script>
-  <script src="./app/js/panels/mensalidade.js?v=3"></script>
-  <script src="./app/js/panels/caixa.js?v=3"></script>
-  <script src="./app/js/panels/gols.js?v=3"></script>
-  <script src="./app/js/panels/banco_dados.js?v=3"></script>
+  <script src="./app/js/panels/jogadores.js?v=4"></script>
+  <script src="./app/js/panels/presenca_escalacao.js?v=4"></script>
+
+  <script src="./app/js/panels/controle_geral.js?v=4"></script>
+  <script src="./app/js/panels/mensalidade.js?v=4"></script>
+  <script src="./app/js/panels/caixa.js?v=4"></script>
+  <script src="./app/js/panels/gols.js?v=4"></script>
+  <script src="./app/js/panels/banco_dados.js?v=4"></script>
 
   <!-- App -->
-  <script src="./app/js/app.js?v=3"></script>
+  <script src="./app/js/app.js?v=4"></script>
 </head>
 
 <body>
@@ -37,7 +39,7 @@
     <div class="brand container">
       <div class="dot"></div>
       <div>
-        <h1 id="appTitle">TESOURA</h1>
+        <h1 id="appTitle">TESOURA - CONTROLE DO FUTEBOL</h1>
         <small>Versão v2 (mobile) • PIN único • Supabase centralizado</small>
       </div>
     </div>
@@ -54,39 +56,42 @@
   </div>
 
   <main class="container">
-    <!-- CARIMBO: se você ver isso, atualizou de verdade -->
     <div class="card" style="border-color: rgba(255,138,0,.7); margin-bottom:12px">
-      <b style="color: var(--accent)">VERSÃO ATUALIZADA (SEM CACHE) — v3</b>
+      <b style="color: var(--accent)">VERSÃO ATUALIZADA (SEM CACHE) — v4</b>
       <div class="muted" style="margin-top:6px">Se esta caixa aparecer, o navegador parou de mostrar a versão antiga.</div>
     </div>
 
+    <!-- JOGADORES -->
     <section class="section active" data-section="jogadores">
       <div data-panel="jogadores"></div>
     </section>
 
+    <!-- PRESENÇA / ESCALAÇÃO (R5 -> V2) -->
     <section class="section" data-section="presenca_escalacao">
-      <div class="card">
-        <h2 style="margin:0 0 6px 0; font-size:16px; color: var(--accent)">Presença / Escalação</h2>
-        <p class="muted" style="margin:0">Painel revisado. Migraremos depois.</p>
-      </div>
+      <div data-panel="presenca_escalacao"></div>
     </section>
 
+    <!-- CONTROLE GERAL -->
     <section class="section" data-section="controle_geral">
       <div data-panel="controle_geral"></div>
     </section>
 
+    <!-- MENSALIDADE -->
     <section class="section" data-section="mensalidade">
       <div data-panel="mensalidade"></div>
     </section>
 
+    <!-- CAIXA -->
     <section class="section" data-section="caixa">
       <div data-panel="caixa"></div>
     </section>
 
+    <!-- GOLS -->
     <section class="section" data-section="gols">
       <div data-panel="gols"></div>
     </section>
 
+    <!-- BANCO DE DADOS -->
     <section class="section" data-section="banco_dados">
       <div data-panel="banco_dados"></div>
     </section>
