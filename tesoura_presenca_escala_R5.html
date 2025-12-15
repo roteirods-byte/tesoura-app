@@ -245,7 +245,9 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
           <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
             <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
-            <button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
+<button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
+<span style="margin-left:10px;color:#cbd5e1;font-size:12px;">Horário de corte: 06:15</span>
+            
           </div>
 
           <div id="status-presentes" class="status-info"></div>
@@ -283,7 +285,7 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
       <div class="grid-escalacao">
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="t-amarelo" style="font-size:13px;">1º TEMPO</div>
+           <div class="t-amarelo" style="font-size:13px">1º TEMPO — JOGO DAS 06:40 ÀS 07:40</div> 
             <div class="status-info">Botão <b>SAIU</b> risca o nome.</div>
           </div>
           <table>
@@ -300,15 +302,21 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
             <tbody id="tbody-1t"></tbody>
           </table>
           <div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
-          <div class="legend-inline">
+         <div style="margin-top:8px;font-size:12px;line-height:1.35;color:#cbd5e1;">
+  <b>Regras 1º tempo (corte 06:15):</b><br/>
+  • Se até 06:15 tiver <b>até 20 presentes</b> (ex.: 15, 19, 20): <b>sem eliminação</b> (todos jogam).<br/>
+  • Se até 06:15 tiver <b>mais de 20 presentes</b> (ex.: 25): o app corta até ficar 20, na ordem:
+  <b>faltou no domingo anterior</b> → <b>inadimplente</b> → <b>maior nº de faltas</b>.
+</div>
+     <div class="legend-inline">
             C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | P (verde) pagou | P (vermelho) não pagou | F (faltou)
           </div>
         </div>
 
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="t-amarelo" style="font-size:13px;">2º TEMPO</div>
-            <div class="status-info">Prioridade: quem não jogou.</div>
+            <div class="t-amarelo" style="font-size:13px">2º TEMPO — JOGO DAS 08:00 ÀS 09:00</div>
+             <div class="status-info">Prioridade: quem não jogou.</div>
           </div>
           <table>
             <thead>
@@ -327,9 +335,9 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
       <div class="legenda">
         <b>OBS:</b>
-        C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
-        <span class="obs-pago">P (verde) pagou</span> |
-        <span class="obs-inad">P (vermelho) não pagou</span>
+C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
+<span class="obs-pago">P (verde) pagou</span> |
+<span class="obs-inad">P (vermelho) não pagou</span>
       </div>
     </div>
 
