@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<!-- REV: 7 | Abas estáveis via IFRAME + limpeza de cache antigo -->
+<!-- REV: 8 | Abas estáveis via IFRAME + força atualização dos painéis -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>TESOURA - PAINÉIS (REV 7)</title>
+  <title>TESOURA - PAINÉIS (REV 8)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- reduz chance de cache do navegador -->
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -24,7 +23,7 @@
 </head>
 
 <body>
-  <div class="topbar">TESOURA – APLICATIVO DO GRUPO (REV 7)</div>
+  <div class="topbar">TESOURA – APLICATIVO DO GRUPO (REV 8)</div>
 
   <div class="tabs">
     <button class="tab-btn active" onclick="abrirAba('aba-jogadores')">JOGADORES</button>
@@ -37,54 +36,35 @@
   </div>
 
   <div id="aba-jogadores" class="tab-content active">
-    <iframe id="f-jogadores" src="tesoura_jogadores_teste.html?v=7"></iframe>
+    <iframe id="f-jogadores" src="tesoura_jogadores_teste.html?v=8"></iframe>
   </div>
 
   <div id="aba-presenca" class="tab-content">
-    <iframe id="f-presenca" src="tesoura_presenca_escala_R5.html?v=7"></iframe>
+    <!-- IMPORTANTE: aqui precisa bater com a revisão do arquivo que você colou -->
+    <iframe id="f-presenca" src="tesoura_presenca_escala_R5.html?v=8"></iframe>
   </div>
 
   <div id="aba-controle" class="tab-content">
-    <iframe id="f-controle" src="tesoura_controle_geral_teste.html?v=7"></iframe>
+    <iframe id="f-controle" src="tesoura_controle_geral_teste.html?v=8"></iframe>
   </div>
 
   <div id="aba-mensalidade" class="tab-content">
-    <iframe id="f-mensalidade" src="tesoura_mensalidade_R4.html?v=7"></iframe>
+    <iframe id="f-mensalidade" src="tesoura_mensalidade_R4.html?v=8"></iframe>
   </div>
 
   <div id="aba-caixa" class="tab-content">
-    <iframe id="f-caixa" src="tesoura_caixa_teste.html?v=7"></iframe>
+    <iframe id="f-caixa" src="tesoura_caixa_teste.html?v=8"></iframe>
   </div>
 
   <div id="aba-gols" class="tab-content">
-    <iframe id="f-gols" src="tesoura_gols_teste.html?v=7"></iframe>
+    <iframe id="f-gols" src="tesoura_gols_teste.html?v=8"></iframe>
   </div>
 
   <div id="aba-banco" class="tab-content">
-    <iframe id="f-banco" src="tesoura_banco_dados_teste.html?v=7"></iframe>
+    <iframe id="f-banco" src="tesoura_banco_dados_teste.html?v=8"></iframe>
   </div>
 
   <script>
-    // 1) Força remover caches antigos + SW antigo (isso resolve o “só aparece com F5”)
-    (async function limparCacheAntigo() {
-      try {
-        if ('serviceWorker' in navigator) {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for (const r of regs) await r.unregister();
-        }
-        if (window.caches) {
-          const keys = await caches.keys();
-          await Promise.all(keys.map(k => caches.delete(k)));
-        }
-      } catch(e) {}
-      // 2) Registra o SW neutro (REV 7)
-      try {
-        if ('serviceWorker' in navigator) {
-          await navigator.serviceWorker.register('./service-worker.js?v=7');
-        }
-      } catch(e) {}
-    })();
-
     function abrirAba(id){
       const abas=document.querySelectorAll('.tab-content');
       const botoes=document.querySelectorAll('.tab-btn');
