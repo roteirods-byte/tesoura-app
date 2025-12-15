@@ -3,12 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tesoura - v2</title>
+  <title>Tesoura - v4</title>
 
-  <!-- Forçar navegador a NÃO usar cache -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json?v=4">
+  <meta name="theme-color" content="#0b1220" />
 
   <link rel="stylesheet" href="./app/css/ui.css?v=4" />
 
@@ -23,7 +22,6 @@
   <!-- Panels -->
   <script src="./app/js/panels/jogadores.js?v=4"></script>
   <script src="./app/js/panels/presenca_escalacao.js?v=4"></script>
-
   <script src="./app/js/panels/controle_geral.js?v=4"></script>
   <script src="./app/js/panels/mensalidade.js?v=4"></script>
   <script src="./app/js/panels/caixa.js?v=4"></script>
@@ -33,18 +31,19 @@
   <!-- App -->
   <script src="./app/js/app.js?v=4"></script>
 </head>
-
 <body>
   <div class="topbar">
     <div class="brand container">
       <div class="dot"></div>
       <div>
-        <h1 id="appTitle">TESOURA - CONTROLE DO FUTEBOL</h1>
-        <small>Versão v2 (mobile) • PIN único • Supabase centralizado</small>
+        <h1 id="appTitle">TESOURA</h1>
+        <small>Versão v4 (mobile) • PIN único • Supabase centralizado</small>
       </div>
     </div>
+  </div>
 
-    <div class="tabs container" role="tablist" aria-label="Abas">
+  <main class="container">
+    <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="jogadores">JOGADORES</button>
       <button class="tab" data-tab="presenca_escalacao">PRESENÇA / ESCALAÇÃO</button>
       <button class="tab" data-tab="controle_geral">CONTROLE GERAL</button>
@@ -52,49 +51,27 @@
       <button class="tab" data-tab="caixa">CAIXA</button>
       <button class="tab" data-tab="gols">GOLS</button>
       <button class="tab" data-tab="banco_dados">BANCO DE DADOS</button>
-    </div>
-  </div>
+    </nav>
 
-  <main class="container">
-    <div class="card" style="border-color: rgba(255,138,0,.7); margin-bottom:12px">
-      <b style="color: var(--accent)">VERSÃO ATUALIZADA (SEM CACHE) — v4</b>
-      <div class="muted" style="margin-top:6px">Se esta caixa aparecer, o navegador parou de mostrar a versão antiga.</div>
-    </div>
+    <!-- PAINÉIS -->
+    <section class="panel" data-panel="jogadores"></section>
+    <section class="panel" data-panel="presenca_escalacao" hidden></section>
+    <section class="panel" data-panel="controle_geral" hidden></section>
+    <section class="panel" data-panel="mensalidade" hidden></section>
+    <section class="panel" data-panel="caixa" hidden></section>
+    <section class="panel" data-panel="gols" hidden></section>
+    <section class="panel" data-panel="banco_dados" hidden></section>
 
-    <!-- JOGADORES -->
-    <section class="section active" data-section="jogadores">
-      <div data-panel="jogadores"></div>
-    </section>
-
-    <!-- PRESENÇA / ESCALAÇÃO (R5 -> V2) -->
-    <section class="section" data-section="presenca_escalacao">
-      <div data-panel="presenca_escalacao"></div>
-    </section>
-
-    <!-- CONTROLE GERAL -->
-    <section class="section" data-section="controle_geral">
-      <div data-panel="controle_geral"></div>
-    </section>
-
-    <!-- MENSALIDADE -->
-    <section class="section" data-section="mensalidade">
-      <div data-panel="mensalidade"></div>
-    </section>
-
-    <!-- CAIXA -->
-    <section class="section" data-section="caixa">
-      <div data-panel="caixa"></div>
-    </section>
-
-    <!-- GOLS -->
-    <section class="section" data-section="gols">
-      <div data-panel="gols"></div>
-    </section>
-
-    <!-- BANCO DE DADOS -->
-    <section class="section" data-section="banco_dados">
-      <div data-panel="banco_dados"></div>
-    </section>
+    <p class="muted" style="margin:14px 0 0 0; font-size:12px">
+      Dica: para “instalar” no celular: abrir no Chrome → menu ⋮ → “Adicionar à tela inicial”.
+    </p>
   </main>
+
+  <script>
+    // Service worker (PWA)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js?v=4").catch(console.warn);
+    }
+  </script>
 </body>
 </html>
