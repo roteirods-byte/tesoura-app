@@ -1,77 +1,78 @@
-<!doctype html>
+<!DOCTYPE html>
+<!-- REV: 6  | Abas estáveis via IFRAME (modelo R10) -->
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <title>APP TESOURA - PAINÉIS (REV 6)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tesoura - v5</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="./manifest.json?v=5">
-  <meta name="theme-color" content="#0b1220" />
-
-  <link rel="stylesheet" href="./app/css/ui.css?v=5" />
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Core -->
-  <script src="./app/js/config.js?v=5"></script>
-  <script src="./app/js/supabaseClient.js?v=5"></script>
-  <script src="./app/js/auth.js?v=5"></script>
-
-  <!-- Panels (ORDEM OFICIAL) -->
-  <script src="./app/js/panels/jogadores.js?v=5"></script>
-  <script src="./app/js/panels/presenca_escalacao.js?v=5"></script>
-  <script src="./app/js/panels/controle_geral.js?v=5"></script>
-  <script src="./app/js/panels/mensalidade.js?v=5"></script>
-  <script src="./app/js/panels/caixa.js?v=5"></script>
-  <script src="./app/js/panels/gols.js?v=5"></script>
-  <script src="./app/js/panels/banco_dados.js?v=5"></script>
-
-  <!-- App -->
-  <script src="./app/js/app.js?v=5"></script>
+  <style>
+    body{margin:0;font-family:Arial,sans-serif;background-color:#0b1220;color:#ffffff}
+    .topbar{background-color:#111827;padding:10px 20px;color:#ff7f27;font-weight:bold;font-size:18px}
+    .tabs{display:flex;background-color:#111827;border-bottom:2px solid #ff7f27}
+    .tab-btn{flex:1;padding:10px;cursor:pointer;text-align:center;border:none;background-color:#111827;color:#ffffff;font-weight:bold;font-size:14px}
+    .tab-btn.active{background-color:#1f2937;color:#ff7f27;border-bottom:3px solid #ff7f27}
+    .tab-content{display:none;height:calc(100vh - 80px);background-color:#0b1220}
+    .tab-content.active{display:block}
+    iframe{width:100%;height:100%;border:none;background-color:#0b1220}
+  </style>
 </head>
 
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <span class="dot"></span>
-        <div>
-          <div class="title">TESOURA - CONTROLE DO FUTEBOL</div>
-          <div class="subtitle">Versão v5 (mobile) • PIN único • Supabase centralizado</div>
-        </div>
-      </div>
+  <div class="topbar">TESOURA – APLICATIVO DO GRUPO (REV 6)</div>
 
-      <!-- Banner para você ver que NÃO está em cache antigo -->
-      <div class="version-badge">VERSÃO ATUALIZADA (SEM CACHE) — v5</div>
-    </header>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="abrirAba('aba-jogadores')">JOGADORES</button>
+    <button class="tab-btn" onclick="abrirAba('aba-presenca')">PRESENÇA / ESCALAÇÃO</button>
+    <button class="tab-btn" onclick="abrirAba('aba-controle')">CONTROLE GERAL</button>
+    <button class="tab-btn" onclick="abrirAba('aba-mensalidade')">MENSALIDADE</button>
+    <button class="tab-btn" onclick="abrirAba('aba-caixa')">CAIXA</button>
+    <button class="tab-btn" onclick="abrirAba('aba-gols')">GOLS</button>
+    <button class="tab-btn" onclick="abrirAba('aba-banco')">BANCO DE DADOS</button>
+  </div>
 
-    <nav class="tabs">
-      <button class="tab" data-tab="jogadores">JOGADORES</button>
-      <button class="tab" data-tab="presenca_escalacao">PRESENÇA/ESCALAÇÃO</button>
-      <button class="tab" data-tab="controle_geral">CONTROLE GERAL</button>
-      <button class="tab" data-tab="mensalidade">MENSALIDADE</button>
-      <button class="tab" data-tab="caixa">CAIXA</button>
-      <button class="tab" data-tab="gols">GOLS</button>
-      <button class="tab" data-tab="banco_dados">BANCO DE DADOS</button>
-    </nav>
+  <div id="aba-jogadores" class="tab-content active">
+    <iframe id="f-jogadores" src="tesoura_jogadores_teste.html?v=6"></iframe>
+  </div>
 
-    <main class="main">
-      <section class="panel" data-panel="jogadores"></section>
-      <section class="panel" data-panel="presenca_escalacao"></section>
-      <section class="panel" data-panel="controle_geral"></section>
-      <section class="panel" data-panel="mensalidade"></section>
-      <section class="panel" data-panel="caixa"></section>
-      <section class="panel" data-panel="gols"></section>
-      <section class="panel" data-panel="banco_dados"></section>
-    </main>
+  <div id="aba-presenca" class="tab-content">
+    <!-- PAINEL PERFEITO R5 -->
+    <iframe id="f-presenca" src="tesoura_presenca_escala_R5.html?v=6"></iframe>
+  </div>
+
+  <div id="aba-controle" class="tab-content">
+    <iframe id="f-controle" src="tesoura_controle_geral_teste.html?v=6"></iframe>
+  </div>
+
+  <div id="aba-mensalidade" class="tab-content">
+    <iframe id="f-mensalidade" src="tesoura_mensalidade_R4.html?v=6"></iframe>
+  </div>
+
+  <div id="aba-caixa" class="tab-content">
+    <iframe id="f-caixa" src="tesoura_caixa_teste.html?v=6"></iframe>
+  </div>
+
+  <div id="aba-gols" class="tab-content">
+    <iframe id="f-gols" src="tesoura_gols_teste.html?v=6"></iframe>
+  </div>
+
+  <div id="aba-banco" class="tab-content">
+    <iframe id="f-banco" src="tesoura_banco_dados_teste.html?v=6"></iframe>
   </div>
 
   <script>
-    // PWA (se você estiver usando). Se der problema, eu posso mandar versão sem PWA.
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js?v=5").catch(()=>{});
+    function abrirAba(id){
+      const abas=document.querySelectorAll('.tab-content');
+      const botoes=document.querySelectorAll('.tab-btn');
+
+      abas.forEach(a=>a.classList.remove('active'));
+      botoes.forEach(b=>b.classList.remove('active'));
+
+      document.getElementById(id).classList.add('active');
+
+      const map = {
+        "aba-jogadores":0,"aba-presenca":1,"aba-controle":2,"aba-mensalidade":3,"aba-caixa":4,"aba-gols":5,"aba-banco":6
+      };
+      botoes[map[id]].classList.add('active');
     }
   </script>
 </body>
