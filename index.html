@@ -3,33 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tesoura - v4</title>
+  <title>Tesoura - v5</title>
 
-  <!-- PWA -->
-  <link rel="manifest" href="./manifest.json?v=4">
+  <link rel="manifest" href="./manifest.json?v=5">
   <meta name="theme-color" content="#0b1220" />
 
-  <link rel="stylesheet" href="./app/css/ui.css?v=4" />
+  <link rel="stylesheet" href="./app/css/ui.css?v=5" />
 
-  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Config + Core -->
-  <script src="./app/js/config.js?v=4"></script>
-  <script src="./app/js/supabaseClient.js?v=4"></script>
-  <script src="./app/js/auth.js?v=4"></script>
+  <script src="./app/js/config.js?v=5"></script>
+  <script src="./app/js/supabaseClient.js?v=5"></script>
+  <script src="./app/js/auth.js?v=5"></script>
 
-  <!-- Panels -->
-  <script src="./app/js/panels/jogadores.js?v=4"></script>
-  <script src="./app/js/panels/presenca_escalacao.js?v=4"></script>
-  <script src="./app/js/panels/controle_geral.js?v=4"></script>
-  <script src="./app/js/panels/mensalidade.js?v=4"></script>
-  <script src="./app/js/panels/caixa.js?v=4"></script>
-  <script src="./app/js/panels/gols.js?v=4"></script>
-  <script src="./app/js/panels/banco_dados.js?v=4"></script>
+  <script src="./app/js/panels/jogadores.js?v=5"></script>
+  <script src="./app/js/panels/presenca_escalacao.js?v=5"></script>
+  <script src="./app/js/panels/controle_geral.js?v=5"></script>
+  <script src="./app/js/panels/mensalidade.js?v=5"></script>
+  <script src="./app/js/panels/caixa.js?v=5"></script>
+  <script src="./app/js/panels/gols.js?v=5"></script>
+  <script src="./app/js/panels/banco_dados.js?v=5"></script>
 
-  <!-- App -->
-  <script src="./app/js/app.js?v=4"></script>
+  <script src="./app/js/app.js?v=5"></script>
 </head>
 <body>
   <div class="topbar">
@@ -37,7 +32,7 @@
       <div class="dot"></div>
       <div>
         <h1 id="appTitle">TESOURA</h1>
-        <small>Versão v4 (mobile) • PIN único • Supabase centralizado</small>
+        <small>Versão v5 (mobile) • PIN único • Supabase centralizado</small>
       </div>
     </div>
   </div>
@@ -53,7 +48,6 @@
       <button class="tab" data-tab="banco_dados">BANCO DE DADOS</button>
     </nav>
 
-    <!-- PAINÉIS -->
     <section class="panel" data-panel="jogadores"></section>
     <section class="panel" data-panel="presenca_escalacao" hidden></section>
     <section class="panel" data-panel="controle_geral" hidden></section>
@@ -61,16 +55,11 @@
     <section class="panel" data-panel="caixa" hidden></section>
     <section class="panel" data-panel="gols" hidden></section>
     <section class="panel" data-panel="banco_dados" hidden></section>
-
-    <p class="muted" style="margin:14px 0 0 0; font-size:12px">
-      Dica: para “instalar” no celular: abrir no Chrome → menu ⋮ → “Adicionar à tela inicial”.
-    </p>
   </main>
 
   <script>
-    // Service worker (PWA)
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js?v=4").catch(console.warn);
+      navigator.serviceWorker.register("./service-worker.js?v=5").catch(console.warn);
     }
   </script>
 </body>
