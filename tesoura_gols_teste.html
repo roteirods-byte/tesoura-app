@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>TESOURA - CONTROLE DE GOLS</title>
+
+  <!-- MESMA BIBLIOTECA DO ARQUIVO JOGADORES -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #0b1220;
+      color: #ffffff;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff7f27;
+      margin-top: 25px;
+      margin-bottom: 10px;
+      font-size: 26px;
+    }
+
+    .painel-central {
+      max-width: 900px;
+      margin: 0 auto 40px auto;
+      background-color: #050b18;
+      padding: 20px 30px 25px 30px;
+      border-radius: 8px;
+    }
+
+    .bloco {
+      background-color: #0b1220;
+      padding: 12px 16px 16px 16px;
+      margin-bottom: 14px;
+      border-radius: 6px;
+    }
+
+    .bloco h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #ff7f27;
+      font-size: 16px;
+    }
+
+    .linha-form {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    label {
+      margin-right: 4px;
+    }
+
+    input, select, button {
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: none;
+      font-size: 13px;
+    }
+
+    input[type="date"], input[type="number"], select {
+      background-color: #101733;
+      color: #ffffff;
+    }
+
+    button {
+      background-color: #00b4ff;
+      color: #000000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .linha-tabelas {
+      display: flex;
+      gap: 18px;
+      margin-top: 10px;
+    }
+
+    .tabela-card {
+      flex: 1;
+      background-color: #0b1220;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .tabela-card h3 {
+      text-align: left;
+      font-size: 15px;
+      margin-bottom: 6px;
+      color: #ff7f27;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #222a3f;
+      padding: 4px 6px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #ff7f27;
+      color: #000000;
+    }
+
+    tr:nth-child(even) {
+      background-color: #101733;
+    }
+
+    tr:nth-child(odd) {
+      background-color: #050b18;
+    }
+
+    .btn-excluir {
+      background-color: #ff4d4d;
+      color: #000000;
+      font-weight: bold;
+      border-radius: 4px;
+      padding: 1px 7px;
+      cursor: pointer;
+      border: none;
+    }
+
+    #status-gols {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #ffcc66;
+    }
+  </style>
+</head>
+<body>
+  <h1>TESOURA - CONTROLE DE GOLS</h1>
+
+  <div class="painel-central">
+    <!-- Registrar gol -->
+    <div class="bloco">
+      <h3>Registrar gol</h3>
+      <div class="linha-form">
+        <label>DATA:</label>
+        <input type="date" id="gols-data" />
+        <label>APELIDO:</label>
+        <select id="gols-apelido">
+          <option value="">-- selecione --</option>
+        </select>
+        <label>GOLS:</label>
+        <input type="number" id="gols-quantidade" min="1" value="1" />
+        <button id="gols-salvar-btn">SALVAR GOL</button>
+      </div>
+      <div id="status-gols"></div>
+    </div>
+
+    <!-- Tabelas -->
+    <div class="linha-tabelas">
+      <!-- Gols registrados -->
+      <div class="tabela-card">
+        <h3>Gols registrados</h3>
+        <table id="tabela-gols-registrados">
+          <thead>
+            <tr>
+              <th>EXCLUIR</th>
+              <th>DATA</th>
+              <th>APELIDO</th>
+              <th>GOLS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- preenchido pelo JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Artilharia -->
+      <div class="tabela-card">
+        <h3>Artilharia</h3>
+        <table id="tabela-artilharia">
+          <thead>
+            <tr>
+              <th>EXCLUIR</th>
+              <th>#</th>
+              <th>APELIDO</th>
+              <th>TOTAL GOLS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- preenchido pelo JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===================== SUPABASE (MESMA CONFIG DO JOGADORES) =====================
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function setStatus(msg) {
+      const div = document.getElementById("status-gols");
+      if (div) div.textContent = msg || "";
+    }
+
+    // ===================== CARREGAR JOGADORES (APELIDO) =====================
+    async function carregarJogadoresGols() {
+      setStatus("Carregando jogadores...");
+
+      const { data, error } = await supabase
+        .from("jogadores")
+        .select("apelido")
+        .order("apelido", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao carregar jogadores:", error);
+        setStatus("Erro ao carregar jogadores: " + (error.message || ""));
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setStatus('Nenhum jogador encontrado na tabela "jogadores".');
+      } else {
+        setStatus("");
+      }
+
+      const select = document.getElementById("gols-apelido");
+      select.innerHTML = '<option value="">-- selecione --</option>';
+
+      data.forEach((j) => {
+        const opt = document.createElement("option");
+        opt.value = j.apelido;
+        opt.textContent = j.apelido;
+        select.appendChild(opt);
+      });
+    }
+
+    // ===================== SALVAR GOL =====================
+    async function salvarGol() {
+      const dataCampo = document.getElementById("gols-data").value;
+      const apelido = document.getElementById("gols-apelido").value;
+      const qtd = parseInt(
+        document.getElementById("gols-quantidade").value || "0",
+        10
+      );
+
+      if (!dataCampo || !apelido || qtd <= 0) {
+        alert("Preencha DATA, APELIDO e GOLS (>=1).");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("gols")
+        .insert([{ data: dataCampo, apelido, gols: qtd }]);
+
+      if (error) {
+        console.error("Erro ao salvar gol:", error);
+        alert("Erro ao salvar gol.");
+        return;
+      }
+
+      await carregarGolsDoDia();
+    }
+
+    // ===================== BUSCAR GOLS DO DIA =====================
+    async function carregarGolsDoDia() {
+      const dataCampo = document.getElementById("gols-data").value;
+      if (!dataCampo) return;
+
+      const { data, error } = await supabase
+        .from("gols")
+        .select("id, data, apelido, gols")
+        .eq("data", dataCampo)
+        .order("id", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao buscar gols:", error);
+        setStatus("Erro ao buscar gols: " + (error.message || ""));
+        return;
+      }
+
+      renderizarGolsRegistrados(data);
+      renderizarArtilharia(data);
+    }
+
+    // ===================== TABELA GOLS REGISTRADOS =====================
+    function renderizarGolsRegistrados(lista) {
+      const tbody = document.querySelector("#tabela-gols-registrados tbody");
+      tbody.innerHTML = "";
+
+      lista.forEach((reg) => {
+        const tr = document.createElement("tr");
+
+        const tdExcluir = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.textContent = "X";
+        btn.className = "btn-excluir";
+        btn.onclick = () => excluirGol(reg.id);
+        tdExcluir.appendChild(btn);
+
+        const tdData = document.createElement("td");
+        tdData.textContent = new Date(reg.data).toLocaleDateString("pt-BR");
+
+        const tdApelido = document.createElement("td");
+        tdApelido.textContent = reg.apelido;
+
+        const tdGols = document.createElement("td");
+        tdGols.textContent = reg.gols;
+
+        tr.appendChild(tdExcluir);
+        tr.appendChild(tdData);
+        tr.appendChild(tdApelido);
+        tr.appendChild(tdGols);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ===================== TABELA ARTILHARIA =====================
+    function renderizarArtilharia(lista) {
+      const tbody = document.querySelector("#tabela-artilharia tbody");
+      tbody.innerHTML = "";
+
+      const mapa = {};
+      lista.forEach((reg) => {
+        if (!mapa[reg.apelido]) mapa[reg.apelido] = 0;
+        mapa[reg.apelido] += reg.gols;
+      });
+
+      let artilharia = Object.entries(mapa).map(([apelido, total]) => ({
+        apelido,
+        total,
+      }));
+
+      artilharia.sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;
+        return a.apelido.localeCompare(b.apelido);
+      });
+
+      artilharia.forEach((item, idx) => {
+        const tr = document.createElement("tr");
+
+        const tdExcluir = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.textContent = "X";
+        btn.className = "btn-excluir";
+        btn.onclick = () => excluirGolsJogadorNoDia(item.apelido);
+        tdExcluir.appendChild(btn);
+
+        const tdPos = document.createElement("td");
+        tdPos.textContent = idx + 1;
+
+        const tdApelido = document.createElement("td");
+        tdApelido.textContent = item.apelido;
+
+        const tdTotal = document.createElement("td");
+        tdTotal.textContent = item.total;
+
+        tr.appendChild(tdExcluir);
+        tr.appendChild(tdPos);
+        tr.appendChild(tdApelido);
+        tr.appendChild(tdTotal);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ===================== EXCLUIR UM REGISTRO =====================
+    async function excluirGol(id) {
+      if (!confirm("Excluir este registro de gol?")) return;
+
+      const { error } = await supabase.from("gols").delete().eq("id", id);
+
+      if (error) {
+        console.error("Erro ao excluir gol:", error);
+        alert("Erro ao excluir gol.");
+        return;
+      }
+
+      await carregarGolsDoDia();
+    }
+
+    // ===================== EXCLUIR TODOS GOLS DO JOGADOR =====================
+    async function excluirGolsJogadorNoDia(apelido) {
+      const dataCampo = document.getElementById("gols-data").value;
+      if (!dataCampo) {
+        alert("Selecione a DATA antes de excluir pela artilharia.");
+        return;
+      }
+
+      if (!confirm(`Excluir todos os gols de ${apelido} nesta data?`)) return;
+
+      const { error } = await supabase
+        .from("gols")
+        .delete()
+        .eq("data", dataCampo)
+        .eq("apelido", apelido);
+
+      if (error) {
+        console.error("Erro ao excluir gols do jogador:", error);
+        alert("Erro ao excluir gols do jogador.");
+        return;
+      }
+
+      await carregarGolsDoDia();
+    }
+
+    // ===================== INICIALIZAÇÃO =====================
+    document.addEventListener("DOMContentLoaded", () => {
+      const campoData = document.getElementById("gols-data");
+      const hoje = new Date().toISOString().substring(0, 10);
+      campoData.value = hoje;
+
+      document
+        .getElementById("gols-salvar-btn")
+        .addEventListener("click", salvarGol);
+      campoData.addEventListener("change", carregarGolsDoDia);
+
+      carregarJogadoresGols().then(carregarGolsDoDia);
+    });
+  </script>
+</body>
+</html>

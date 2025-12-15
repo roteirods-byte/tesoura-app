@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>TESOURA - BANCO DE DADOS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb}
+    header{background:#020617;padding:12px 16px;text-align:center;font-weight:bold;letter-spacing:1px;text-transform:uppercase}
+    .container{max-width:1200px;margin:0 auto;padding:16px}
+    h2{margin:8px 0;color:#f97316;text-transform:uppercase}
+    .painel{background:#020617;border-radius:6px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,.4);margin-bottom:16px;font-size:13px}
+    button{padding:6px 10px;border-radius:4px;border:none;cursor:pointer;font-weight:bold;text-transform:uppercase;font-size:11px}
+    .btn-sec{background:#0ea5e9;color:#0f172a}
+    .btn-ok{background:#22c55e;color:#022c22}
+    .btn-del{background:#ef4444;color:#f9fafb}
+    .btn-warn{background:#f97316;color:#0f172a}
+    select,input{padding:6px;border-radius:4px;border:1px solid #334155;background:#0b1120;color:#f9fafb;font-size:12px}
+    table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
+    th,td{border:1px solid #4b5563;padding:3px 4px;text-align:center;text-transform:uppercase;white-space:nowrap}
+    th{background:#f97316;color:#0f172a;position:sticky;top:0;z-index:1}
+    tr:nth-child(even){background:#0b1120}
+    tr:nth-child(odd){background:#020617}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .grow{flex:1;min-width:180px}
+    .small{min-width:140px}
+    .status{margin-top:6px;font-size:12px}
+    .scroll{overflow:auto;max-height:520px}
+    .erroBox{margin-top:8px;padding:10px;border:1px solid #ef4444;border-radius:6px;color:#fecaca;background:#1f0a0a;display:none}
+    @media print{
+      header,.printbar,.actions{display:none !important}
+      .scroll{max-height:none;overflow:visible}
+      th{position:static}
+    }
+  </style>
+</head>
+<body>
+  <header>TESOURA - BANCO DE DADOS</header>
+
+  <div class="printbar" style="text-align:right; padding:4px 16px 0 16px;">
+    <button class="btn-sec" onclick="window.print()">IMPRIMIR / BAIXAR PAINEL</button>
+  </div>
+
+  <div class="container">
+
+    <div class="painel">
+      <h2>Selecionar tabela</h2>
+      <div class="row">
+        <select id="tabela" class="small">
+          <option value="jogadores">JOGADORES</option>
+          <option value="mensalidades">MENSALIDADES</option>
+          <option value="caixa">CAIXA</option>
+          <option value="presencas">PRESENÇAS</option>
+          <option value="escalacao">ESCALAÇÃO</option>
+          <option value="gols">GOLS</option>
+        </select>
+
+        <input id="filtroData" class="small" type="date" />
+        <input id="filtroMes" class="small" type="text" placeholder="MÊS (ex: 12)" />
+        <input id="filtroAno" class="small" type="text" placeholder="ANO (ex: 2025)" />
+
+        <button id="btnCarregar" class="btn-ok">CARREGAR</button>
+        <button id="btnLimpar" class="btn-warn">LIMPAR FILTROS</button>
+      </div>
+
+      <div id="status" class="status"></div>
+      <div id="erroBox" class="erroBox"></div>
+    </div>
+
+    <div class="painel">
+      <h2>Registros</h2>
+      <div class="scroll">
+        <table>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="painel">
+      <h2>Editar (linha selecionada)</h2>
+      <div class="row">
+        <input id="editJson" class="grow" placeholder='Cole aqui o JSON da linha' />
+        <button id="btnSalvarEdicao" class="btn-ok actions">SALVAR EDIÇÃO</button>
+        <button id="btnCancelarEdicao" class="btn-warn actions">CANCELAR</button>
+      </div>
+      <div class="status" id="statusEdit"></div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const elTabela = document.getElementById("tabela");
+    const elData = document.getElementById("filtroData");
+    const elMes = document.getElementById("filtroMes");
+    const elAno = document.getElementById("filtroAno");
+    const btnCarregar = document.getElementById("btnCarregar");
+    const btnLimpar = document.getElementById("btnLimpar");
+    const thead = document.getElementById("thead");
+    const tbody = document.getElementById("tbody");
+    const status = document.getElementById("status");
+    const erroBox = document.getElementById("erroBox");
+
+    const editJson = document.getElementById("editJson");
+    const btnSalvarEdicao = document.getElementById("btnSalvarEdicao");
+    const btnCancelarEdicao = document.getElementById("btnCancelarEdicao");
+    const statusEdit = document.getElementById("statusEdit");
+
+    let linhaSelecionada = null;
+
+    function setStatus(msg){ status.textContent = msg || ""; }
+    function setEditStatus(msg){ statusEdit.textContent = msg || ""; }
+
+    function showErro(msg){
+      erroBox.style.display = "block";
+      erroBox.textContent = msg || "ERRO";
+    }
+    function hideErro(){
+      erroBox.style.display = "none";
+      erroBox.textContent = "";
+    }
+
+    window.onerror = function(message, source, lineno, colno){
+      showErro(`ERRO NO PAINEL: ${message} (linha ${lineno})`);
+    };
+
+    function limpar(){
+      elData.value = "";
+      elMes.value = "";
+      elAno.value = "";
+      setStatus("");
+      hideErro();
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      linhaSelecionada = null;
+      editJson.value = "";
+      setEditStatus("");
+    }
+
+    function guessKey(table){
+      if (table === "jogadores") return ["apelido"];
+      if (table === "mensalidades") return ["apelido","ano","mes"];
+      if (table === "presencas") return ["data_jogo","apelido"];
+      if (table === "escalacao") return ["data_jogo","apelido","tempo","time"];
+      // caixa/gols: ideal ter id
+      return ["id"];
+    }
+
+    function buildWhere(q, table){
+      const d = elData.value;
+      const mes = (elMes.value || "").trim();
+      const ano = (elAno.value || "").trim();
+
+      if (d){
+        if (table === "presencas" || table === "escalacao") q = q.eq("data_jogo", d);
+        if (table === "caixa") q = q.eq("data", d);
+        if (table === "gols") q = q.eq("data_jogo", d);
+      }
+      if (ano){
+        if (table === "mensalidades") q = q.eq("ano", parseInt(ano,10));
+      }
+      if (mes && ano){
+        if (table === "mensalidades") q = q.eq("mes", parseInt(mes,10));
+      }
+      return q;
+    }
+
+    async function carregar(){
+      hideErro();
+      const table = elTabela.value;
+      setStatus("Carregando...");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      linhaSelecionada = null;
+      editJson.value = "";
+      setEditStatus("");
+
+      let q = supabase.from(table).select("*").limit(500);
+      q = buildWhere(q, table);
+
+      const { data, error } = await q;
+
+      if (error){
+        console.error(error);
+        setStatus("ERRO AO CARREGAR.");
+        showErro(
+          "Banco de Dados não conseguiu ler a tabela.\n" +
+          "Causas comuns: RLS bloqueando SELECT, tabela não existe, ou coluna diferente.\n\n" +
+          (error.message || "Sem detalhes do erro.")
+        );
+        return;
+      }
+
+      const rows = data || [];
+      if (!rows.length){
+        setStatus("Nenhum registro encontrado.");
+        return;
+      }
+
+      const cols = Object.keys(rows[0]);
+
+      const trH = document.createElement("tr");
+      cols.forEach(c=>{
+        const th=document.createElement("th");
+        th.textContent = c;
+        trH.appendChild(th);
+      });
+      const thEdit=document.createElement("th"); thEdit.textContent="EDITAR";
+      const thDel=document.createElement("th"); thDel.textContent="EXCLUIR";
+      trH.appendChild(thEdit); trH.appendChild(thDel);
+      thead.appendChild(trH);
+
+      rows.forEach(r=>{
+        const tr=document.createElement("tr");
+        cols.forEach(c=>{
+          const td=document.createElement("td");
+          td.textContent = (r[c] ?? "").toString();
+          tr.appendChild(td);
+        });
+
+        const tdE=document.createElement("td");
+        const bE=document.createElement("button");
+        bE.className="btn-sec";
+        bE.textContent="EDITAR";
+        bE.onclick=()=>{
+          linhaSelecionada = { table, data: r, keyCols: guessKey(table) };
+          editJson.value = JSON.stringify(r);
+          setEditStatus("Linha carregada para edição.");
+        };
+        tdE.appendChild(bE);
+
+        const tdD=document.createElement("td");
+        const bD=document.createElement("button");
+        bD.className="btn-del";
+        bD.textContent="EXCLUIR";
+        bD.onclick=()=>excluirLinha(table, r);
+        tdD.appendChild(bD);
+
+        tr.appendChild(tdE);
+        tr.appendChild(tdD);
+        tbody.appendChild(tr);
+      });
+
+      setStatus(`OK. Registros: ${rows.length}`);
+    }
+
+    async function excluirLinha(table, row){
+      if (!confirm("EXCLUIR este registro?")) return;
+
+      const keyCols = guessKey(table);
+      let q = supabase.from(table).delete();
+
+      keyCols.forEach(k=>{
+        if (row[k] == null) return;
+        q = q.eq(k, row[k]);
+      });
+
+      const { error } = await q;
+      if (error){
+        console.error(error);
+        alert("Erro ao excluir. Veja o console.");
+        return;
+      }
+      alert("Excluído.");
+      carregar();
+    }
+
+    async function salvarEdicao(){
+      if (!linhaSelecionada){
+        alert("Selecione uma linha para editar.");
+        return;
+      }
+
+      let novo;
+      try{ novo = JSON.parse(editJson.value || "{}"); }
+      catch(e){ alert("JSON inválido."); return; }
+
+      const { table, data: antigo, keyCols } = linhaSelecionada;
+
+      let q = supabase.from(table).update(novo);
+      keyCols.forEach(k=>{
+        if (antigo[k] == null) return;
+        q = q.eq(k, antigo[k]);
+      });
+
+      const { error } = await q;
+      if (error){
+        console.error(error);
+        alert("Erro ao salvar edição. Veja o console.");
+        return;
+      }
+
+      setEditStatus("Edição salva.");
+      carregar();
+    }
+
+    btnCarregar.addEventListener("click", carregar);
+    btnLimpar.addEventListener("click", limpar);
+    btnSalvarEdicao.addEventListener("click", salvarEdicao);
+    btnCancelarEdicao.addEventListener("click", ()=>{
+      linhaSelecionada=null;
+      editJson.value="";
+      setEditStatus("");
+    });
+
+    (function init(){
+      const d = new Date();
+      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      elData.value = iso;
+      carregar();
+    })();
+  </script>
+</body>
+</html>

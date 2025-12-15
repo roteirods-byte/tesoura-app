@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>TESOURA - CONTROLE GERAL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      color: #f9fafb;
+    }
+    header {
+      background: #020617;
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    h2 {
+      margin: 8px 0;
+      color: #f97316;
+      text-transform: uppercase;
+    }
+    .painel {
+      background: #020617;
+      border-radius: 6px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    label {
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    select {
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #4b5563;
+      background: #0b1120;
+      color: #f9fafb;
+      font-size: 12px;
+      margin-right: 4px;
+    }
+    button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 12px;
+      background: #38bdf8;
+      color: #0f172a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      background: #020617;
+      font-size: 11px;
+    }
+    th, td {
+      border: 1px solid #4b5563;
+      padding: 3px 4px;
+      text-align: center;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    th {
+      background: #f97316;
+      color: #0f172a;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:nth-child(even) { background: #0b1120; }
+    tr:nth-child(odd)  { background: #020617; }
+    #status {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>TESOURA - CONTROLE GERAL (ANO COMPLETO)</header>
+
+  <div class="container">
+    <div class="painel">
+      <h2>Filtro</h2>
+      <label>ANO:</label>
+      <select id="ano"></select>
+      <button id="btn-carregar">CARREGAR LISTA</button>
+      <p style="font-size:12px;margin-top:4px;">
+        C = COMPARECEU, F = FALTOU, 1 = JOGOU 1 TEMPO, 2 = JOGOU 2 TEMPOS.
+      </p>
+      <p id="status"></p>
+    </div>
+
+    <div class="painel" style="overflow-x:auto;">
+      <h2>Jogadores x Domingos (Ano inteiro)</h2>
+      <table>
+        <thead id="thead-controle"></thead>
+        <tbody id="tbody-controle"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // MESMA CONEXÃO QUE OS OUTROS PAINÉIS
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const anoSel = document.getElementById("ano");
+    const btnCarregar = document.getElementById("btn-carregar");
+    const theadControle = document.getElementById("thead-controle");
+    const tbodyControle = document.getElementById("tbody-controle");
+    const statusEl = document.getElementById("status");
+
+    const nomesMes = [
+      "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL",
+      "MAIO", "JUNHO", "JULHO", "AGOSTO",
+      "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"
+    ];
+
+    function initAno() {
+      const hoje = new Date();
+      const anoAtual = hoje.getFullYear();
+      for (let a = anoAtual - 1; a <= anoAtual + 1; a++) {
+        const opt = document.createElement("option");
+        opt.value = a;
+        opt.textContent = a;
+        if (a === anoAtual) opt.selected = true;
+        anoSel.appendChild(opt);
+      }
+    }
+
+    // retorna objeto {mes: [ {iso, rotulo}, ... ]}
+    function getDomingosAno(ano) {
+      const porMes = {};
+      for (let m = 1; m <= 12; m++) {
+        const domingos = [];
+        const dt = new Date(ano, m - 1, 1);
+        while (dt.getMonth() === m - 1) {
+          if (dt.getDay() === 0) {
+            const anoStr = dt.getFullYear();
+            const mesStr = String(dt.getMonth() + 1).padStart(2, "0");
+            const diaStr = String(dt.getDate()).padStart(2, "0");
+            domingos.push({
+              iso: `${anoStr}-${mesStr}-${diaStr}`,
+              rotulo: `${diaStr}/${mesStr}`
+            });
+          }
+          dt.setDate(dt.getDate() + 1);
+        }
+        porMes[m] = domingos;
+      }
+      return porMes;
+    }
+
+    async function carregarLista() {
+      const ano = parseInt(anoSel.value, 10);
+      statusEl.textContent = "CARREGANDO DADOS...";
+      theadControle.innerHTML = "";
+      tbodyControle.innerHTML = "";
+
+      const domingosAno = getDomingosAno(ano);
+
+      // ===== CABEÇALHO EM 2 LINHAS (IGUAL À PLANILHA) =====
+      const trMeses = document.createElement("tr");
+      const thAtletaSpan = document.createElement("th");
+      thAtletaSpan.textContent = "ATLETA";
+      thAtletaSpan.rowSpan = 2;
+      trMeses.appendChild(thAtletaSpan);
+
+      // primeiro cabeçalho: blocos de mês
+      for (let m = 1; m <= 12; m++) {
+        const listaDom = domingosAno[m];
+        if (listaDom.length === 0) continue; // mês sem domingo (não acontece na prática)
+        const thMes = document.createElement("th");
+        thMes.colSpan = listaDom.length;
+        thMes.textContent = `MÊS ${m} - ${nomesMes[m-1]} - ${ano}`;
+        trMeses.appendChild(thMes);
+      }
+
+      const trDias = document.createElement("tr");
+      for (let m = 1; m <= 12; m++) {
+        const listaDom = domingosAno[m];
+        listaDom.forEach(d => {
+          const thDia = document.createElement("th");
+          thDia.textContent = d.rotulo; // ex: 02/02
+          trDias.appendChild(thDia);
+        });
+      }
+
+      theadControle.appendChild(trMeses);
+      theadControle.appendChild(trDias);
+
+      // ===== BUSCA DADOS NO SUPABASE =====
+
+      // Jogadores
+      const { data: jogadores, error: errJog } = await supabase
+        .from("jogadores")
+        .select("apelido")
+        .eq("ativo", true)
+        .order("apelido", { ascending: true });
+
+      if (errJog) {
+        console.error(errJog);
+        statusEl.textContent = "ERRO AO BUSCAR JOGADORES.";
+        return;
+      }
+
+      // Presenças do ano
+      const iniIso = `${ano}-01-01`;
+      const fimIso = `${ano}-12-31`;
+
+      const { data: pres, error: errPres } = await supabase
+        .from("presencas")
+        .select("data_jogo, apelido, presenca, faltoso")
+        .gte("data_jogo", iniIso)
+        .lte("data_jogo", fimIso);
+
+      if (errPres) {
+        console.error(errPres);
+        statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS.";
+        return;
+      }
+
+      const mapaPres = {};
+      (pres || []).forEach(p => {
+        const key = `${p.apelido}::${p.data_jogo}`;
+        mapaPres[key] = p;
+      });
+
+      // Escalação do ano (para saber 1 tempo / 2 tempos)
+      const { data: esc, error: errEsc } = await supabase
+        .from("escalacao")
+        .select("data_jogo, apelido, tempo")
+        .gte("data_jogo", iniIso)
+        .lte("data_jogo", fimIso);
+
+      if (errEsc) {
+        console.error(errEsc);
+        statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO.";
+        return;
+      }
+
+      const mapaEsc = {};
+      (esc || []).forEach(e => {
+        const key = `${e.apelido}::${e.data_jogo}`;
+        if (!mapaEsc[key]) mapaEsc[key] = new Set();
+        if (e.tempo) mapaEsc[key].add(e.tempo);
+      });
+
+      // ===== MONTA LINHAS (ANO INTEIRO) =====
+      jogadores.forEach(j => {
+        const apelido = j.apelido;
+        const tr = document.createElement("tr");
+
+        const tdAtleta = document.createElement("td");
+        tdAtleta.textContent = (apelido || "").toUpperCase();
+        tr.appendChild(tdAtleta);
+
+        for (let m = 1; m <= 12; m++) {
+          const listaDom = domingosAno[m];
+          listaDom.forEach(d => {
+            const td = document.createElement("td");
+            const key = `${apelido}::${d.iso}`;
+            const presDia = mapaPres[key];
+            let valor = "";
+
+            if (presDia) {
+              if (presDia.presenca) {
+                const setTempos = mapaEsc[key] || new Set();
+                const qtd = setTempos.size;
+                if (qtd >= 2) {
+                  valor = "2"; // jogou 2 tempos
+                } else if (qtd === 1) {
+                  valor = "1"; // jogou 1 tempo
+                } else {
+                  valor = "C"; // compareceu mas não jogou (equivalente ao "C" da sua planilha)
+                }
+              } else if (presDia.faltoso) {
+                valor = "F";
+              }
+            }
+
+            td.textContent = valor;
+            tr.appendChild(td);
+          });
+        }
+
+        tbodyControle.appendChild(tr);
+      });
+
+      statusEl.textContent = "LISTA CARREGADA.";
+    }
+
+    function init() {
+      initAno();
+      carregarLista();
+    }
+
+    btnCarregar.addEventListener("click", carregarLista);
+
+    init();
+  </script>
+</body>
+</html>

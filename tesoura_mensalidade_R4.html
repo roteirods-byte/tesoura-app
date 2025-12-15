@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>TESOURA - MENSALIDADE (R1)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f9fafb;
+    }
+    header {
+      background: #020617;
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    h2 {
+      margin: 8px 0;
+      color: #f97316;
+      text-transform: uppercase;
+    }
+    .painel {
+      background: #020617;
+      border-radius: 6px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    button {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    .btn-recarregar {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+    .btn-salvar {
+      background: #22c55e;
+      color: #022c22;
+      width: 86px;
+    }
+    .btn-editar {
+      background: #eab308;
+      color: #1f2937;
+      width: 86px;
+    }
+    .btn-cancelar {
+      background: #f97316;
+      color: #0f172a;
+      width: 86px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      background: #020617;
+      font-size: 11px;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #4b5563;
+      padding: 2px 4px;
+      text-align: center;
+      text-transform: uppercase;
+      white-space: nowrap;
+      height: 22px; /* PADRÃO DEFINIDO */
+      line-height: 22px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    th {
+      background: #f97316;
+      color: #0f172a;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:nth-child(even) { background: #0b1120; }
+    tr:nth-child(odd)  { background: #020617; }
+
+    input[type="number"] {
+      width: 78px;
+      height: 22px;
+      line-height: 22px;
+      border-radius: 4px;
+      border: 1px solid #4b5563;
+      background: #0b1120;
+      color: #f9fafb;
+      font-size: 11px;
+      text-align: center;
+      box-sizing: border-box;
+      padding: 0 4px;
+    }
+    input[type="checkbox"] { transform: scale(1.05); }
+
+    .p-verde { color: #22c55e; font-weight: bold; }
+    .p-vermelho { color: #ef4444; font-weight: bold; }
+
+    #status { font-size: 12px; margin-top: 6px; }
+
+    /* imprimir/baixar */
+    @media print {
+      body { background: #ffffff; color: #000000; }
+      header, .no-print { display: none !important; }
+      .container { max-width: none; padding: 0; }
+      .painel { box-shadow: none; background: transparent; padding: 0; }
+      table { font-size: 10px; }
+      th { position: static; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>TESOURA - MENSALIDADE</header>
+
+  <div class="container">
+    <div class="painel no-print" style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+      <div>
+        <h2 style="margin:0;">Mês atual</h2>
+        <div id="info-mes" style="font-size:12px; margin-top:4px;"></div>
+<div id="total-mes" style="margin-top:6px; font-size:12px; font-weight:800; color:#00d26a;">TOTAL PAGO NO MÊS: R$ 0</div>
+
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn-recarregar" id="btn-recarregar">RECARREGAR</button>
+        <button class="btn-recarregar" onclick="window.print()">IMPRIMIR / BAIXAR</button>
+      </div>
+    </div>
+
+    <div class="painel" style="overflow-x:auto;">
+      <h2>Pagamentos</h2>
+      <p style="font-size:12px; margin:0 0 6px 0;">
+        Marque <b>PAGO?</b> e clique em <b>SALVAR</b>. Use <b>EDITAR</b> para corrigir.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px;">ID</th>
+            <th style="width:180px;">APELIDO</th>
+            <th style="width:90px;">VALOR (R$)</th>
+            <th style="width:70px;">STATUS (P)</th>
+            <th style="width:140px;">DATA PAGAMENTO</th>
+            <th style="width:70px;">PAGO?</th>
+            <th style="width:95px;">SALVAR</th>
+            <th style="width:95px;">EDITAR</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-mensal"></tbody>
+      </table>
+
+      <p id="status"></p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const tbody = document.getElementById("tbody-mensal");
+    const statusEl = document.getElementById("status");
+    const infoMesEl = document.getElementById("info-mes");
+    const btnRecarregar = document.getElementById("btn-recarregar");
+
+    const editando = new Set(); // ids em modo edição
+
+    function hojeISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function obterSegundoDomingo(ano, mes1a12) {
+      let dt = new Date(ano, mes1a12-1, 1);
+      let domingos = [];
+      while (dt.getMonth() === mes1a12-1) {
+        if (dt.getDay() === 0) {
+          domingos.push(new Date(dt.getTime()));
+          if (domingos.length === 2) break;
+        }
+        dt.setDate(dt.getDate() + 1);
+      }
+      return domingos[1] || domingos[0] || new Date(ano, mes1a12-1, 1);
+    }
+
+    function isoToBR(iso) {
+      if (!iso) return "";
+      const [y,m,d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    function valorPadraoPorData(ano, mes, dataPagamentoISO) {
+      const dtPag = new Date(dataPagamentoISO + "T00:00:00");
+      const segDom = obterSegundoDomingo(ano, mes);
+      if (dtPag > segDom) return 80;
+      return 70;
+    }
+
+    function pCor(pago, status, ano, mes) {
+      const hoje = new Date(hojeISO() + "T00:00:00");
+      const segDom = obterSegundoDomingo(ano, mes);
+      const virada = new Date(segDom.getTime());
+      virada.setDate(virada.getDate() + 1); // segunda-feira após 2º domingo
+
+      const st = (status || "").toUpperCase();
+      if (pago) return "verde";
+      if (st === "ATRASADO") return "vermelho";
+      if (hoje <= virada) return "verde";
+      return "vermelho";
+    }
+
+    async function garantirLinhasMes(ano, mes) {
+      const { data: jogadores, error: errJ } = await supabase
+        .from("jogadores")
+        .select("apelido")
+        .eq("ativo", true)
+        .order("apelido", { ascending: true });
+
+      if (errJ) throw errJ;
+
+      const { data: mens, error: errM } = await supabase
+        .from("mensalidades")
+        .select("id, apelido, ano, mes")
+        .eq("ano", ano)
+        .eq("mes", mes);
+
+      if (errM) throw errM;
+
+      const mapa = {};
+      (mens || []).forEach(r => mapa[(r.apelido || "").toUpperCase()] = r);
+
+      const faltando = (jogadores || [])
+        .map(j => (j.apelido || "").toUpperCase())
+        .filter(ap => ap && !mapa[ap])
+        .map(ap => ({
+          apelido: ap,
+          ano,
+          mes,
+          valor: null,
+          status: "PENDENTE",
+          data_pagamento: null,
+          pago: false
+        }));
+
+      if (faltando.length > 0) {
+        const { error: errIns } = await supabase
+          .from("mensalidades")
+          .insert(faltando);
+        if (errIns) throw errIns;
+      }
+    }
+
+
+    async function registrarPagamentoNoCaixa({ apelido, valor, ano, mes, data_pagamento }) {
+      // Registra no CAIXA como entrada de mensalidade (idempotente)
+      const data = data_pagamento || new Date().toISOString().slice(0, 10);
+      const tipo = "ENTRADA";
+      const descricao = `Mensalidade ${String(mes).padStart(2,"0")}/${ano} - ${apelido}`;
+      const obs = "MENSALIDADE";
+
+      // Tenta inserir; se já existir, atualiza
+      const ins = await supabase.from('caixa').insert([{ data, tipo, descricao, valor: Number(valor) || 0, obs }]).select().maybeSingle();
+      if (!ins.error) return;
+
+      // Se falhar (ex.: duplicado), tenta achar e atualizar
+      const sel = await supabase
+        .from('caixa')
+        .select('id')
+        .eq('data', data)
+        .eq('tipo', tipo)
+        .eq('descricao', descricao)
+        .limit(1)
+        .maybeSingle();
+
+      if (sel.error || !sel.data?.id) return;
+
+      await supabase
+        .from('caixa')
+        .update({ valor: Number(valor) || 0, obs })
+        .eq('id', sel.data.id);
+    }
+
+    async function carregar() {
+      statusEl.textContent = "CARREGANDO...";
+      tbody.innerHTML = "";
+
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = hoje.getMonth() + 1;
+
+      infoMesEl.textContent = `ANO: ${ano} | MÊS: ${String(mes).padStart(2,'0')}`;
+
+      try {
+        await garantirLinhasMes(ano, mes);
+      } catch(e) {
+        console.error(e);
+        statusEl.textContent = "ERRO AO PREPARAR MENSALIDADES (VEJA CONSOLE).";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, apelido, valor, status, data_pagamento, pago, ano, mes")
+        .eq("ano", ano)
+        .eq("mes", mes)
+        .order("apelido", { ascending: true });
+
+      if (error) {
+        console.error(error);
+        statusEl.textContent = "ERRO AO CARREGAR MENSALIDADES.";
+        return;
+      }
+
+      render(data || [], ano, mes);
+      statusEl.textContent = `TOTAL: ${(data||[]).length}`;
+    }
+
+    function render(lista, ano, mes) {
+      tbody.innerHTML = "";
+      let total = 0;
+
+      lista.forEach(row => {
+        if (row.pago) total += Number(row.valor || 0);
+
+        const tr = document.createElement("tr");
+
+        function tdTexto(txt) {
+          const td = document.createElement("td");
+          td.textContent = txt ?? "";
+          return td;
+        }
+
+        tr.appendChild(tdTexto(row.id));
+        tr.appendChild(tdTexto((row.apelido || "").toUpperCase()));
+
+        // VALOR
+        const tdValor = document.createElement("td");
+        const inpValor = document.createElement("input");
+        inpValor.type = "number";
+        inpValor.min = "0";
+        inpValor.step = "1";
+        inpValor.value = row.valor != null ? row.valor : "";
+        inpValor.id = `valor_${row.id}`;
+        inpValor.disabled = !editando.has(row.id);
+        tdValor.appendChild(inpValor);
+        tr.appendChild(tdValor);
+
+        // STATUS (P)
+        const tdStatus = document.createElement("td");
+        const sp = document.createElement("span");
+        sp.textContent = "P";
+        const cor = pCor(!!row.pago, row.status, ano, mes);
+        sp.className = cor === "verde" ? "p-verde" : "p-vermelho";
+        tdStatus.appendChild(sp);
+        tr.appendChild(tdStatus);
+
+        // DATA PAGAMENTO
+        tr.appendChild(tdTexto(isoToBR(row.data_pagamento)));
+
+        // PAGO?
+        const tdPago = document.createElement("td");
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.checked = !!row.pago;
+        chk.id = `pago_${row.id}`;
+        chk.disabled = !editando.has(row.id);
+        tdPago.appendChild(chk);
+        tr.appendChild(tdPago);
+
+        // SALVAR
+        const tdSalvar = document.createElement("td");
+        const bSalvar = document.createElement("button");
+        bSalvar.textContent = "SALVAR";
+        bSalvar.className = "btn-salvar";
+        bSalvar.disabled = !editando.has(row.id);
+        bSalvar.onclick = () => salvarLinha(row.id, row.apelido, ano, mes);
+        tdSalvar.appendChild(bSalvar);
+        tr.appendChild(tdSalvar);
+
+        // EDITAR
+        const tdEditar = document.createElement("td");
+        const bEditar = document.createElement("button");
+        bEditar.textContent = editando.has(row.id) ? "CANCELAR" : "EDITAR";
+        bEditar.className = editando.has(row.id) ? "btn-cancelar" : "btn-editar";
+        bEditar.onclick = () => {
+          if (editando.has(row.id)) {
+            editando.delete(row.id);
+          } else {
+            editando.add(row.id);
+          }
+          carregar();
+        };
+        tdEditar.appendChild(bEditar);
+        tr.appendChild(tdEditar);
+
+        tbody.appendChild(tr);
+      });
+
+      if (totalMesEl) {
+        const fmt = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+        totalMesEl.textContent = `TOTAL PAGO NO MÊS: R$ ${fmt(total)}`;
+      }
+
+    }
+
+    async function salvarLinha(id, apelido, ano, mes) {
+      const chk = document.getElementById(`pago_${id}`);
+      const inp = document.getElementById(`valor_${id}`);
+      const pago = !!(chk && chk.checked);
+
+      let valor = (inp && inp.value !== "") ? parseInt(inp.value, 10) : null;
+
+      const hoje = hojeISO();
+
+      if (pago && (valor == null || Number.isNaN(valor))) {
+        valor = valorPadraoPorData(ano, mes, hoje);
+      }
+
+      const updates = {
+        valor: (valor == null || Number.isNaN(valor)) ? null : valor,
+        pago: pago,
+        data_pagamento: pago ? hoje : null,
+        status: pago ? "EM DIA" : "PENDENTE"
+      };
+
+      statusEl.textContent = "SALVANDO...";
+
+      // estado anterior (evita duplicar no CAIXA)
+      const { data: prev, error: prevErr } = await supabase
+        .from("mensalidades")
+        .select("pago,data_pagamento")
+        .eq("id", id)
+        .maybeSingle();
+      if (prevErr) console.warn("Falha ao ler estado anterior:", prevErr);
+      const prevPago = !!(prev && prev.pago);
+
+      const { error } = await supabase
+        .from("mensalidades")
+        .update(updates)
+        .eq("id", id);
+
+      // se virou PAGO agora, lança no CAIXA
+      const novoPago = !!pago;
+      if (!prevPago && novoPago) {
+        const dataCx = (updates.data_pagamento || hojeISO());
+        const descricao = `Mensalidade - ${apelido} (${String(mes).padStart(2,"0")}/${ano})`;
+        const { error: errCx } = await supabase.from("caixa").insert({
+          data: dataCx,
+          tipo: "MENSALIDADE",
+          descricao,
+          valor: Number(valor) || 0,
+          obs: ""
+        });
+        if (errCx) console.warn("Falha ao lançar no CAIXA:", errCx);
+      }
+
+
+      if (error) {
+        console.error(error);
+        alert("ERRO AO SALVAR. VEJA O CONSOLE.");
+        statusEl.textContent = "ERRO AO SALVAR.";
+        return;
+      }
+
+      editando.delete(id);
+      statusEl.textContent = "SALVO.";
+      await carregar();
+    }
+
+    btnRecarregar.addEventListener("click", carregar);
+    carregar();
+  </script>
+</body>
+</html>

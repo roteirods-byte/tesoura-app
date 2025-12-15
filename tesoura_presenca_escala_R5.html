@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>TESOURA - PRESENÇA / ESCALAÇÃO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
+    header{background:#020617;padding:12px 16px;text-align:center;font-weight:bold;letter-spacing:1px;text-transform:uppercase}
+    .container{max-width:1400px;margin:0 auto;padding:16px}
+    h2{margin:8px 0;color:#f97316;text-transform:uppercase}
+    .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
+    .linhas-topo{display:flex;gap:16px;margin-bottom:16px}
+    .col-50{flex:1;min-width:0}
+    button{
+      padding:6px 10px;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      font-weight:bold;
+      text-transform:uppercase;
+      font-size:11px;
+      line-height:1;
+      height:30px;
+      min-width:110px;
+    }
+    .btn-primario{background:#22c55e;color:#022c22}
+    .btn-secundario{background:#0ea5e9;color:#0f172a}
+    .btn-perigo{background:#ef4444;color:#f9fafb}
+    .btn-neutro{background:#f97316;color:#0f172a}
+    .btn-chegou{background:#10b981;color:#022c22;min-width:120px}
+    .btn-sair{background:#f97316;color:#0f172a;min-width:70px;height:34px;border-radius:6px;font-size:11px}
+    .btn-nao-joga{background:#64748b;color:#e5e7eb;min-width:140px}
+    .btn-excluir{background:#ef4444;color:#f9fafb;min-width:90px}
+    table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
+    th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:uppercase;white-space:nowrap;font-size:11px}
+    th{background:#111827;color:#f97316;position:sticky;top:0;z-index:1}
+    tr:nth-child(even){background:#0b1120}
+    tr:nth-child(odd){background:#020617}
+    .status-info{font-size:12px;margin-top:6px;color:#cbd5e1}
+    .painel-scroll{overflow-y:auto;max-height:320px}
+    .riscado{text-decoration:line-through;opacity:.55}
+    .obs-pago{color:#22c55e;font-weight:bold}
+    .obs-inad{color:#ef4444;font-weight:bold}
+    .grid-escalacao{display:flex;gap:16px;margin-top:12px}
+    .col-escalacao{flex:1;min-width:0}
+    .totais{font-weight:bold;text-align:right;margin-top:6px;font-size:12px;color:#cbd5e1}
+    .msg-salvar{font-size:13px;font-weight:bold;color:#22c55e;margin:6px 0 0;text-align:right;min-height:18px}
+    .legenda{font-size:11px;margin-top:10px;color:#cbd5e1}
+    .t-amarelo{color:#facc15;font-weight:bold}
+    .t-azul{color:#38bdf8;font-weight:bold}
+    @media print{
+      body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
+      header,.no-print{display:none !important}
+      .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
+      table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
+      th{background:#eee;color:#000}
+      tr:nth-child(even),tr:nth-child(odd){background:#fff}
+      .t-amarelo,.t-azul,.obs-pago,.obs-inad{color:#000 !important}
+      .riscado{opacity:1}
+      .page-break{page-break-before:always}
+    
+/* PRINT_SEPARADO_R5 */
+/* Não imprimir lista de jogadores */
+.linhas-topo .col-50:first-child{display:none !important;}
+.linhas-topo{display:block !important;}
+.linhas-topo .col-50{width:100% !important; display:block !important;}
+/* Presença ocupa a página(s) inicial(is) */
+.painel-presenca{page-break-inside: avoid;}
+/* Escalação em página separada */
+.grid-escalacao{page-break-before: always; page-break-inside: avoid;}
+.grid-escalacao table{page-break-inside: avoid;}
+/* Remover sombras/efeitos para imprimir limpo */
+*{box-shadow:none !important; text-shadow:none !important;}
+body{background:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
+}
+  
+    /* === AJUSTES PADRÃO (compacto) === */
+    body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
+    .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
+    .painel-scroll{overflow-y:auto;max-height:320px}
+    table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
+    th, td { padding: 2px 3px; }
+    button{
+      padding:6px 10px;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      font-weight:bold;
+      text-transform:uppercase;
+      font-size:11px;
+      line-height:1;
+      height:30px;
+      min-width:110px;
+    }
+    .btn-chegou { width:120px; }
+    .btn-nao-joga { width:140px; }
+    .btn-excluir { width:90px; }
+    .btn-sair { width:70px; }
+
+    /* ESCALAÇÃO: 1º e 2º tempo com MESMO tamanho */
+    .grid-escalacao { align-items: stretch; }
+    .col-escalacao { display: flex; flex-direction: column; }
+    .col-escalacao table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
+
+    /* TÍTULOS AMARELO/AZUL SEM FUNDO */
+    th { background: #f97316; color: #0f172a; } /* padrão do projeto */
+    .grid-escalacao th { background: transparent; }
+    /* cabeçalhos específicos da escalação */
+    .th-amarelo { color: #facc15 !important; font-weight: 900; }
+    .th-azul { color: #38bdf8 !important; font-weight: 900; }
+
+    /* === IMPRESSÃO / PDF (não quebrar um painel em 2 folhas) === */
+    @media print {
+      body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
+      header { color: #000000 !important; background: #ffffff !important; }
+      .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
+      .linhas-topo { page-break-after: always; break-after: page; }
+      button, .btn-primario, .btn-secundario, .btn-perigo, .btn-neutro { display: none !important; }
+      .painel-scroll{overflow-y:auto;max-height:320px}
+      th, td { border: 1px solid #444 !important; }
+    }
+
+  
+/* R2 - Ajustes de layout (padrão do projeto) */
+table th, table td { padding: 6px 8px !important; font-size: 12px !important; }
+button{
+      padding:6px 10px;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      font-weight:bold;
+      text-transform:uppercase;
+      font-size:11px;
+      line-height:1;
+      height:30px;
+      min-width:110px;
+    }
+#listaJogadores, #listaPresentes { max-height: 320px !important; overflow: auto !important; }
+#painelEscalacao .col { flex: 1 1 0 !important; }
+#painelEscalacao .col table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
+#painelEscalacao .col { min-height: 420px !important; }
+#painelEscalacao .col .tblwrap { max-height: 360px !important; overflow: auto !important; }
+
+/* Impressão: 1 página (evitar quebrar o painel no meio) */
+@media print {
+  body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
+  .container, .card, #painelEscalacao { page-break-inside: avoid; break-inside: avoid; }
+  .btn, button{
+      padding:6px 10px;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      font-weight:bold;
+      text-transform:uppercase;
+      font-size:11px;
+      line-height:1;
+      height:30px;
+      min-width:110px;
+    }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* === R3: layout compacto (linhas e botões menores) === */
+header{padding:10px 14px}
+.container{padding:12px;max-width:1400px}
+.painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
+.status-info{font-size:11px}
+label{font-size:10px}
+button{
+      padding:6px 10px;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+      font-weight:bold;
+      text-transform:uppercase;
+      font-size:11px;
+      line-height:1;
+      height:30px;
+      min-width:110px;
+    }
+table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
+th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:uppercase;white-space:nowrap;font-size:11px}
+.painel-scroll{overflow-y:auto;max-height:320px}
+.btn-chegou{width:120px}
+.btn-nao-joga{width:140px}
+.btn-excluir{width:90px}
+.btn-sair{width:70px}
+
+
+/* LAYOUT_ALTURA_R5 */
+.grid-escalacao{align-items:stretch;}
+.col-escalacao{display:flex; flex-direction:column;}
+.col-escalacao table{flex:1; width:100%;}
+/* Padroniza altura de linha nas tabelas da escalação */
+.grid-escalacao table td, .grid-escalacao table th{padding-top:6px; padding-bottom:6px; line-height:1.1;}
+</style>
+</head>
+<body>
+  <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
+
+  <div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
+    <button class="btn-secundario" onclick="window.print()">IMPRIMIR / BAIXAR</button>
+  </div>
+
+  <div class="container">
+
+    <div class="linhas-topo">
+      <div class="col-50">
+        <div class="painel">
+          <h2>Jogadores (todos)</h2>
+          <div class="status-info">Clique em <b>CHEGOU AGORA</b> quando o jogador chegar.</div>
+          <div id="status-jogadores" class="status-info"></div>
+
+          <div class="painel-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:70px">ID</th>
+                  <th>APELIDO</th>
+                  <th style="width:170px">CHEGOU AGORA</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-jogadores-todos"></tbody>
+            </table>
+          </div>
+
+          <div id="status-total-jogadores" class="status-info"></div>
+        </div>
+      </div>
+
+      <div class="col-50">
+        <div class="painel">
+          <h2>Presença hoje</h2>
+
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+            <div id="info-presentes" class="status-info"></div>
+            <div id="info-data-jogo" class="status-info"></div>
+          </div>
+
+          <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
+            <button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
+          </div>
+
+          <div id="status-presentes" class="status-info"></div>
+
+          <div class="painel-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:70px">ID</th>
+                  <th style="width:70px">ORDEM</th>
+                  <th>APELIDO</th>
+                  <th style="width:110px">HORA</th>
+                  <th style="width:110px">OBS</th>
+                  <th style="width:170px">NÃO VAI JOGAR</th>
+                  <th style="width:120px">EXCLUIR</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-presentes-hoje"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="painel">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <h2 style="margin:0;">Escalação do jogo</h2>
+        <div class="no-print" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <div id="msg-salvar" class="msg-salvar"></div>
+          <button id="btn-escalar-2t" class="btn-primario">Escalar 2º tempo</button>
+          <button id="btn-salvar-jogo" class="btn-neutro">Salvar</button>
+        </div>
+      </div>
+
+      <div class="grid-escalacao">
+        <div class="col-escalacao">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="t-amarelo" style="font-size:13px;">1º TEMPO</div>
+            <div class="status-info">Botão <b>SAIU</b> risca o nome.</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">ID</th>
+                <th style="width:60px">POS</th>
+                <th class="t-amarelo">AMARELO</th>
+                <th style="width:90px">SAIU</th>
+                <th class="t-azul">AZUL</th>
+                <th style="width:90px">SAIU</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-1t"></tbody>
+          </table>
+          <div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
+        </div>
+
+        <div class="col-escalacao">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="t-amarelo" style="font-size:13px;">2º TEMPO</div>
+            <div class="status-info">Prioridade: quem não jogou.</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">ID</th>
+                <th style="width:60px">POS</th>
+                <th class="t-amarelo">AMARELO</th>
+                <th class="t-azul">AZUL</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-2t"></tbody>
+          </table>
+          <div class="totais" id="totais-2t">TOTAL PONTOS: 0 x 0</div>
+        </div>
+      </div>
+
+      <div class="legenda">
+        <b>OBS:</b>
+        C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
+        <span class="obs-pago">P (verde) pagou</span> |
+        <span class="obs-inad">P (vermelho) não pagou</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ===== SUPABASE =====
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ===== ESTADO =====
+    let dataJogoIso = null;
+    let todosJogadores = [];  // {id, apelido, pontos, inadimplente}
+    let mapaJogadores = {};   // apelido -> jogador
+
+    // presentesHoje: {id, apelido, horaChegada, naoVaiJogar, escalou1, escalou2, saiu, obs, pontos}
+    let presentesHoje = [];
+
+    // escalações: cada item {id, apelido}
+    let escala1 = { amarelo: [], azul: [] };
+    let escala2 = { amarelo: [], azul: [] };
+
+    // ===== DOM =====
+    const statusJogadoresEl = document.getElementById("status-jogadores");
+    const statusTotalJogadoresEl = document.getElementById("status-total-jogadores");
+    const tbodyJogadoresTodos = document.getElementById("tbody-jogadores-todos");
+
+    const infoDataJogoEl = document.getElementById("info-data-jogo");
+    const infoPresentesEl = document.getElementById("info-presentes");
+    const statusPresentesEl = document.getElementById("status-presentes");
+    const tbodyPresentesHoje = document.getElementById("tbody-presentes-hoje");
+
+    const btnLimparPresentes = document.getElementById("btn-limpar-presentes");
+    const btnEscalar1T = document.getElementById("btn-escalar-1t");
+    const btnEscalar2T = document.getElementById("btn-escalar-2t");
+    const btnSalvarJogo = document.getElementById("btn-salvar-jogo");
+
+    const tbody1T = document.getElementById("tbody-1t");
+    const tbody2T = document.getElementById("tbody-2t");
+    const totais1TEl = document.getElementById("totais-1t");
+    const totais2TEl = document.getElementById("totais-2t");
+    const msgSalvarEl = document.getElementById("msg-salvar");
+
+    // ===== DATA/HORA =====
+    function hojeIso() {
+      const d = new Date();
+      const ano = d.getFullYear();
+      const mes = String(d.getMonth() + 1).padStart(2, "0");
+      const dia = String(d.getDate()).padStart(2, "0");
+      return `${ano}-${mes}-${dia}`;
+    }
+    function formatHora(d) {
+      return d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false });
+    }
+    function comparaHoraStr(a,b){ return (a||"").localeCompare(b||""); }
+
+    function atualizarInfoPresentes(){
+      infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}`;
+    }
+
+    // ===== REGRA PAGAMENTO =====
+    // - Até 1 dia depois do 2º domingo do mês: TODO MUNDO É P VERDE (ninguém é inadimplente).
+    // - Depois disso: P vermelho só para quem estiver atrasado (mês atual em aberto) OU meses anteriores em aberto.
+    function segundoDomingo(ano, mes){ // mes 1-12
+      const d = new Date(ano, mes-1, 1);
+      let domingos = 0;
+      while (true){
+        if (d.getDay() === 0) { // domingo
+          domingos++;
+          if (domingos === 2) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+        d.setDate(d.getDate()+1);
+      }
+    }
+    function addDias(dt, n){
+      const d = new Date(dt.getTime());
+      d.setDate(d.getDate()+n);
+      return d;
+    }
+    function ymd(dt){
+      const y=dt.getFullYear();
+      const m=String(dt.getMonth()+1).padStart(2,"0");
+      const d=String(dt.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
+    }
+
+    // mensMap: { "YYYY-MM": {apelido: {pago, status, data_pagamento}} }
+    let mensPorApelido = {}; // apelido -> array de {ano,mes,pago,status,data_pagamento}
+
+    function isPagoHoje(apelido){
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = hoje.getMonth()+1;
+
+      const venc = segundoDomingo(ano, mes);
+      const viraVermelho = addDias(venc, 1); // segunda-feira após 2º domingo (venc+1)
+
+      // antes da virada: todo mundo verde
+      if (hoje < viraVermelho) return true;
+
+      const regs = mensPorApelido[apelido] || [];
+
+      // 1) se tem mês anterior em aberto => vermelho (já virou o mês seguinte)
+      for (const r of regs){
+        const key = r.ano*100 + r.mes;
+        const keyAtual = ano*100 + mes;
+        if (key < keyAtual){
+          if (!r.pago) return false;
+        }
+      }
+
+      // 2) mês atual: se existe pago true => verde; se existe pago false => vermelho; se não existe => vermelho (após virada)
+      const regAtual = regs.find(r => r.ano===ano && r.mes===mes);
+      if (regAtual) return !!regAtual.pago;
+      return false;
+    }
+
+    // ===== LOAD BASE =====
+    async function carregarBase(){
+      try{
+        dataJogoIso = hojeIso();
+        infoDataJogoEl.textContent = `DIA DO JOGO: ${dataJogoIso.split("-").reverse().join("/")}`;
+        msgSalvarEl.textContent = "";
+
+        statusJogadoresEl.textContent = "Carregando jogadores...";
+        tbodyJogadoresTodos.innerHTML = "";
+        tbodyPresentesHoje.innerHTML = "";
+        presentesHoje = [];
+        escala1 = { amarelo: [], azul: [] };
+        escala2 = { amarelo: [], azul: [] };
+
+        // jogadores
+        const { data: jogs, error: errJ } = await supabase
+          .from("jogadores")
+          .select("id, apelido, pontos, ativo")
+          .eq("ativo", true)
+          .order("apelido", { ascending: true });
+
+        if (errJ){
+          console.error(errJ);
+          statusJogadoresEl.textContent = "ERRO AO CARREGAR JOGADORES. (abra F12 > Console)";
+          return;
+        }
+
+        todosJogadores = jogs || [];
+        mapaJogadores = {};
+        todosJogadores.forEach(j => { mapaJogadores[j.apelido] = j; });
+
+        // mensalidades (carrega do mês atual e meses anteriores do mesmo ano)
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = hoje.getMonth()+1;
+
+        const { data: mens, error: errMens } = await supabase
+          .from("mensalidades")
+          .select("apelido, ano, mes, pago, status, data_pagamento")
+          .lte("ano", ano);
+
+        if (errMens){
+          console.warn("mensalidades:", errMens);
+        }
+
+        mensPorApelido = {};
+        (mens || []).forEach(m=>{
+          if(!mensPorApelido[m.apelido]) mensPorApelido[m.apelido] = [];
+          mensPorApelido[m.apelido].push({
+            ano: Number(m.ano), mes: Number(m.mes),
+            pago: !!m.pago,
+            status: (m.status||"").toUpperCase(),
+            data_pagamento: m.data_pagamento || null
+          });
+        });
+
+        renderJogadoresTodos();
+        renderPresentes();
+        renderEscalacoes();
+
+        statusJogadoresEl.textContent = "Jogadores carregados.";
+        statusTotalJogadoresEl.textContent = `TOTAL DE JOGADORES: ${todosJogadores.length}`;
+        atualizarInfoPresentes();
+      }catch(e){
+        console.error(e);
+        statusJogadoresEl.textContent = "ERRO NO PAINEL. (abra F12 > Console)";
+      }
+    }
+
+    function renderJogadoresTodos(){
+      tbodyJogadoresTodos.innerHTML = "";
+      todosJogadores.forEach(j=>{
+        const tr=document.createElement("tr");
+
+        const tdId=document.createElement("td");
+        tdId.textContent = j.id ?? "";
+        tr.appendChild(tdId);
+
+        const tdAp=document.createElement("td");
+        tdAp.textContent = (j.apelido||"").toUpperCase();
+        tr.appendChild(tdAp);
+
+        const tdBtn=document.createElement("td");
+        const bt=document.createElement("button");
+        bt.textContent="CHEGOU AGORA";
+        bt.className="btn-chegou";
+        bt.onclick=()=>marcarChegada(j);
+        tdBtn.appendChild(bt);
+        tr.appendChild(tdBtn);
+
+        tbodyJogadoresTodos.appendChild(tr);
+      });
+    }
+
+    function marcarChegada(j){
+      const apelido = j?.apelido;
+      if(!apelido) return;
+
+      if(presentesHoje.find(p=>p.apelido===apelido)){
+        alert("Este jogador já está na lista de presença hoje.");
+        return;
+      }
+
+      const agora=new Date();
+      const registro = {
+        id: j.id,
+        apelido,
+        horaChegada: formatHora(agora),
+        naoVaiJogar: false,
+        escalou1: false,
+        escalou2: false,
+        saiu: false, // saiu do 1º tempo
+        obs: "",
+        pontos: j.pontos ?? 0
+      };
+      presentesHoje.push(registro);
+      presentesHoje.sort((a,b)=>comparaHoraStr(a.horaChegada,b.horaChegada));
+      atualizarInfoPresentes();
+      limparEscalacoes();
+      renderPresentes();
+      renderEscalacoes();
+    }
+
+    function toggleNaoVaiJogar(apelido){
+      const p=presentesHoje.find(x=>x.apelido===apelido);
+      if(!p) return;
+      p.naoVaiJogar=!p.naoVaiJogar;
+      // risco visual imediato
+      limparEscalacoes();
+      renderPresentes();
+      renderEscalacoes();
+    }
+
+    function excluirPresente(apelido){
+      presentesHoje = presentesHoje.filter(p=>p.apelido!==apelido);
+      atualizarInfoPresentes();
+      limparEscalacoes();
+      renderPresentes();
+      renderEscalacoes();
+    }
+
+    function renderPresentes(){
+      tbodyPresentesHoje.innerHTML="";
+      presentesHoje.forEach((p,idx)=>{
+        const tr=document.createElement("tr");
+
+        const tdId=document.createElement("td");
+        tdId.textContent = p.id ?? "";
+        tr.appendChild(tdId);
+
+        const tdOrd=document.createElement("td");
+        tdOrd.textContent=idx+1;
+        tr.appendChild(tdOrd);
+
+        const tdAp=document.createElement("td");
+        tdAp.textContent=p.apelido.toUpperCase();
+        // risco visual no painel presença:
+        // - NÃO VAI JOGAR
+        // - escalou 1º
+        // - escalou 2º
+        if(p.naoVaiJogar || p.escalou1 || p.escalou2){
+          tdAp.classList.add("riscado");
+        }
+        tr.appendChild(tdAp);
+
+        const tdHora=document.createElement("td");
+        tdHora.textContent=p.horaChegada;
+        tr.appendChild(tdHora);
+
+        const tdObs=document.createElement("td");
+        // OBS: base (C/1/2/1-2) + pagamento (P verde/vermelho)
+        const base = (p.obs||"").split("-")[0] || "";
+        const pago = isPagoHoje(p.apelido);
+        const spanBase=document.createElement("span");
+        spanBase.textContent = base ? (base+"-") : "";
+        tdObs.appendChild(spanBase);
+
+        const spanP=document.createElement("span");
+        spanP.textContent="P";
+        spanP.className = pago ? "obs-pago" : "obs-inad";
+        tdObs.appendChild(spanP);
+
+        tr.appendChild(tdObs);
+
+        const tdNao=document.createElement("td");
+        const btNao=document.createElement("button");
+        btNao.textContent = p.naoVaiJogar ? "VAI JOGAR" : "NÃO VAI JOGAR";
+        btNao.className="btn-nao-joga";
+        btNao.onclick=()=>toggleNaoVaiJogar(p.apelido);
+        tdNao.appendChild(btNao);
+        tr.appendChild(tdNao);
+
+        const tdExc=document.createElement("td");
+        const btExc=document.createElement("button");
+        btExc.textContent="EXCLUIR";
+        btExc.className="btn-excluir";
+        btExc.onclick=()=>excluirPresente(p.apelido);
+        tdExc.appendChild(btExc);
+        tr.appendChild(tdExc);
+
+        tbodyPresentesHoje.appendChild(tr);
+      });
+
+      statusPresentesEl.textContent = presentesHoje.length ? "Lista carregada." : "Nenhum jogador cadastrado hoje.";
+    }
+
+    function limparEscalacoes(){
+      escala1={amarelo:[],azul:[]};
+      escala2={amarelo:[],azul:[]};
+      presentesHoje.forEach(p=>{
+        p.escalou1=false;
+        p.escalou2=false;
+        p.saiu=false;
+        p.obs="";
+      });
+      atualizarObs();
+    }
+
+    function atualizarObs(){
+      const set1 = new Set([...escala1.amarelo, ...escala1.azul].map(e=>e.apelido));
+      const set2 = new Set([...escala2.amarelo, ...escala2.azul].map(e=>e.apelido));
+
+      presentesHoje.forEach(p=>{
+        const j1=set1.has(p.apelido);
+        const j2=set2.has(p.apelido);
+
+        if (j1 && j2) p.obs="1-2";
+        else if (j1) p.obs="1";
+        else if (j2) p.obs="2";
+        else p.obs="C";
+      });
+    }
+
+    // ===== ESCALAÇÃO (BALANCEAMENTO DE PONTOS) =====
+    function pts(apelido){
+      const j = mapaJogadores[apelido];
+      return (j && j.pontos!=null) ? Number(j.pontos) : 0;
+    }
+
+    function balancearEmDoisTimes(listaApelidos){
+      // algoritmo guloso: ordena por pontos desc e vai colocando no time com menor soma (e respeita 10 vagas)
+      const ordenada = [...listaApelidos].sort((a,b)=>pts(b)-pts(a));
+      const A=[], B=[];
+      let sa=0, sb=0;
+      for(const ap of ordenada){
+        if (A.length>=10){ B.push(ap); sb+=pts(ap); continue; }
+        if (B.length>=10){ A.push(ap); sa+=pts(ap); continue; }
+        if (sa<=sb){ A.push(ap); sa+=pts(ap); } else { B.push(ap); sb+=pts(ap); }
+      }
+      return { amarelo:A, azul:B, somaAm:sa, somaAz:sb };
+    }
+
+    function escalarPrimeiroTempo(){
+      if(presentesHoje.length===0){ alert("Nenhum presente cadastrado."); return; }
+
+      // 1º tempo: usa ordem de chegada, mas balanceia pontos dentro dos 20 primeiros válidos
+      const validos = presentesHoje.filter(p=>!p.naoVaiJogar);
+      if(validos.length===0){ alert("Nenhum jogador disponível."); return; }
+
+      const selecionados = validos.slice(0, Math.min(20, validos.length)).map(p=>p.apelido);
+      const bal = balancearEmDoisTimes(selecionados);
+
+      escala1 = {
+        amarelo: bal.amarelo.map(ap=>({id: mapaJogadores[ap]?.id ?? "", apelido: ap})),
+        azul:    bal.azul.map(ap=>({id: mapaJogadores[ap]?.id ?? "", apelido: ap}))
+      };
+
+      // marca escalou1
+      presentesHoje.forEach(p=>{ p.escalou1 = selecionados.includes(p.apelido); });
+
+      // limpa 2º tempo
+      escala2={amarelo:[],azul:[]};
+      presentesHoje.forEach(p=>{ p.escalou2=false; p.saiu=false; });
+
+      atualizarObs();
+      renderPresentes();
+      renderEscalacoes();
+    }
+
+    function toggleSaiu(apelido){
+      const p = presentesHoje.find(x=>x.apelido===apelido);
+      if(!p) return;
+      p.saiu = !p.saiu; // saiu do 1º tempo
+      renderEscalacoes();
+    }
+
+        function escalarSegundoTempo() {
+      if (escala1.amarelo.length === 0 && escala1.azul.length === 0) {
+        alert("Antes, escale o 1º tempo.");
+        return;
+      }
+
+      const limiteSegundo = "08:00:00";
+
+      // 1) candidatos válidos (regra do horário 08:00; se ninguém estiver no horário, usa todos válidos)
+      let candidatosBase = presentesHoje.filter(p =>
+        !p.naoVaiJogar && comparaHoraStr(p.horaChegada, limiteSegundo) <= 0
+      );
+
+      if (candidatosBase.length === 0) {
+        candidatosBase = presentesHoje.filter(p => !p.naoVaiJogar);
+        if (candidatosBase.length === 0) {
+          alert("Nenhum jogador disponível para o 2º tempo.");
+          return;
+        }
+      }
+
+      // 2) conjuntos do 1º tempo
+      const jogou1Set = new Set(
+        escala1.amarelo.map(e => e.apelido).concat(escala1.azul.map(e => e.apelido))
+      );
+      const time1 = {};
+      escala1.amarelo.forEach(e => time1[e.apelido] = "AMARELO");
+      escala1.azul.forEach(e => time1[e.apelido] = "AZUL");
+
+      // 3) PRIORIDADE: quem NÃO jogou o 1º tempo (mas está apto para 2º tempo)
+      // (se tiver mais de 20, pega os 20 primeiros pela ordem de chegada)
+      const naoJogou1 = candidatosBase
+        .filter(p => !jogou1Set.has(p.apelido))
+        .sort((a, b) => comparaHoraStr(a.horaChegada, b.horaChegada));
+
+      const totalAlvo = Math.min(20, candidatosBase.length);
+      const listaPrioritaria = naoJogou1.slice(0, totalAlvo);
+
+      // 4) Continuam do 1º tempo (mesmo time), só se houver espaço e se NÃO estiver marcado como SAIU
+      const jogaram1Aptos = candidatosBase
+        .filter(p => jogou1Set.has(p.apelido) && !p.saiu2t)
+        .sort((a, b) => comparaHoraStr(a.horaChegada, b.horaChegada));
+
+      const faltam = Math.max(0, totalAlvo - listaPrioritaria.length);
+
+      // Seleciona quem continua do 1º tempo, mantendo time
+      const continuam = jogaram1Aptos.slice(0, faltam);
+
+      // 5) Monta os times do 2º tempo:
+      // - primeiro coloca os que CONTINUAM (time fixo)
+      // - depois distribui os que NÃO jogaram, para equilibrar PONTOS
+      escala2 = { amarelo: [], azul: [] };
+
+      let ptsAm = 0;
+      let ptsAz = 0;
+
+      function getPts(ap) {
+        const j = mapaJogadores[ap];
+        return j && j.pontos != null ? (parseInt(j.pontos, 10) || 0) : 0;
+      }
+
+      // continuadores
+      continuam.forEach(p => {
+        const tm = time1[p.apelido];
+        p.escalou2 = true;
+
+        if (tm === "AMARELO") {
+          escala2.amarelo.push({ apelido: p.apelido });
+          ptsAm += getPts(p.apelido);
+        } else {
+          escala2.azul.push({ apelido: p.apelido });
+          ptsAz += getPts(p.apelido);
+        }
+      });
+
+      // distribuidores (não jogaram 1º tempo)
+      const restantes = listaPrioritaria
+        .filter(p => !continuam.find(c => c.apelido === p.apelido))
+        .slice();
+
+      // ordena por pontos desc para equilibrar melhor
+      restantes.sort((a, b) => getPts(b.apelido) - getPts(a.apelido));
+
+      restantes.forEach(p => {
+        p.escalou2 = true;
+
+        const capAm = escala2.amarelo.length < 10;
+        const capAz = escala2.azul.length < 10;
+
+        if (capAm && capAz) {
+          if (ptsAm <= ptsAz) {
+            escala2.amarelo.push({ apelido: p.apelido });
+            ptsAm += getPts(p.apelido);
+          } else {
+            escala2.azul.push({ apelido: p.apelido });
+            ptsAz += getPts(p.apelido);
+          }
+        } else if (capAm) {
+          escala2.amarelo.push({ apelido: p.apelido });
+          ptsAm += getPts(p.apelido);
+        } else if (capAz) {
+          escala2.azul.push({ apelido: p.apelido });
+          ptsAz += getPts(p.apelido);
+        }
+      });
+
+      // 6) Garantia: se ainda faltar gente (caso raro), completa com quem jogou 1º tempo e não saiu
+      const jaNo2 = new Set(
+        escala2.amarelo.map(e => e.apelido).concat(escala2.azul.map(e => e.apelido))
+      );
+
+      for (const p of jogaram1Aptos) {
+        if (escala2.amarelo.length + escala2.azul.length >= totalAlvo) break;
+        if (jaNo2.has(p.apelido)) continue;
+
+        const tm = time1[p.apelido] || "AMARELO";
+        p.escalou2 = true;
+
+        if (tm === "AMARELO" && escala2.amarelo.length < 10) {
+          escala2.amarelo.push({ apelido: p.apelido });
+        } else if (tm === "AZUL" && escala2.azul.length < 10) {
+          escala2.azul.push({ apelido: p.apelido });
+        } else if (escala2.amarelo.length < 10) {
+          escala2.amarelo.push({ apelido: p.apelido });
+        } else if (escala2.azul.length < 10) {
+          escala2.azul.push({ apelido: p.apelido });
+        }
+      }
+
+      atualizarObs();
+      renderEscalacoes();
+      renderPresentes();
+    }
+
+    function calcularTotalPontos(lista){
+      return (lista||[]).reduce((s,e)=>s+(pts(e.apelido)||0),0);
+    }
+
+    function renderEscalacoes(){
+      // 1º tempo
+      tbody1T.innerHTML="";
+      const maxPos=10;
+      for(let i=0;i<maxPos;i++){
+        const tr=document.createElement("tr");
+
+        const a=escala1.amarelo[i];
+        const b=escala1.azul[i];
+
+        const tdId=document.createElement("td"); tdId.textContent = a?.id ?? b?.id ?? ""; tr.appendChild(tdId);
+        const tdPos=document.createElement("td"); tdPos.textContent=i+1; tr.appendChild(tdPos);
+
+        const tdAm=document.createElement("td");
+        tdAm.textContent = a ? a.apelido.toUpperCase() : "";
+        tdAm.className = a ? "t-amarelo" : "";
+        // risca no 1º tempo quando: saiu OU está no 2º tempo também
+        if (a){
+          const p = presentesHoje.find(x=>x.apelido===a.apelido);
+          if (p && (p.saiu || p.escalou2)) tdAm.classList.add("riscado");
+        }
+        tr.appendChild(tdAm);
+
+        const tdSaiAm=document.createElement("td");
+        if(a){
+          const bt=document.createElement("button");
+          bt.textContent="SAIU";
+          bt.className="btn-sair";
+          bt.onclick=()=>toggleSaiu(a.apelido);
+          tdSaiAm.appendChild(bt);
+        }
+        tr.appendChild(tdSaiAm);
+
+        const tdAz=document.createElement("td");
+        tdAz.textContent = b ? b.apelido.toUpperCase() : "";
+        tdAz.className = b ? "t-azul" : "";
+        if (b){
+          const p = presentesHoje.find(x=>x.apelido===b.apelido);
+          if (p && (p.saiu || p.escalou2)) tdAz.classList.add("riscado");
+        }
+        tr.appendChild(tdAz);
+
+        const tdSaiAz=document.createElement("td");
+        if(b){
+          const bt2=document.createElement("button");
+          bt2.textContent="SAIU";
+          bt2.className="btn-sair";
+          bt2.onclick=()=>toggleSaiu(b.apelido);
+          tdSaiAz.appendChild(bt2);
+        }
+        tr.appendChild(tdSaiAz);
+
+        tbody1T.appendChild(tr);
+      }
+
+      // 2º tempo
+      tbody2T.innerHTML="";
+      for(let i=0;i<10;i++){
+        const tr=document.createElement("tr");
+        const a=escala2.amarelo[i];
+        const b=escala2.azul[i];
+
+        const tdId=document.createElement("td"); tdId.textContent = a?.id ?? b?.id ?? ""; tr.appendChild(tdId);
+        const tdPos=document.createElement("td"); tdPos.textContent=i+1; tr.appendChild(tdPos);
+
+        const tdAm=document.createElement("td");
+        tdAm.textContent = a ? a.apelido.toUpperCase() : "";
+        tdAm.className = a ? "t-amarelo" : "";
+        tr.appendChild(tdAm);
+
+        const tdAz=document.createElement("td");
+        tdAz.textContent = b ? b.apelido.toUpperCase() : "";
+        tdAz.className = b ? "t-azul" : "";
+        tr.appendChild(tdAz);
+
+        tbody2T.appendChild(tr);
+      }
+
+      const totalAm1=calcularTotalPontos(escala1.amarelo);
+      const totalAz1=calcularTotalPontos(escala1.azul);
+      totais1TEl.textContent = `TOTAL PONTOS: ${totalAm1} x ${totalAz1}`;
+
+      const totalAm2=calcularTotalPontos(escala2.amarelo);
+      const totalAz2=calcularTotalPontos(escala2.azul);
+      totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}`;
+    }
+
+    function limparPresentesHoje(){
+      if(!confirm("Limpar toda a presença de hoje?")) return;
+      presentesHoje=[];
+      limparEscalacoes();
+      atualizarInfoPresentes();
+      renderPresentes();
+      renderEscalacoes();
+    }
+
+    // ===== SALVAR (SEM UPSERT, PARA NÃO DEPENDER DE CONSTRAINT) =====
+    async function salvarJogo(){
+      try{
+        if(!dataJogoIso){ alert("Base não carregada."); return; }
+        msgSalvarEl.textContent="";
+
+        const dia=dataJogoIso;
+
+        // 1) presenças: apaga do dia e insere novamente
+        const { error: errDelPres } = await supabase.from("presencas").delete().eq("data_jogo", dia);
+        if(errDelPres){ console.error(errDelPres); alert("Erro ao limpar presenças do dia."); return; }
+
+        const presentesSet=new Set(presentesHoje.map(p=>p.apelido));
+        const presRows = todosJogadores.map(j=>({
+          data_jogo: dia,
+          apelido: j.apelido,
+          presenca: presentesSet.has(j.apelido),
+          faltoso: !presentesSet.has(j.apelido)
+        }));
+
+        if(presRows.length){
+          const { error: errInsPres } = await supabase.from("presencas").insert(presRows);
+          if(errInsPres){ console.error(errInsPres); alert("Erro ao salvar presenças."); return; }
+        }
+
+        // 2) escalação: apaga do dia e insere
+        const { error: errDelEsc } = await supabase.from("escalacao").delete().eq("data_jogo", dia);
+        if(errDelEsc){ console.error(errDelEsc); alert("Erro ao limpar escalação."); return; }
+
+        const escRows=[];
+        escala1.amarelo.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:1, time:"AMARELO"}));
+        escala1.azul.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:1, time:"AZUL"}));
+        escala2.amarelo.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:2, time:"AMARELO"}));
+        escala2.azul.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:2, time:"AZUL"}));
+
+        if(escRows.length){
+          const { error: errInsEsc } = await supabase.from("escalacao").insert(escRows);
+          if(errInsEsc){ console.error(errInsEsc); alert("Erro ao salvar escalação."); return; }
+        }
+
+        msgSalvarEl.textContent="PÁGINA SALVA";
+        alert("Página salva.");
+      }catch(e){
+        console.error(e);
+        alert("Erro ao salvar (veja F12 > Console).");
+      }
+    }
+
+    // ===== EVENTOS =====
+    btnLimparPresentes.addEventListener("click", limparPresentesHoje);
+    btnEscalar1T.addEventListener("click", escalarPrimeiroTempo);
+    btnEscalar2T.addEventListener("click", escalarSegundoTempo);
+    btnSalvarJogo.addEventListener("click", salvarJogo);
+
+    carregarBase();
+  </script>
+</body>
+</html>

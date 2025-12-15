@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>TESOURA - LIVRO CAIXA</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #0b1220;
+      color: #ffffff;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #111827;
+      border-radius: 8px;
+    }
+    h1 {
+      color: #ff7f27;
+      margin-top: 0;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    label {
+      font-size: 14px;
+    }
+    select, input {
+      background-color: #0b1220;
+      color: #ffffff;
+      border: 1px solid #374151;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    button {
+      background-color: #06b6d4;
+      color: #000;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    button:hover { opacity: 0.9; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid #374151;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background-color: #ff7f27;
+      color: #000;
+    }
+    tr:nth-child(even) td { background-color: #020617; }
+    tr:nth-child(odd) td { background-color: #020617; }
+    .total-box {
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #a7f3d0;
+    }
+    .tipo-receita { color: #22c55e; }
+    .tipo-despesa { color: #f97316; }
+    .input-small { width: 110px; }
+    .input-valor { width: 80px; }
+    .input-obs { width: 220px; }
+    .btn-mini {
+      padding: 3px 8px;
+      font-size: 11px;
+    }
+    .btn-excluir {
+      background-color: #ef4444;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Livro Caixa</h1>
+
+  <div class="row">
+    <label>ANO:
+      <select id="filtroAno"></select>
+    </label>
+    <label>MÊS:
+      <select id="filtroMes"></select>
+    </label>
+    <button id="btnCarregar">CONSULTAR</button>
+  </div>
+
+  <div class="row">
+    <label>DATA:
+      <input type="date" id="cxData" class="input-small" />
+    </label>
+    <label>TIPO:
+      <input type="text" id="cxTipo" class="input-small" placeholder="ex: DESPESA, MENSALIDADE" />
+    </label>
+    <label>DESCRIÇÃO:
+      <input type="text" id="cxDesc" class="input-small" />
+    </label>
+    <label>VALOR:
+      <input type="number" step="0.01" id="cxValor" class="input-valor" />
+    </label>
+    <label>OBS:
+      <input type="text" id="cxObs" class="input-obs" />
+    </label>
+    <button id="btnAdicionar">ADICIONAR LANÇAMENTO</button>
+  </div>
+
+  <table>
+    <thead>
+    <tr>
+      <th>DATA</th>
+      <th>TIPO</th>
+      <th>DESCRIÇÃO</th>
+      <th>VALOR</th>
+      <th>OBS.</th>
+      <th>EDITAR</th>
+      <th>EXCLUIR</th>
+    </tr>
+    </thead>
+    <tbody id="tbodyCaixa"></tbody>
+  </table>
+
+  <div id="totalMes" class="total-box">
+    TOTAL DO MÊS: R$ 0,00
+  </div>
+
+</div>
+
+<script>
+  const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const filtroAno = document.getElementById("filtroAno");
+  const filtroMes = document.getElementById("filtroMes");
+  const btnCarregar = document.getElementById("btnCarregar");
+  const btnAdicionar = document.getElementById("btnAdicionar");
+  const tbodyCaixa = document.getElementById("tbodyCaixa");
+  const totalMesEl = document.getElementById("totalMes");
+
+  const cxData = document.getElementById("cxData");
+  const cxTipo = document.getElementById("cxTipo");
+  const cxDesc = document.getElementById("cxDesc");
+  const cxValor = document.getElementById("cxValor");
+  const cxObs = document.getElementById("cxObs");
+
+  function preencherAnoMesPadrao() {
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth() + 1;
+
+    for (let a = 2024; a <= 2030; a++) {
+      const opt = document.createElement("option");
+      opt.value = a;
+      opt.textContent = a;
+      if (a === anoAtual) opt.selected = true;
+      filtroAno.appendChild(opt);
+    }
+
+    const nomesMes = ["01 - JAN", "02 - FEV", "03 - MAR", "04 - ABR", "05 - MAI", "06 - JUN",
+      "07 - JUL", "08 - AGO", "09 - SET", "10 - OUT", "11 - NOV", "12 - DEZ"];
+
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = nomesMes[m - 1];
+      if (m === mesAtual) opt.selected = true;
+      filtroMes.appendChild(opt);
+    }
+  }
+
+  function getLimitesMes(ano, mes) {
+    const inicio = new Date(ano, mes - 1, 1);
+    const fim = new Date(ano, mes, 0);
+    const isoIni = inicio.toISOString().slice(0, 10);
+    const isoFim = fim.toISOString().slice(0, 10);
+    return { isoIni, isoFim };
+  }
+
+  function formatarDataBR(iso) {
+    if (!iso) return "";
+    const [ano, mes, dia] = iso.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  async function carregarCaixaMes() {
+    const ano = parseInt(filtroAno.value, 10);
+    const mes = parseInt(filtroMes.value, 10);
+    const { isoIni, isoFim } = getLimitesMes(ano, mes);
+
+    const { data, error } = await supabase
+      .from("caixa")
+      .select("*")
+      .gte("data", isoIni)
+      .lte("data", isoFim)
+      .order("data", { ascending: true });
+
+    if (error) {
+      alert("Erro ao carregar caixa: " + error.message);
+      return;
+    }
+
+    renderizarCaixa(data || []);
+  }
+
+  function renderizarCaixa(lista) {
+    tbodyCaixa.innerHTML = "";
+    let total = 0;
+
+    lista.forEach(l => {
+      const tr = document.createElement("tr");
+
+      const tdData = document.createElement("td");
+      tdData.textContent = formatarDataBR(l.data);
+
+      const tdTipo = document.createElement("td");
+      tdTipo.textContent = l.tipo || "";
+      if ((l.tipo || "").toUpperCase() === "MENSALIDADE") {
+        tdTipo.className = "tipo-receita";
+      }
+
+      const tdDesc = document.createElement("td");
+      tdDesc.textContent = l.descricao || "";
+
+      const tdVal = document.createElement("td");
+      const val = Number(l.valor || 0);
+      tdVal.textContent = "R$ " + val.toFixed(2).replace(".", ",");
+      total += val;
+
+      const tdObs = document.createElement("td");
+      tdObs.textContent = l.obs || "";
+
+      const tdEditar = document.createElement("td");
+      const btnEd = document.createElement("button");
+      btnEd.textContent = "EDITAR";
+      btnEd.className = "btn-mini";
+      btnEd.addEventListener("click", () => editarLancamento(l));
+      tdEditar.appendChild(btnEd);
+
+      const tdExc = document.createElement("td");
+      const btnEx = document.createElement("button");
+      btnEx.textContent = "EXCLUIR";
+      btnEx.className = "btn-mini btn-excluir";
+      btnEx.addEventListener("click", () => excluirLancamento(l.id));
+      tdExc.appendChild(btnEx);
+
+      tr.appendChild(tdData);
+      tr.appendChild(tdTipo);
+      tr.appendChild(tdDesc);
+      tr.appendChild(tdVal);
+      tr.appendChild(tdObs);
+      tr.appendChild(tdEditar);
+      tr.appendChild(tdExc);
+
+      tbodyCaixa.appendChild(tr);
+    });
+
+    totalMesEl.textContent =
+      "TOTAL DO MÊS: R$ " + total.toFixed(2).replace(".", ",");
+  }
+
+  async function adicionarLancamento() {
+    if (!cxData.value || !cxTipo.value || !cxDesc.value || !cxValor.value) {
+      alert("Preencha DATA, TIPO, DESCRIÇÃO e VALOR.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("caixa")
+      .insert({
+        data: cxData.value,
+        tipo: cxTipo.value.toUpperCase(),
+        descricao: cxDesc.value.toUpperCase(),
+        valor: Number(cxValor.value),
+        obs: cxObs.value.toUpperCase()
+      });
+
+    if (error) {
+      alert("Erro ao salvar lançamento: " + error.message);
+      return;
+    }
+
+    cxDesc.value = "";
+    cxValor.value = "";
+    cxObs.value = "";
+
+    await carregarCaixaMes();
+  }
+
+  async function editarLancamento(l) {
+    const novaDesc = prompt("Descrição:", l.descricao || "") || "";
+    const novoValStr = prompt("Valor:", l.valor != null ? l.valor : 0) || "0";
+    const novoObs = prompt("Observação:", l.obs || "") || "";
+
+    const novoVal = Number(novoValStr);
+
+    const { error } = await supabase
+      .from("caixa")
+      .update({
+        descricao: novaDesc.toUpperCase(),
+        valor: novoVal,
+        obs: novoObs.toUpperCase()
+      })
+      .eq("id", l.id);
+
+    if (error) {
+      alert("Erro ao editar lançamento: " + error.message);
+      return;
+    }
+
+    await carregarCaixaMes();
+  }
+
+  async function excluirLancamento(id) {
+    if (!confirm("Confirmar exclusão deste lançamento?")) return;
+
+    const { error } = await supabase
+      .from("caixa")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      alert("Erro ao excluir lançamento: " + error.message);
+      return;
+    }
+
+    await carregarCaixaMes();
+  }
+
+  btnCarregar.addEventListener("click", carregarCaixaMes);
+  btnAdicionar.addEventListener("click", adicionarLancamento);
+  filtroAno.addEventListener("change", carregarCaixaMes);
+  filtroMes.addEventListener("change", carregarCaixaMes);
+
+  preencherAnoMesPadrao();
+  cxData.value = new Date().toISOString().slice(0, 10);
+  carregarCaixaMes();
+</script>
+</body>
+</html>
