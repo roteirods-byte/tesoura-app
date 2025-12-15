@@ -195,11 +195,49 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 /* Padroniza altura de linha nas tabelas da escalação */
 .grid-escalacao table td, .grid-escalacao table th{padding-top:6px; padding-bottom:6px; line-height:1.1;}
 
-  .subinfo{margin-top:6px;font-size:13px;color:#cfd9ff;opacity:.95}
-  .cutinfo{margin-left:12px;font-size:13px;color:#cfd9ff;opacity:.95}
-  .legend-inline{margin-top:10px;font-size:12px;color:#cfd9ff;opacity:.95;line-height:1.3}
+    .hint-corte{
+      margin-left:10px;
+      font-size:12px;
+      color:#ff7f27;
+      font-weight:bold;
+      white-space:nowrap;
+    }
+    .rodape-regras{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .regras-box{
+      background:#0f172a;
+      border:1px solid rgba(255,127,39,0.25);
+      border-radius:12px;
+      padding:12px;
+    }
+    .regras-titulo{
+      color:#ff7f27;
+      font-weight:bold;
+      margin-bottom:8px;
+      font-size:13px;
+    }
+    .regras-lista{
+      margin:0;
+      padding-left:18px;
+      color:#e5e7eb;
+      font-size:12px;
+      line-height:1.35;
+    }
+    @media (max-width: 900px){
+      .rodape-regras{grid-template-columns:1fr;}
+      .hint-corte{display:block;margin-left:0;margin-top:6px;}
+    }
 
-</style>
+    /* Ajuste: 1º e 2º tempo com mesma altura */
+    .grid-escalacao{align-items:stretch;}
+    .col-escalacao{display:flex;flex-direction:column;}
+    .col-escalacao table{flex:1;}
+
+  </style>
 </head>
 <body>
   <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
@@ -245,9 +283,7 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
           <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
             <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
-<button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
-<span style="margin-left:10px;color:#cbd5e1;font-size:12px;">Horário de corte: 06:15</span>
-            
+            <button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button><span class="hint-corte">Horário de corte: 06:15</span>
           </div>
 
           <div id="status-presentes" class="status-info"></div>
@@ -285,7 +321,7 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
       <div class="grid-escalacao">
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-           <div class="t-amarelo" style="font-size:13px">1º TEMPO — JOGO DAS 06:40 ÀS 07:40</div> 
+            <div class="t-amarelo" style="font-size:13px;">1º TEMPO — JOGO DAS 06:40 ÀS 07:40</div>
             <div class="status-info">Botão <b>SAIU</b> risca o nome.</div>
           </div>
           <table>
@@ -302,21 +338,12 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
             <tbody id="tbody-1t"></tbody>
           </table>
           <div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
-         <div style="margin-top:8px;font-size:12px;line-height:1.35;color:#cbd5e1;">
-  <b>Regras 1º tempo (corte 06:15):</b><br/>
-  • Se até 06:15 tiver <b>até 20 presentes</b> (ex.: 15, 19, 20): <b>sem eliminação</b> (todos jogam).<br/>
-  • Se até 06:15 tiver <b>mais de 20 presentes</b> (ex.: 25): o app corta até ficar 20, na ordem:
-  <b>faltou no domingo anterior</b> → <b>inadimplente</b> → <b>maior nº de faltas</b>.
-</div>
-     <div class="legend-inline">
-            C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | P (verde) pagou | P (vermelho) não pagou | F (faltou)
-          </div>
         </div>
 
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="t-amarelo" style="font-size:13px">2º TEMPO — JOGO DAS 08:00 ÀS 09:00</div>
-             <div class="status-info">Prioridade: quem não jogou.</div>
+            <div class="t-amarelo" style="font-size:13px;">2º TEMPO — JOGO DAS 08:00 ÀS 09:00</div>
+            <div class="status-info">Prioridade: quem não jogou.</div>
           </div>
           <table>
             <thead>
@@ -333,13 +360,32 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
         </div>
       </div>
 
+      <div class="rodape-regras">
+        <div class="regras-box">
+          <div class="regras-titulo">Regras 1º tempo (corte 06:15)</div>
+          <ul class="regras-lista">
+            <li>Se até 06:15 tiver até 20 presentes (ex.: 15, 19, 20): <b>sem eliminação</b> (todos jogam).</li>
+            <li>Se até 06:15 tiver mais de 20 presentes (ex.: 25): o app corta até ficar 20, na ordem: <b>faltou no domingo anterior → inadimplente → maior nº de faltas</b>.</li>
+          </ul>
+        </div>
+
+        <div class="regras-box">
+          <div class="regras-titulo">Regras 2º tempo</div>
+          <ul class="regras-lista">
+            <li>Prioridade máxima: escalar primeiro quem está presente e <b>não jogou o 1º tempo</b>.</li>
+            <li>Para abrir vagas (quem sai primeiro): <b>1)</b> saiu espontaneamente (SAIU) <b>2)</b> falta domingo anterior <b>3)</b> jogou 2 tempos domingo anterior <b>4)</b> maior nº de faltas <b>5)</b> mais novos (idade).</li>
+            <li>Depois: mantém a base de cada time (amarelo/azul) e distribui quem não jogou buscando equilíbrio de pontos e posições.</li>
+          </ul>
+        </div>
+      </div>
+
       <div class="legenda">
         <b>OBS:</b>
-C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
-<span class="obs-pago">P (verde) pagou</span> |
-<span class="obs-inad">P (vermelho) não pagou</span>
+        C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | F (faltou) |
+        <span class="obs-pago">P (verde) pagou</span> |
+        <span class="obs-inad">P (vermelho) não pagou</span>
       </div>
-    </div>
+</div>
 
   </div>
 
@@ -709,175 +755,32 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       return { amarelo:A, azul:B, somaAm:sa, somaAz:sb };
     }
 
-    
-    // ===== Regras (REV 6) =====
-    const HORARIO_CORTE_1T = "06:15";
+    function escalarPrimeiroTempo(){
+      if(presentesHoje.length===0){ alert("Nenhum presente cadastrado."); return; }
 
-    function pad2(n){ return String(n).padStart(2,"0"); }
+      // 1º tempo: usa ordem de chegada, mas balanceia pontos dentro dos 20 primeiros válidos
+      const validos = presentesHoje.filter(p=>!p.naoVaiJogar);
+      if(validos.length===0){ alert("Nenhum jogador disponível."); return; }
 
-    function parseDataISO(iso){ // yyyy-mm-dd
-      const [y,m,d] = iso.split("-").map(Number);
-      return new Date(y, m-1, d, 0,0,0,0);
-    }
+      const selecionados = validos.slice(0, Math.min(20, validos.length)).map(p=>p.apelido);
+      const bal = balancearEmDoisTimes(selecionados);
 
-    function formataDataISO(dt){
-      const y = dt.getFullYear();
-      const m = pad2(dt.getMonth()+1);
-      const d = pad2(dt.getDate());
-      return `${y}-${m}-${d}`;
-    }
-
-    function domingoAnterior(dataISO){
-      const dt = parseDataISO(dataISO);
-      // volta 7 dias
-      dt.setDate(dt.getDate()-7);
-      return formataDataISO(dt);
-    }
-
-    function horaMenorOuIgual(hhmm, limite){
-      // hhmm pode vir "06:14" ou "06:14:30"
-      const h = (hhmm||"").slice(0,5);
-      return h && h <= limite;
-    }
-
-    const cacheFaltas = {}; // chave: apelido|ano
-
-    async function getFaltasAno(apelido, ano){
-      const k = `${apelido}|${ano}`;
-      if (cacheFaltas[k] != null) return cacheFaltas[k];
-
-      // Conta quantas vezes status = 'F' no ano
-      const ini = `${ano}-01-01`;
-      const fim = `${ano}-12-31`;
-      const { data, error } = await supabase
-        .from("presencas")
-        .select("id, data_jogo, apelido, status")
-        .eq("apelido", apelido)
-        .eq("status", "F")
-        .gte("data_jogo", ini)
-        .lte("data_jogo", fim);
-
-      if (error) { console.warn("Erro faltas:", error.message); cacheFaltas[k]=0; return 0; }
-      cacheFaltas[k] = (data||[]).length;
-      return cacheFaltas[k];
-    }
-
-    async function getStatusDomingoAnterior(apelido, dataISO){
-      const prev = domingoAnterior(dataISO);
-      const { data, error } = await supabase
-        .from("presencas")
-        .select("status")
-        .eq("apelido", apelido)
-        .eq("data_jogo", prev)
-        .limit(1);
-
-      if (error) { console.warn("Erro domingo anterior:", error.message); return null; }
-      return (data && data[0] && data[0].status) ? data[0].status : null;
-    }
-
-    async function enrichMetricas(apelidos, dataISO){
-      const ano = Number((dataISO||"").slice(0,4)) || (new Date()).getFullYear();
-      const out = {};
-      for (const ap of apelidos){
-        const [faltasAno, statusPrev] = await Promise.all([
-          getFaltasAno(ap, ano),
-          getStatusDomingoAnterior(ap, dataISO),
-        ]);
-        out[ap] = {
-          faltasAno,
-          faltouDomingoAnterior: statusPrev === "F",
-          jogouDoisDomingoAnterior: statusPrev === "1-2"
-        };
-      }
-      return out;
-    }
-
-
-    async function escalarPrimeiroTempo(){
-      const dataISO = getDataJogoISO();
-      const listaHoje = (presencasHoje || []).filter(p => !p.naoVaiJogar);
-
-      // Apenas quem chegou até o corte (06:15)
-      const listaCorte = listaHoje
-        .filter(p => horaMenorOuIgual(p.hora, HORARIO_CORTE_1T))
-        .sort((a,b)=> (a.ordem||0) - (b.ordem||0));
-
-      const qtdCorte = listaCorte.length;
-
-      // Regras:
-      // - Se >= 25 no corte: aplicar eliminação (faltou domingo anterior, inadimplente, mais faltas)
-      // - Se < 25 no corte: sem eliminação; 1º tempo pega até 20 por ordem de chegada (ou todos, se < 20)
-      // - Observação: se tiver 15 ou 20 no corte, não tem eliminação (escala os presentes, até 20)
-      let candidatos = [...listaCorte];
-
-      if (qtdCorte >= 25){
-        const apelidos = candidatos.map(p=>p.apelido);
-        const metricas = await enrichMetricas(apelidos, dataISO);
-
-        candidatos.sort((a,b)=>{
-          const ja = jogadoresPorApelido[a.apelido] || {};
-          const jb = jogadoresPorApelido[b.apelido] || {};
-          const ma = metricas[a.apelido] || {};
-          const mb = metricas[b.apelido] || {};
-
-          // 1) faltou domingo anterior (sai primeiro)
-          if (!!ma.faltouDomingoAnterior !== !!mb.faltouDomingoAnterior){
-            return (ma.faltouDomingoAnterior ? 1 : 0) - (mb.faltouDomingoAnterior ? 1 : 0);
-          }
-          // 2) inadimplente (sai primeiro)
-          if (!!ja.inadimplente !== !!jb.inadimplente){
-            return (ja.inadimplente ? 1 : 0) - (jb.inadimplente ? 1 : 0);
-          }
-          // 3) maior número de faltas (sai primeiro)
-          if ((ma.faltasAno||0) !== (mb.faltasAno||0)){
-            return (ma.faltasAno||0) - (mb.faltasAno||0);
-          }
-          // 4) desempate: ordem de chegada (quem chegou antes fica)
-          return (a.ordem||0) - (b.ordem||0);
-        });
-
-        // candidatos agora está em ordem "melhor para ficar" (menores primeiro),
-        // então pegamos os 20 primeiros.
-        candidatos = candidatos.slice(0, 20);
-
-      } else {
-        // Sem eliminação: pega até 20 por ordem
-        candidatos = candidatos.slice(0, 20);
-      }
-
-      // Distribuir em times por pontos (equilíbrio simples)
-      const entradas = candidatos.map(p=>{
-        const j = jogadoresPorApelido[p.apelido] || {};
-        return { apelido: p.apelido, pontos: Number(j.pontos||0) };
-      });
-
-      const { amarelo, azul } = distribuiEquilibrado(entradas);
-
-      escala1t = {
-        amarelo: amarelo.map(x=>x.apelido),
-        azul: azul.map(x=>x.apelido),
-        saiu: {} // marcações do botão SAÍU
+      escala1 = {
+        amarelo: bal.amarelo.map(ap=>({id: mapaJogadores[ap]?.id ?? "", apelido: ap})),
+        azul:    bal.azul.map(ap=>({id: mapaJogadores[ap]?.id ?? "", apelido: ap}))
       };
 
-      // Atualiza status: quem escalou 1º tempo = "1"
-      // quem estava presente até corte e não entrou = "C"
-      const entrouSet = new Set([...escala1t.amarelo, ...escala1t.azul]);
+      // marca escalou1
+      presentesHoje.forEach(p=>{ p.escalou1 = selecionados.includes(p.apelido); });
 
-      for (const p of presencasHoje){
-        if (p.naoVaiJogar) continue;
-        const ap = p.apelido;
-        if (entrouSet.has(ap)){
-          p.status = "1";
-        } else {
-          // Só marca "C" para quem está presente hoje (e não jogou ainda)
-          if (!p.status || p.status === "P") p.status = "C";
-        }
-      }
+      // limpa 2º tempo
+      escala2={amarelo:[],azul:[]};
+      presentesHoje.forEach(p=>{ p.escalou2=false; p.saiu=false; });
 
-      renderEscalacao();
-      toast("1º tempo escalado.");
+      atualizarObs();
+      renderPresentes();
+      renderEscalacoes();
     }
-
 
     function toggleSaiu(apelido){
       const p = presentesHoje.find(x=>x.apelido===apelido);
@@ -886,95 +789,139 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       renderEscalacoes();
     }
 
-        
-    async function escalarSegundoTempo(){
-      const dataISO = getDataJogoISO();
-
-      const presentes = (presencasHoje || []).filter(p => !p.naoVaiJogar);
-      const jogou1tSet = new Set([...(escala1t?.amarelo||[]), ...(escala1t?.azul||[])]);
-      const naoJogou1t = presentes.filter(p => !jogou1tSet.has(p.apelido));
-      const jogou1t = presentes.filter(p => jogou1tSet.has(p.apelido));
-
-      const totalDesejado = Math.min(20, presentes.length);
-
-      // Se 20 que não jogaram 1º tempo: entram os 20
-      let selecionados = [];
-      if (naoJogou1t.length >= totalDesejado){
-        // pega por ordem de chegada (prioridade)
-        selecionados = naoJogou1t
-          .sort((a,b)=> (a.ordem||0) - (b.ordem||0))
-          .slice(0, totalDesejado);
-      } else {
-        // entram todos que não jogaram 1º tempo, e completa com quem jogou 1º tempo
-        const base = naoJogou1t.sort((a,b)=> (a.ordem||0) - (b.ordem||0));
-        const falta = totalDesejado - base.length;
-
-        // Para abrir vagas: retirar jogadores do 1º tempo seguindo ordem "quem sai primeiro"
-        // 1) marcou SAÍU, 2) faltou domingo anterior, 3) jogou dois tempos domingo anterior, 4) mais faltas, 5) mais novo
-        const apelidos1t = jogou1t.map(p=>p.apelido);
-        const metricas = await enrichMetricas(apelidos1t, dataISO);
-
-        const ordenaSaida = (p)=>{
-          const ap = p.apelido;
-          const m = metricas[ap] || {};
-          const j = jogadoresPorApelido[ap] || {};
-          const saiuMarcado = !!(escala1t?.saiu && escala1t.saiu[ap]);
-          const idade = Number(j.idade||0); // idade maior = mais velho
-          return [
-            saiuMarcado ? 0 : 1,                 // 0 sai primeiro
-            m.faltouDomingoAnterior ? 0 : 1,     // 0 sai primeiro
-            m.jogouDoisDomingoAnterior ? 0 : 1,  // 0 sai primeiro
-            -(m.faltasAno||0),                   // mais faltas sai primeiro
-            idade                                 // mais novo (idade menor) sai primeiro
-          ];
-        };
-
-        // Ordena quem sai primeiro (menores no vetor saem primeiro)
-        const jogouOrdenado = [...jogou1t].sort((a,b)=>{
-          const ka = ordenaSaida(a);
-          const kb = ordenaSaida(b);
-          for (let i=0;i<ka.length;i++){
-            if (ka[i] < kb[i]) return -1;
-            if (ka[i] > kb[i]) return 1;
-          }
-          return (a.ordem||0) - (b.ordem||0);
-        });
-
-        // Mantém os que ficam do 1º tempo
-        const ficam1t = jogouOrdenado.slice(falta); // remove os "falta" primeiros
-
-        selecionados = [...base, ...ficam1t];
+        function escalarSegundoTempo() {
+      if (escala1.amarelo.length === 0 && escala1.azul.length === 0) {
+        alert("Antes, escale o 1º tempo.");
+        return;
       }
 
-      // Agora distribuir entre Amarelo e Azul equilibrando pontos (simples)
-      const entradas = selecionados.map(p=>{
-        const j = jogadoresPorApelido[p.apelido] || {};
-        return { apelido: p.apelido, pontos: Number(j.pontos||0) };
-      });
+      const limiteSegundo = "08:00:00";
 
-      const { amarelo, azul } = distribuiEquilibrado(entradas);
+      // 1) candidatos válidos (regra do horário 08:00; se ninguém estiver no horário, usa todos válidos)
+      let candidatosBase = presentesHoje.filter(p =>
+        !p.naoVaiJogar && comparaHoraStr(p.horaChegada, limiteSegundo) <= 0
+      );
 
-      escala2t = {
-        amarelo: amarelo.map(x=>x.apelido),
-        azul: azul.map(x=>x.apelido)
-      };
-
-      // Atualiza status:
-      // - quem jogou 2º tempo e já tinha "1" vira "1-2"
-      // - quem jogou 2º tempo e não tinha "1" vira "2"
-      const jogou2tSet = new Set([...(escala2t?.amarelo||[]), ...(escala2t?.azul||[])]);
-      for (const p of presencasHoje){
-        if (p.naoVaiJogar) continue;
-        if (jogou2tSet.has(p.apelido)){
-          if (p.status === "1") p.status = "1-2";
-          else if (p.status !== "1-2") p.status = "2";
+      if (candidatosBase.length === 0) {
+        candidatosBase = presentesHoje.filter(p => !p.naoVaiJogar);
+        if (candidatosBase.length === 0) {
+          alert("Nenhum jogador disponível para o 2º tempo.");
+          return;
         }
       }
 
-      renderEscalacao();
-      toast("2º tempo escalado.");
-    }
+      // 2) conjuntos do 1º tempo
+      const jogou1Set = new Set(
+        escala1.amarelo.map(e => e.apelido).concat(escala1.azul.map(e => e.apelido))
+      );
+      const time1 = {};
+      escala1.amarelo.forEach(e => time1[e.apelido] = "AMARELO");
+      escala1.azul.forEach(e => time1[e.apelido] = "AZUL");
 
+      // 3) PRIORIDADE: quem NÃO jogou o 1º tempo (mas está apto para 2º tempo)
+      // (se tiver mais de 20, pega os 20 primeiros pela ordem de chegada)
+      const naoJogou1 = candidatosBase
+        .filter(p => !jogou1Set.has(p.apelido))
+        .sort((a, b) => comparaHoraStr(a.horaChegada, b.horaChegada));
+
+      const totalAlvo = Math.min(20, candidatosBase.length);
+      const listaPrioritaria = naoJogou1.slice(0, totalAlvo);
+
+      // 4) Continuam do 1º tempo (mesmo time), só se houver espaço e se NÃO estiver marcado como SAIU
+      const jogaram1Aptos = candidatosBase
+        .filter(p => jogou1Set.has(p.apelido) && !p.saiu2t)
+        .sort((a, b) => comparaHoraStr(a.horaChegada, b.horaChegada));
+
+      const faltam = Math.max(0, totalAlvo - listaPrioritaria.length);
+
+      // Seleciona quem continua do 1º tempo, mantendo time
+      const continuam = jogaram1Aptos.slice(0, faltam);
+
+      // 5) Monta os times do 2º tempo:
+      // - primeiro coloca os que CONTINUAM (time fixo)
+      // - depois distribui os que NÃO jogaram, para equilibrar PONTOS
+      escala2 = { amarelo: [], azul: [] };
+
+      let ptsAm = 0;
+      let ptsAz = 0;
+
+      function getPts(ap) {
+        const j = mapaJogadores[ap];
+        return j && j.pontos != null ? (parseInt(j.pontos, 10) || 0) : 0;
+      }
+
+      // continuadores
+      continuam.forEach(p => {
+        const tm = time1[p.apelido];
+        p.escalou2 = true;
+
+        if (tm === "AMARELO") {
+          escala2.amarelo.push({ apelido: p.apelido });
+          ptsAm += getPts(p.apelido);
+        } else {
+          escala2.azul.push({ apelido: p.apelido });
+          ptsAz += getPts(p.apelido);
+        }
+      });
+
+      // distribuidores (não jogaram 1º tempo)
+      const restantes = listaPrioritaria
+        .filter(p => !continuam.find(c => c.apelido === p.apelido))
+        .slice();
+
+      // ordena por pontos desc para equilibrar melhor
+      restantes.sort((a, b) => getPts(b.apelido) - getPts(a.apelido));
+
+      restantes.forEach(p => {
+        p.escalou2 = true;
+
+        const capAm = escala2.amarelo.length < 10;
+        const capAz = escala2.azul.length < 10;
+
+        if (capAm && capAz) {
+          if (ptsAm <= ptsAz) {
+            escala2.amarelo.push({ apelido: p.apelido });
+            ptsAm += getPts(p.apelido);
+          } else {
+            escala2.azul.push({ apelido: p.apelido });
+            ptsAz += getPts(p.apelido);
+          }
+        } else if (capAm) {
+          escala2.amarelo.push({ apelido: p.apelido });
+          ptsAm += getPts(p.apelido);
+        } else if (capAz) {
+          escala2.azul.push({ apelido: p.apelido });
+          ptsAz += getPts(p.apelido);
+        }
+      });
+
+      // 6) Garantia: se ainda faltar gente (caso raro), completa com quem jogou 1º tempo e não saiu
+      const jaNo2 = new Set(
+        escala2.amarelo.map(e => e.apelido).concat(escala2.azul.map(e => e.apelido))
+      );
+
+      for (const p of jogaram1Aptos) {
+        if (escala2.amarelo.length + escala2.azul.length >= totalAlvo) break;
+        if (jaNo2.has(p.apelido)) continue;
+
+        const tm = time1[p.apelido] || "AMARELO";
+        p.escalou2 = true;
+
+        if (tm === "AMARELO" && escala2.amarelo.length < 10) {
+          escala2.amarelo.push({ apelido: p.apelido });
+        } else if (tm === "AZUL" && escala2.azul.length < 10) {
+          escala2.azul.push({ apelido: p.apelido });
+        } else if (escala2.amarelo.length < 10) {
+          escala2.amarelo.push({ apelido: p.apelido });
+        } else if (escala2.azul.length < 10) {
+          escala2.azul.push({ apelido: p.apelido });
+        }
+      }
+
+      atualizarObs();
+      renderEscalacoes();
+      renderPresentes();
+    }
 
     function calcularTotalPontos(lista){
       return (lista||[]).reduce((s,e)=>s+(pts(e.apelido)||0),0);
