@@ -5,17 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tesoura - v5</title>
 
+  <!-- PWA -->
   <link rel="manifest" href="./manifest.json?v=5">
   <meta name="theme-color" content="#0b1220" />
 
   <link rel="stylesheet" href="./app/css/ui.css?v=5" />
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- Core -->
   <script src="./app/js/config.js?v=5"></script>
   <script src="./app/js/supabaseClient.js?v=5"></script>
   <script src="./app/js/auth.js?v=5"></script>
 
+  <!-- Panels (ORDEM OFICIAL) -->
   <script src="./app/js/panels/jogadores.js?v=5"></script>
   <script src="./app/js/panels/presenca_escalacao.js?v=5"></script>
   <script src="./app/js/panels/controle_geral.js?v=5"></script>
@@ -24,23 +28,28 @@
   <script src="./app/js/panels/gols.js?v=5"></script>
   <script src="./app/js/panels/banco_dados.js?v=5"></script>
 
+  <!-- App -->
   <script src="./app/js/app.js?v=5"></script>
 </head>
-<body>
-  <div class="topbar">
-    <div class="brand container">
-      <div class="dot"></div>
-      <div>
-        <h1 id="appTitle">TESOURA</h1>
-        <small>Versão v5 (mobile) • PIN único • Supabase centralizado</small>
-      </div>
-    </div>
-  </div>
 
-  <main class="container">
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-tab="jogadores">JOGADORES</button>
-      <button class="tab" data-tab="presenca_escalacao">PRESENÇA / ESCALAÇÃO</button>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <div>
+          <div class="title">TESOURA - CONTROLE DO FUTEBOL</div>
+          <div class="subtitle">Versão v5 (mobile) • PIN único • Supabase centralizado</div>
+        </div>
+      </div>
+
+      <!-- Banner para você ver que NÃO está em cache antigo -->
+      <div class="version-badge">VERSÃO ATUALIZADA (SEM CACHE) — v5</div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab" data-tab="jogadores">JOGADORES</button>
+      <button class="tab" data-tab="presenca_escalacao">PRESENÇA/ESCALAÇÃO</button>
       <button class="tab" data-tab="controle_geral">CONTROLE GERAL</button>
       <button class="tab" data-tab="mensalidade">MENSALIDADE</button>
       <button class="tab" data-tab="caixa">CAIXA</button>
@@ -48,18 +57,21 @@
       <button class="tab" data-tab="banco_dados">BANCO DE DADOS</button>
     </nav>
 
-    <section class="panel" data-panel="jogadores"></section>
-    <section class="panel" data-panel="presenca_escalacao" hidden></section>
-    <section class="panel" data-panel="controle_geral" hidden></section>
-    <section class="panel" data-panel="mensalidade" hidden></section>
-    <section class="panel" data-panel="caixa" hidden></section>
-    <section class="panel" data-panel="gols" hidden></section>
-    <section class="panel" data-panel="banco_dados" hidden></section>
-  </main>
+    <main class="main">
+      <section class="panel" data-panel="jogadores"></section>
+      <section class="panel" data-panel="presenca_escalacao"></section>
+      <section class="panel" data-panel="controle_geral"></section>
+      <section class="panel" data-panel="mensalidade"></section>
+      <section class="panel" data-panel="caixa"></section>
+      <section class="panel" data-panel="gols"></section>
+      <section class="panel" data-panel="banco_dados"></section>
+    </main>
+  </div>
 
   <script>
+    // PWA (se você estiver usando). Se der problema, eu posso mandar versão sem PWA.
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js?v=5").catch(console.warn);
+      navigator.serviceWorker.register("./service-worker.js?v=5").catch(()=>{});
     }
   </script>
 </body>
