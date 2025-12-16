@@ -1,2 +1,0 @@
-# tesoura-app
-APLICATIVO FUTEBOL
