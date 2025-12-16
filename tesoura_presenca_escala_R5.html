@@ -199,13 +199,23 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
   .cutinfo{margin-left:12px;font-size:13px;color:#cfd9ff;opacity:.95}
   .legend-inline{margin-top:10px;font-size:12px;color:#cfd9ff;opacity:.95;line-height:1.3}
 
+
+    .rodape-regras{display:flex;gap:16px;margin-top:14px}
+    .rodape-col{flex:1;min-width:0}
+    .rodape-col .regras-box{margin-top:0}
+    
+
+    /* FIX: colunas 1T e 2T sempre no mesmo tamanho */
+    .grid-escalacao{align-items:stretch}
+    .col-escalacao{flex:1;min-width:0}
+
 </style>
 </head>
 <body>
   <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
 
   <div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
-</div>
+    </div>
 
   <div class="container">
 
@@ -307,10 +317,29 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
   • Se até 06:15 tiver <b>mais de 20 presentes</b> (ex.: 25): o app corta até ficar 20, na ordem:
   <b>faltou no domingo anterior</b> → <b>inadimplente</b> → <b>maior nº de faltas</b>.
 </div>
-     <div class="legend-inline">
-            C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | P (verde) pagou | P (vermelho) não pagou | F (faltou)
-          </div>
+</div>
+  <div class="rodape-regras">
+    <div class="rodape-col">
+      
+    </div>
+    <div class="rodape-col">
+      <div class="regras-box">
+        <div class="regras-titulo">Regras 2º tempo (resumo)</div>
+        <div class="regras-texto">
+          • Prioridade: quem está presente e <b>não jogou</b> o 1º tempo.<br/>
+          • Para abrir vagas, sai primeiro: (1) quem marcou SAIR/SAIU, (2) faltou no domingo anterior, (3) jogou os dois tempos no domingo anterior, (4) maior nº de faltas, (5) mais novos.<br/>
+          • Manter base dos times, distribuir quem entra equilibrando pontos e posições.
         </div>
+      </div>
+      <div class="legenda">
+        <b>OBS:</b>
+C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
+<span class="obs-pago">P (verde) pagou</span> |
+<span class="obs-inad">P (vermelho) não pagou</span>
+      </div>
+    </div>
+  </div>
+
 
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -332,12 +361,9 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
         </div>
       </div>
 
-      <div class="legenda">
-        <b>OBS:</b>
-C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
-<span class="obs-pago">P (verde) pagou</span> |
-<span class="obs-inad">P (vermelho) não pagou</span>
-      </div>
+      
+<!-- LEGENDA_MOVIDA_PARA_RODAPE -->
+
     </div>
 
   </div>
