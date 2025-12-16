@@ -15,8 +15,7 @@
     .btn-ok{background:#22c55e;color:#022c22}
     .btn-del{background:#ef4444;color:#f9fafb}
     .btn-warn{background:#f97316;color:#0f172a}
-    select,input,textarea{padding:6px;border-radius:4px;border:1px solid #334155;background:#0b1120;color:#f9fafb;font-size:12px}
-    textarea{width:100%;min-height:140px;resize:vertical}
+    select,input{padding:6px;border-radius:4px;border:1px solid #334155;background:#0b1120;color:#f9fafb;font-size:12px}
     table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
     th,td{border:1px solid #4b5563;padding:3px 4px;text-align:center;text-transform:uppercase;white-space:nowrap}
     th{background:#f97316;color:#0f172a;position:sticky;top:0;z-index:1}
@@ -24,13 +23,12 @@
     tr:nth-child(odd){background:#020617}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .grow{flex:1;min-width:180px}
-    .small{min-width:160px}
+    .small{min-width:140px}
     .status{margin-top:6px;font-size:12px}
     .scroll{overflow:auto;max-height:520px}
     .erroBox{margin-top:8px;padding:10px;border:1px solid #ef4444;border-radius:6px;color:#fecaca;background:#1f0a0a;display:none}
-    .hide{display:none}
     @media print{
-      header,.no-print{display:none !important}
+      header,.printbar,.actions{display:none !important}
       .scroll{max-height:none;overflow:visible}
       th{position:static}
     }
@@ -39,51 +37,30 @@
 <body>
   <header>TESOURA - BANCO DE DADOS</header>
 
+  <div class="printbar" style="text-align:right; padding:4px 16px 0 16px;">
+    <button class="btn-sec" onclick="window.print()">IMPRIMIR / BAIXAR PAINEL</button>
+  </div>
+
   <div class="container">
 
-    <div class="painel no-print">
-      <h2>Arquivos salvos</h2>
-
+    <div class="painel">
+      <h2>Selecionar tabela</h2>
       <div class="row">
-        <label class="small">
-          Painel<br/>
-          <select id="painel">
-            <option value="jogadores">JOGADORES</option>
-            <option value="presenca">PRESENÇA</option>
-            <option value="escalacao">ESCALAÇÃO</option>
-            <option value="controle">CONTROLE GERAL</option>
-            <option value="mensalidade">MENSALIDADE</option>
-            <option value="caixa">CAIXA</option>
-            <option value="gols">GOLS</option>
-          </select>
-        </label>
+        <select id="tabela" class="small">
+          <option value="jogadores">JOGADORES</option>
+          <option value="mensalidades">MENSALIDADES</option>
+          <option value="caixa">CAIXA</option>
+          <option value="presencas">PRESENÇAS</option>
+          <option value="escalacao">ESCALAÇÃO</option>
+          <option value="gols">GOLS</option>
+        </select>
 
-        <label class="small">
-          Período<br/>
-          <select id="periodo">
-            <option value="semanal">SEMANAL</option>
-            <option value="mensal">MENSAL</option>
-            <option value="anual">ANUAL</option>
-          </select>
-        </label>
-
-        <label class="small" id="boxData">
-          Data (domingo)<br/>
-          <input id="dataRef" type="date"/>
-        </label>
-
-        <label class="small hide" id="boxMes">
-          Mês (1-12)<br/>
-          <input id="mesRef" type="number" min="1" max="12" placeholder="12"/>
-        </label>
-
-        <label class="small" id="boxAno">
-          Ano<br/>
-          <input id="anoRef" type="number" placeholder="2025"/>
-        </label>
+        <input id="filtroData" class="small" type="date" />
+        <input id="filtroMes" class="small" type="text" placeholder="MÊS (ex: 12)" />
+        <input id="filtroAno" class="small" type="text" placeholder="ANO (ex: 2025)" />
 
         <button id="btnCarregar" class="btn-ok">CARREGAR</button>
-        <button id="btnLimpar" class="btn-warn">LIMPAR</button>
+        <button id="btnLimpar" class="btn-warn">LIMPAR FILTROS</button>
       </div>
 
       <div id="status" class="status"></div>
@@ -91,7 +68,7 @@
     </div>
 
     <div class="painel">
-      <h2>Lista</h2>
+      <h2>Registros</h2>
       <div class="scroll">
         <table>
           <thead id="thead"></thead>
@@ -100,15 +77,14 @@
       </div>
     </div>
 
-    <div class="painel hide" id="boxVisualizar">
-      <h2>Visualizar arquivo</h2>
-      <div class="row no-print">
-        <button class="btn-sec" id="btnImprimir">IMPRIMIR</button>
-        <button class="btn-sec" id="btnBaixar">BAIXAR (JSON)</button>
-        <button class="btn-warn" id="btnFechar">FECHAR</button>
+    <div class="painel">
+      <h2>Editar (linha selecionada)</h2>
+      <div class="row">
+        <input id="editJson" class="grow" placeholder='Cole aqui o JSON da linha' />
+        <button id="btnSalvarEdicao" class="btn-ok actions">SALVAR EDIÇÃO</button>
+        <button id="btnCancelarEdicao" class="btn-warn actions">CANCELAR</button>
       </div>
-      <div class="status" id="infoArquivo"></div>
-      <textarea id="conteudo"></textarea>
+      <div class="status" id="statusEdit"></div>
     </div>
 
   </div>
@@ -119,228 +95,243 @@
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const elPainel = document.getElementById("painel");
-    const elPeriodo = document.getElementById("periodo");
-    const elData = document.getElementById("dataRef");
-    const elMes = document.getElementById("mesRef");
-    const elAno = document.getElementById("anoRef");
-
-    const boxData = document.getElementById("boxData");
-    const boxMes  = document.getElementById("boxMes");
-    const boxAno  = document.getElementById("boxAno");
-
+    const elTabela = document.getElementById("tabela");
+    const elData = document.getElementById("filtroData");
+    const elMes = document.getElementById("filtroMes");
+    const elAno = document.getElementById("filtroAno");
     const btnCarregar = document.getElementById("btnCarregar");
     const btnLimpar = document.getElementById("btnLimpar");
-
     const thead = document.getElementById("thead");
     const tbody = document.getElementById("tbody");
+    // Ajusta filtros conforme a tabela selecionada
+    function onTabelaChange(){
+      const isJogadores = (elTabela.value === "jogadores");
+      // para jogadores, não aplicar filtros de data/mês/ano
+      [elData, elMes, elAno].forEach(el=>{
+        el.disabled = isJogadores;
+        if (isJogadores) el.value = "";
+      });
+    }
+    elTabela.addEventListener("change", () => {
+      onTabelaChange();
+      // opcional: limpar resultado quando troca
+      tbody.innerHTML = "";
+      statusEl.textContent = "";
+      formEdicaoEl.style.display = "none";
+    });
+    onTabelaChange();
+
     const status = document.getElementById("status");
     const erroBox = document.getElementById("erroBox");
 
-    const boxVisualizar = document.getElementById("boxVisualizar");
-    const infoArquivo = document.getElementById("infoArquivo");
-    const txtConteudo = document.getElementById("conteudo");
-    const btnImprimir = document.getElementById("btnImprimir");
-    const btnBaixar = document.getElementById("btnBaixar");
-    const btnFechar = document.getElementById("btnFechar");
+    const editJson = document.getElementById("editJson");
+    const btnSalvarEdicao = document.getElementById("btnSalvarEdicao");
+    const btnCancelarEdicao = document.getElementById("btnCancelarEdicao");
+    const statusEdit = document.getElementById("statusEdit");
 
-    let arquivoAtual = null;
+    let linhaSelecionada = null;
 
     function setStatus(msg){ status.textContent = msg || ""; }
+    function setEditStatus(msg){ statusEdit.textContent = msg || ""; }
+
     function showErro(msg){
-      erroBox.style.display="block";
+      erroBox.style.display = "block";
       erroBox.textContent = msg || "ERRO";
     }
     function hideErro(){
-      erroBox.style.display="none";
-      erroBox.textContent="";
+      erroBox.style.display = "none";
+      erroBox.textContent = "";
     }
 
-    function aplicarPeriodoUI(){
-      const p = elPeriodo.value;
-      if (p === "semanal"){
-        boxData.classList.remove("hide");
-        boxMes.classList.add("hide");
-        boxAno.classList.remove("hide");
-      } else if (p === "mensal"){
-        boxData.classList.add("hide");
-        boxMes.classList.remove("hide");
-        boxAno.classList.remove("hide");
-      } else { // anual
-        boxData.classList.add("hide");
-        boxMes.classList.add("hide");
-        boxAno.classList.remove("hide");
-      }
-    }
+    window.onerror = function(message, source, lineno, colno){
+      showErro(`ERRO NO PAINEL: ${message} (linha ${lineno})`);
+    };
 
     function limpar(){
-      elData.value="";
-      elMes.value="";
-      elAno.value="";
-      thead.innerHTML="";
-      tbody.innerHTML="";
+      elData.value = "";
+      elMes.value = "";
+      elAno.value = "";
       setStatus("");
       hideErro();
-      fecharVisualizar();
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      linhaSelecionada = null;
+      editJson.value = "";
+      setEditStatus("");
     }
 
-    function fecharVisualizar(){
-      arquivoAtual = null;
-      boxVisualizar.classList.add("hide");
-      infoArquivo.textContent="";
-      txtConteudo.value="";
+    function guessKey(table){
+      if (table === "jogadores") return ["apelido"];
+      if (table === "mensalidades") return ["apelido","ano","mes"];
+      if (table === "presencas") return ["data_jogo","apelido"];
+      if (table === "escalacao") return ["data_jogo","apelido","tempo","time"];
+      // caixa/gols: ideal ter id
+      return ["id"];
     }
 
-    function baixarJSON(nome, obj){
-      const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = nome;
-      a.click();
-      URL.revokeObjectURL(a.href);
+    function buildWhere(q, table){
+      const d = elData.value;
+      const mes = (elMes.value || "").trim();
+      const ano = (elAno.value || "").trim();
+
+      if (d){
+        if (table === "presencas" || table === "escalacao") q = q.eq("data_jogo", d);
+        if (table === "caixa") q = q.eq("data", d);
+        if (table === "gols") q = q.eq("data_jogo", d);
+      }
+      if (ano){
+        if (table === "mensalidades") q = q.eq("ano", parseInt(ano,10));
+      }
+      if (mes && ano){
+        if (table === "mensalidades") q = q.eq("mes", parseInt(mes,10));
+      }
+      return q;
     }
 
     async function carregar(){
       hideErro();
-      fecharVisualizar();
-      thead.innerHTML="";
-      tbody.innerHTML="";
+      const table = elTabela.value;
       setStatus("Carregando...");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      linhaSelecionada = null;
+      editJson.value = "";
+      setEditStatus("");
 
-      const painel = elPainel.value;
-      const periodo = elPeriodo.value;
+      let q = supabase.from(table).select("*").limit(500);
+      q = buildWhere(q, table);
 
-      let q = supabase.from("arquivos_app").select("*").eq("painel", painel).eq("periodo", periodo).order("criado_em", {ascending:false}).limit(200);
-
-      const ano = (elAno.value || "").trim();
-      const mes = (elMes.value || "").trim();
-      const data = (elData.value || "").trim();
-
-      if (periodo === "semanal"){
-        if (data) q = q.eq("data_ref", data);
-        if (ano) q = q.eq("ano_ref", parseInt(ano,10));
-      }
-      if (periodo === "mensal"){
-        if (ano) q = q.eq("ano_ref", parseInt(ano,10));
-        if (mes) q = q.eq("mes_ref", parseInt(mes,10));
-      }
-      if (periodo === "anual"){
-        if (ano) q = q.eq("ano_ref", parseInt(ano,10));
-      }
-
-      const { data: rows, error } = await q;
+      const { data, error } = await q;
 
       if (error){
         console.error(error);
         setStatus("ERRO AO CARREGAR.");
-        showErro("Não consegui ler a tabela arquivos_app.\nPossíveis causas: tabela não criada, RLS bloqueando, ou permissão.\n\n" + (error.message || ""));
+        showErro(
+          "Banco de Dados não conseguiu ler a tabela.\n" +
+          "Causas comuns: RLS bloqueando SELECT, tabela não existe, ou coluna diferente.\n\n" +
+          (error.message || "Sem detalhes do erro.")
+        );
         return;
       }
 
-      if (!rows || !rows.length){
-        setStatus("Nenhum arquivo encontrado.");
+      const rows = data || [];
+      if (!rows.length){
+        setStatus("Nenhum registro encontrado.");
         return;
       }
 
-      const cols = ["id","painel","periodo","data_ref","mes_ref","ano_ref","titulo","criado_em"];
+      const cols = Object.keys(rows[0]);
+
       const trH = document.createElement("tr");
       cols.forEach(c=>{
         const th=document.createElement("th");
-        th.textContent=c;
+        th.textContent = c;
         trH.appendChild(th);
       });
-      ["VER","BAIXAR","IMPRIMIR","EXCLUIR"].forEach(t=>{
-        const th=document.createElement("th");
-        th.textContent=t;
-        trH.appendChild(th);
-      });
+      const thEdit=document.createElement("th"); thEdit.textContent="EDITAR";
+      const thDel=document.createElement("th"); thDel.textContent="EXCLUIR";
+      trH.appendChild(thEdit); trH.appendChild(thDel);
       thead.appendChild(trH);
 
       rows.forEach(r=>{
         const tr=document.createElement("tr");
-
         cols.forEach(c=>{
           const td=document.createElement("td");
-          td.textContent = (r[c] ?? "");
+          td.textContent = (r[c] ?? "").toString();
           tr.appendChild(td);
         });
 
-        const tdVer=document.createElement("td");
-        const bVer=document.createElement("button");
-        bVer.className="btn-sec no-print";
-        bVer.textContent="VER";
-        bVer.onclick=()=>abrirVisualizar(r);
-        tdVer.appendChild(bVer);
-        tr.appendChild(tdVer);
-
-        const tdBaixar=document.createElement("td");
-        const bB=document.createElement("button");
-        bB.className="btn-sec no-print";
-        bB.textContent="BAIXAR";
-        bB.onclick=()=>{
-          const nome = `tesoura_${r.painel}_${r.periodo}_${r.id}.json`;
-          baixarJSON(nome, r.conteudo);
+        const tdE=document.createElement("td");
+        const bE=document.createElement("button");
+        bE.className="btn-sec";
+        bE.textContent="EDITAR";
+        bE.onclick=()=>{
+          linhaSelecionada = { table, data: r, keyCols: guessKey(table) };
+          editJson.value = JSON.stringify(r);
+          setEditStatus("Linha carregada para edição.");
         };
-        tdBaixar.appendChild(bB);
-        tr.appendChild(tdBaixar);
+        tdE.appendChild(bE);
 
-        const tdImp=document.createElement("td");
-        const bI=document.createElement("button");
-        bI.className="btn-sec no-print";
-        bI.textContent="IMPRIMIR";
-        bI.onclick=()=>{
-          abrirVisualizar(r);
-          setTimeout(()=>window.print(), 50);
-        };
-        tdImp.appendChild(bI);
-        tr.appendChild(tdImp);
-
-        const tdDel=document.createElement("td");
+        const tdD=document.createElement("td");
         const bD=document.createElement("button");
-        bD.className="btn-del no-print";
+        bD.className="btn-del";
         bD.textContent="EXCLUIR";
-        bD.onclick=()=>excluir(r.id);
-        tdDel.appendChild(bD);
-        tr.appendChild(tdDel);
+        bD.onclick=()=>excluirLinha(table, r);
+        tdD.appendChild(bD);
 
+        tr.appendChild(tdE);
+        tr.appendChild(tdD);
         tbody.appendChild(tr);
       });
 
-      setStatus("OK. Arquivos: " + rows.length);
+      setStatus(`OK. Registros: ${rows.length}`);
     }
 
-    function abrirVisualizar(r){
-      arquivoAtual = r;
-      boxVisualizar.classList.remove("hide");
-      infoArquivo.textContent = `Arquivo #${r.id} | ${r.painel.toUpperCase()} | ${r.periodo.toUpperCase()} | ${r.criado_em}`;
-      txtConteudo.value = JSON.stringify(r.conteudo, null, 2);
-      window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
-    }
+    async function excluirLinha(table, row){
+      if (!confirm("EXCLUIR este registro?")) return;
 
-    async function excluir(id){
-      if (!confirm("Excluir o arquivo " + id + "?")) return;
-      const { error } = await supabase.from("arquivos_app").delete().eq("id", id);
+      const keyCols = guessKey(table);
+      let q = supabase.from(table).delete();
+
+      keyCols.forEach(k=>{
+        if (row[k] == null) return;
+        q = q.eq(k, row[k]);
+      });
+
+      const { error } = await q;
       if (error){
         console.error(error);
-        showErro("Erro ao excluir: " + (error.message || ""));
+        alert("Erro ao excluir. Veja o console.");
         return;
       }
-      await carregar();
+      alert("Excluído.");
+      carregar();
     }
 
-    // eventos
-    elPeriodo.addEventListener("change", aplicarPeriodoUI);
+    async function salvarEdicao(){
+      if (!linhaSelecionada){
+        alert("Selecione uma linha para editar.");
+        return;
+      }
+
+      let novo;
+      try{ novo = JSON.parse(editJson.value || "{}"); }
+      catch(e){ alert("JSON inválido."); return; }
+
+      const { table, data: antigo, keyCols } = linhaSelecionada;
+
+      let q = supabase.from(table).update(novo);
+      keyCols.forEach(k=>{
+        if (antigo[k] == null) return;
+        q = q.eq(k, antigo[k]);
+      });
+
+      const { error } = await q;
+      if (error){
+        console.error(error);
+        alert("Erro ao salvar edição. Veja o console.");
+        return;
+      }
+
+      setEditStatus("Edição salva.");
+      carregar();
+    }
+
     btnCarregar.addEventListener("click", carregar);
     btnLimpar.addEventListener("click", limpar);
-
-    btnFechar.addEventListener("click", fecharVisualizar);
-    btnImprimir.addEventListener("click", ()=>window.print());
-    btnBaixar.addEventListener("click", ()=>{
-      if (!arquivoAtual) return;
-      baixarJSON(`tesoura_${arquivoAtual.painel}_${arquivoAtual.periodo}_${arquivoAtual.id}.json`, arquivoAtual.conteudo);
+    btnSalvarEdicao.addEventListener("click", salvarEdicao);
+    btnCancelarEdicao.addEventListener("click", ()=>{
+      linhaSelecionada=null;
+      editJson.value="";
+      setEditStatus("");
     });
 
-    aplicarPeriodoUI();
+    (function init(){
+      const d = new Date();
+      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      elData.value = iso;
+      carregar();
+    })();
   </script>
 </body>
 </html>
