@@ -194,58 +194,10 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 .col-escalacao table{flex:1; width:100%;}
 /* Padroniza altura de linha nas tabelas da escalação */
 .grid-escalacao table td, .grid-escalacao table th{padding-top:6px; padding-bottom:6px; line-height:1.1;}
-
-    .hint-corte{
-      margin-left:10px;
-      font-size:12px;
-      color:#ff7f27;
-      font-weight:bold;
-      white-space:nowrap;
-    }
-    .rodape-regras{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:14px;
-      margin-top:14px;
-    }
-    .regras-box{
-      background:#0f172a;
-      border:1px solid rgba(255,127,39,0.25);
-      border-radius:12px;
-      padding:12px;
-    }
-    .regras-titulo{
-      color:#ff7f27;
-      font-weight:bold;
-      margin-bottom:8px;
-      font-size:13px;
-    }
-    .regras-lista{
-      margin:0;
-      padding-left:18px;
-      color:#e5e7eb;
-      font-size:12px;
-      line-height:1.35;
-    }
-    @media (max-width: 900px){
-      .rodape-regras{grid-template-columns:1fr;}
-      .hint-corte{display:block;margin-left:0;margin-top:6px;}
-    }
-
-    /* Ajuste: 1º e 2º tempo com mesma altura */
-    .grid-escalacao{align-items:stretch;}
-    .col-escalacao{display:flex;flex-direction:column;}
-    .col-escalacao table{flex:1;}
-
-  </style>
+</style>
 </head>
 <body>
   <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
-
-  <div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
-    <button class="btn-secundario" onclick="window.print()">IMPRIMIR / BAIXAR</button>
-  </div>
-
   <div class="container">
 
     <div class="linhas-topo">
@@ -283,7 +235,7 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
           <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
             <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
-            <button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button><span class="hint-corte">Horário de corte: 06:15</span>
+            <button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
           </div>
 
           <div id="status-presentes" class="status-info"></div>
@@ -321,7 +273,7 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
       <div class="grid-escalacao">
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="t-amarelo" style="font-size:13px;">1º TEMPO — JOGO DAS 06:40 ÀS 07:40</div>
+            <div class="t-amarelo" style="font-size:13px;">1º TEMPO</div>
             <div class="status-info">Botão <b>SAIU</b> risca o nome.</div>
           </div>
           <table>
@@ -342,7 +294,7 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="t-amarelo" style="font-size:13px;">2º TEMPO — JOGO DAS 08:00 ÀS 09:00</div>
+            <div class="t-amarelo" style="font-size:13px;">2º TEMPO</div>
             <div class="status-info">Prioridade: quem não jogou.</div>
           </div>
           <table>
@@ -360,32 +312,13 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
         </div>
       </div>
 
-      <div class="rodape-regras">
-        <div class="regras-box">
-          <div class="regras-titulo">Regras 1º tempo (corte 06:15)</div>
-          <ul class="regras-lista">
-            <li>Se até 06:15 tiver até 20 presentes (ex.: 15, 19, 20): <b>sem eliminação</b> (todos jogam).</li>
-            <li>Se até 06:15 tiver mais de 20 presentes (ex.: 25): o app corta até ficar 20, na ordem: <b>faltou no domingo anterior → inadimplente → maior nº de faltas</b>.</li>
-          </ul>
-        </div>
-
-        <div class="regras-box">
-          <div class="regras-titulo">Regras 2º tempo</div>
-          <ul class="regras-lista">
-            <li>Prioridade máxima: escalar primeiro quem está presente e <b>não jogou o 1º tempo</b>.</li>
-            <li>Para abrir vagas (quem sai primeiro): <b>1)</b> saiu espontaneamente (SAIU) <b>2)</b> falta domingo anterior <b>3)</b> jogou 2 tempos domingo anterior <b>4)</b> maior nº de faltas <b>5)</b> mais novos (idade).</li>
-            <li>Depois: mantém a base de cada time (amarelo/azul) e distribui quem não jogou buscando equilíbrio de pontos e posições.</li>
-          </ul>
-        </div>
-      </div>
-
       <div class="legenda">
         <b>OBS:</b>
-        C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | F (faltou) |
+        C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
         <span class="obs-pago">P (verde) pagou</span> |
         <span class="obs-inad">P (vermelho) não pagou</span>
       </div>
-</div>
+    </div>
 
   </div>
 
