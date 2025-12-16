@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- REV: 9 | Abas estáveis via IFRAME + força atualização dos painéis -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>TESOURA - PAINÉIS (REV 9)</title>
+  <title>TESOURA - PAINÉIS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Evita cache do próprio index -->
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -23,7 +23,7 @@
 </head>
 
 <body>
-  <div class="topbar">TESOURA – APLICATIVO DO GRUPO (REV 9)</div>
+  <div class="topbar">TESOURA – APLICATIVO DO GRUPO</div>
 
   <div class="tabs">
     <button class="tab-btn active" onclick="abrirAba('aba-jogadores')">JOGADORES</button>
@@ -35,49 +35,91 @@
     <button class="tab-btn" onclick="abrirAba('aba-banco')">BANCO DE DADOS</button>
   </div>
 
+  <!-- IMPORTANTE:
+       - NÃO colocamos src direto.
+       - Guardamos o arquivo em data-src.
+       - O src é colocado quando a aba é aberta (evita branco/travadas).
+  -->
   <div id="aba-jogadores" class="tab-content active">
-    <iframe id="f-jogadores" src="tesoura_jogadores_teste.html?v=9"></iframe>
+    <iframe id="f-jogadores" data-src="tesoura_jogadores_teste.html"></iframe>
   </div>
 
   <div id="aba-presenca" class="tab-content">
-    <iframe id="f-presenca" src="tesoura_presenca_escala_R5.html?v=9"></iframe>
+    <iframe id="f-presenca" data-src="tesoura_presenca_escala_R5.html"></iframe>
   </div>
 
   <div id="aba-controle" class="tab-content">
-    <iframe id="f-controle" src="tesoura_controle_geral_teste.html?v=9"></iframe>
+    <iframe id="f-controle" data-src="tesoura_controle_geral_teste.html"></iframe>
   </div>
 
   <div id="aba-mensalidade" class="tab-content">
-    <iframe id="f-mensalidade" src="tesoura_mensalidade_R4.html?v=9"></iframe>
+    <iframe id="f-mensalidade" data-src="tesoura_mensalidade_R4.html"></iframe>
   </div>
 
   <div id="aba-caixa" class="tab-content">
-    <iframe id="f-caixa" src="tesoura_caixa_teste.html?v=9"></iframe>
+    <iframe id="f-caixa" data-src="tesoura_caixa_teste.html"></iframe>
   </div>
 
   <div id="aba-gols" class="tab-content">
-    <iframe id="f-gols" src="tesoura_gols_teste.html?v=9"></iframe>
+    <iframe id="f-gols" data-src="tesoura_gols_teste.html"></iframe>
   </div>
 
   <div id="aba-banco" class="tab-content">
-    <iframe id="f-banco" src="tesoura_banco_dados_teste.html?v=9"></iframe>
+    <iframe id="f-banco" data-src="tesoura_banco_dados_teste.html"></iframe>
   </div>
 
   <script>
+    const map = {
+      "aba-jogadores":0,
+      "aba-presenca":1,
+      "aba-controle":2,
+      "aba-mensalidade":3,
+      "aba-caixa":4,
+      "aba-gols":5,
+      "aba-banco":6
+    };
+
+    function carregarIframeSePrecisa(abaId){
+      const iframe = document.querySelector(`#${abaId} iframe`);
+      if(!iframe) return;
+
+      // Se ainda não carregou, carrega agora
+      if(!iframe.getAttribute('src')){
+        const base = iframe.getAttribute('data-src');
+        // Cache-buster só na 1ª carga (evita pegar arquivo antigo)
+        iframe.setAttribute('src', base + '?cb=' + Date.now());
+      }
+    }
+
     function abrirAba(id){
-      const abas=document.querySelectorAll('.tab-content');
-      const botoes=document.querySelectorAll('.tab-btn');
+      const abas = document.querySelectorAll('.tab-content');
+      const botoes = document.querySelectorAll('.tab-btn');
 
       abas.forEach(a=>a.classList.remove('active'));
       botoes.forEach(b=>b.classList.remove('active'));
 
       document.getElementById(id).classList.add('active');
-
-      const map = {
-        "aba-jogadores":0,"aba-presenca":1,"aba-controle":2,"aba-mensalidade":3,"aba-caixa":4,"aba-gols":5,"aba-banco":6
-      };
       botoes[map[id]].classList.add('active');
+
+      // garante que a aba abriu e o iframe carregou
+      carregarIframeSePrecisa(id);
+
+      // atualiza o hash (opcional, mas ajuda a “grudar” na aba)
+      location.hash = id.replace('aba-','');
     }
+
+    // Ao abrir o site, se vier com #presenca etc, já abre a aba certa
+    function abrirPorHash(){
+      const h = (location.hash || '').replace('#','').trim();
+      if(!h) return;
+      const alvo = 'aba-' + h;
+      if(map[alvo] !== undefined) abrirAba(alvo);
+    }
+
+    // carrega a 1ª aba automaticamente
+    carregarIframeSePrecisa('aba-jogadores');
+    abrirPorHash();
+    window.addEventListener('hashchange', abrirPorHash);
   </script>
 </body>
 </html>
