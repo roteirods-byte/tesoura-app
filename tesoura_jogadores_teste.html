@@ -221,9 +221,9 @@
   <script>
     const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    const camisaInput = document.getElementById("camisa");
+window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = window.__TESOURA_SUPABASE__;
+       const camisaInput = document.getElementById("camisa");
     const nomeInput = document.getElementById("nome");
     const apelidoInput = document.getElementById("apelido");
     const dataNascInput = document.getElementById("data_nasc");
@@ -442,3 +442,4 @@
   </script>
 </body>
 </html>
+
