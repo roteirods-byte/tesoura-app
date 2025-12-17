@@ -199,6 +199,11 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
   .cutinfo{margin-left:12px;font-size:13px;color:#cfd9ff;opacity:.95}
   .legend-inline{margin-top:10px;font-size:12px;color:#cfd9ff;opacity:.95;line-height:1.3}
 
+
+    .regras-wrap{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+    .regras-col{flex:1;min-width:260px;font-size:12px;line-height:1.35;color:#e5e7eb}
+    .regras-col ul{margin:6px 0 0 18px;padding:0}
+    .regras-col li{margin:4px 0}
 </style>
 </head>
 <body>
@@ -302,16 +307,8 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
             <tbody id="tbody-1t"></tbody>
           </table>
           <div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
-         <div style="margin-top:8px;font-size:12px;line-height:1.35;color:#cbd5e1;">
-  <b>Regras 1º tempo (corte 06:15):</b><br/>
-  • Se até 06:15 tiver <b>até 20 presentes</b> (ex.: 15, 19, 20): <b>sem eliminação</b> (todos jogam).<br/>
-  • Se até 06:15 tiver <b>mais de 20 presentes</b> (ex.: 25): o app corta até ficar 20, na ordem:
-  <b>faltou no domingo anterior</b> → <b>inadimplente</b> → <b>maior nº de faltas</b>.
-</div>
-     <div class="legend-inline">
-            C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | P (verde) pagou | P (vermelho) não pagou | F (faltou)
-          </div>
-        </div>
+         
+
 
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -333,7 +330,27 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
         </div>
       </div>
 
-      <div class="legenda">
+            <div class="regras-wrap">
+        <div class="regras-col">
+          <b>Regras 1º tempo (corte 06:15):</b>
+          <ul>
+            <li>Se até 06:15 tiver <b>até 20</b> presentes (ex.: 15, 19, 20): sem eliminação (todos jogam).</li>
+            <li>Se até 06:15 tiver <b>mais de 20</b> presentes (ex.: 25): o app corta até ficar 20, na ordem:
+              <b>faltou no domingo anterior → inadimplente → maior nº de faltas</b>.</li>
+          </ul>
+        </div>
+        <div class="regras-col">
+          <b>Regras 2º tempo (resumo):</b>
+          <ul>
+            <li>Prioridade: quem está presente e <b>não jogou</b> o 1º tempo.</li>
+            <li>Para abrir vagas, sai primeiro: (1) quem marcou <b>SAIU/SAIU</b>, (2) faltou no domingo anterior,
+              (3) jogou os dois tempos no domingo anterior, (4) maior nº de faltas, (5) mais novos.</li>
+            <li>Manter base dos times e distribuir quem entra, equilibrando pontos e posições.</li>
+          </ul>
+        </div>
+      </div>
+
+<div class="legenda">
         <b>OBS:</b>
 C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
 <span class="obs-pago">P (verde) pagou</span> |
