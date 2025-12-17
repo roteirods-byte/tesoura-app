@@ -93,8 +93,8 @@
   <script>
     const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var supabase = window.__TESOURA_SUPABASE__;
     const elTabela = document.getElementById("tabela");
     const elData = document.getElementById("filtroData");
     const elMes = document.getElementById("filtroMes");
@@ -103,24 +103,6 @@
     const btnLimpar = document.getElementById("btnLimpar");
     const thead = document.getElementById("thead");
     const tbody = document.getElementById("tbody");
-    // Ajusta filtros conforme a tabela selecionada
-    function onTabelaChange(){
-      const isJogadores = (elTabela.value === "jogadores");
-      // para jogadores, não aplicar filtros de data/mês/ano
-      [elData, elMes, elAno].forEach(el=>{
-        el.disabled = isJogadores;
-        if (isJogadores) el.value = "";
-      });
-    }
-    elTabela.addEventListener("change", () => {
-      onTabelaChange();
-      // opcional: limpar resultado quando troca
-      tbody.innerHTML = "";
-      statusEl.textContent = "";
-      formEdicaoEl.style.display = "none";
-    });
-    onTabelaChange();
-
     const status = document.getElementById("status");
     const erroBox = document.getElementById("erroBox");
 
