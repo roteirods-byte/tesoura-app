@@ -207,8 +207,8 @@
     // ===================== SUPABASE (MESMA CONFIG DO JOGADORES) =====================
     const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var supabase = window.__TESOURA_SUPABASE__;
     function setStatus(msg) {
       const div = document.getElementById("status-gols");
       if (div) div.textContent = msg || "";
