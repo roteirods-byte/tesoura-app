@@ -179,6 +179,25 @@
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
+
+    if (window.__TESOURA_INIT_MENSALIDADE__) {
+      console.log('MENSALIDADE já inicializada');
+    } else {
+      window.__TESOURA_INIT_MENSALIDADE__ = true;
+
+      function segundoDomingoISO(ano, mes){
+        // mes: 1-12
+        const d = new Date(ano, mes-1, 1);
+        // primeiro domingo
+        while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+        // segundo domingo
+        d.setDate(d.getDate() + 7);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+
     const tbody = document.getElementById("tbody-mensal");
     const statusEl = document.getElementById("status");
     const infoMesEl = document.getElementById("info-mes");
@@ -260,6 +279,7 @@
           apelido: ap,
           ano,
           mes,
+          data_vencimento: segundoDomingoISO(ano, mes),
           valor: null,
           status: "PENDENTE",
           data_pagamento: null,
@@ -493,6 +513,8 @@
 
     btnRecarregar.addEventListener("click", carregar);
     carregar();
-  </script>
+  
+    }
+</script>
 </body>
 </html>
