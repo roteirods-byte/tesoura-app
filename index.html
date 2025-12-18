@@ -41,6 +41,27 @@
 </head>
 
 <body>
+  <!-- TELA INICIAL (fica antes do app) -->
+<div id="telaInicial" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.80);">
+  <div style="width:min(520px,100%);background:#081427;border:1px solid #334155;border-radius:14px;padding:18px;text-align:center;">
+    <div style="color:#ff7f27;font-weight:900;font-size:22px;">GRUPO TESOURA I</div>
+    <div style="color:#e5e7eb;margin-top:8px;font-weight:700;">ESPORTE, FAMÍLIA E AMIZADE</div>
+    <div style="color:#e5e7eb;margin-top:18px;font-weight:800;">APLICATIVO DO GRUPO</div>
+
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap;">
+      <button id="btnEntrarJogadores" style="min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#22c55e;color:#052e16;">
+        ENTRAR JOGADORES
+      </button>
+
+      <button id="btnEntrarDiretoria" style="min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#3b82f6;color:#06162f;">
+        ENTRAR DIRETORIA
+      </button>
+    </div>
+
+    <div id="msgTelaInicial" style="margin-top:12px;color:#e5e7eb;font-size:12px;min-height:16px;"></div>
+  </div>
+</div>
+
  <!-- BLOQUEIO DE VISUALIZAÇÃO (JOGADORES) -->
   <div id="viewGate" style="position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:9998;padding:16px;">
     <div style="width:min(420px,100%);background:#111827;border:1px solid #334155;border-radius:10px;padding:14px;">
@@ -274,5 +295,76 @@
       setIframeSrc(document.getElementById('f-jogadores'));
     });
   </script>
+<script>
+  // ===== CONFIG =====
+  const SENHA_JOGADORES = "TESOURA2026"; // troque aqui se quiser
+  const KEY_ROLE = "TESOURA_ROLE"; // sessionStorage
+  // ==================
+
+  function bloquearEdicaoPresencaNoPublico(){
+    // trava botões do painel presença quando NÃO estiver em diretoria
+    const role = sessionStorage.getItem(KEY_ROLE);
+    if(role !== "jogador") return; // só trava no modo jogador
+
+    const textos = [
+      "CHEGOU AGORA",
+      "LIMPAR HOJE",
+      "ESCALAR 1º TEMPO",
+      "ESCALAR 2º TEMPO",
+      "SALVAR",
+      "EXCLUIR",
+      "NÃO VAI JOGAR"
+    ];
+
+    const buttons = Array.from(document.querySelectorAll("button"));
+    buttons.forEach(b=>{
+      const t = (b.innerText || "").trim().toUpperCase();
+      if(textos.includes(t)){
+        b.disabled = true;
+        b.style.opacity = "0.45";
+        b.style.cursor = "not-allowed";
+        b.title = "Somente Diretoria";
+      }
+    });
+  }
+
+  function initTelaInicial(){
+    const tela = document.getElementById("telaInicial");
+    const msg  = document.getElementById("msgTelaInicial");
+    const bJog = document.getElementById("btnEntrarJogadores");
+    const bDir = document.getElementById("btnEntrarDiretoria");
+
+    // sempre começa mostrando a tela inicial (evita “não pediu senha”)
+    sessionStorage.removeItem(KEY_ROLE);
+
+    bJog.onclick = ()=>{
+      const s = prompt("Senha para VISUALIZAR (Jogadores):") || "";
+      if(s.trim() === SENHA_JOGADORES){
+        sessionStorage.setItem(KEY_ROLE, "jogador");
+        tela.style.display = "none";
+        setTimeout(bloquearEdicaoPresencaNoPublico, 300);
+      }else{
+        msg.textContent = "Senha incorreta.";
+      }
+    };
+
+    bDir.onclick = ()=>{
+      sessionStorage.setItem(KEY_ROLE, "diretoria");
+      tela.style.display = "none";
+
+      // tenta clicar automaticamente no botão existente "ENTRAR (DIRETORIA)"
+      setTimeout(()=>{
+        const btns = Array.from(document.querySelectorAll("button,a"));
+        const alvo = btns.find(el => ((el.innerText||"").toUpperCase().includes("ENTRAR") && (el.innerText||"").toUpperCase().includes("DIRETORIA")));
+        if(alvo) alvo.click();
+      }, 200);
+    };
+  }
+
+  window.addEventListener("load", ()=>{
+    initTelaInicial();
+  });
+</script>
+  
 </body>
 </html>
