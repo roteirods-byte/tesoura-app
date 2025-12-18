@@ -259,6 +259,46 @@
       await refreshMode();
     });
 
+function travarIframeJogador(iframe){
+  try{
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    if(!doc) return;
+
+    // cria/atualiza a tarja vermelha
+    let banner = doc.getElementById("TESOURA_JOGADOR_BANNER");
+    if(!banner){
+      banner = doc.createElement("div");
+      banner.id = "TESOURA_JOGADOR_BANNER";
+      banner.textContent = "MODO JOGADOR: SOMENTE VISUALIZAÇÃO";
+      banner.style.cssText =
+        "position:fixed;top:0;left:0;right:0;z-index:999999;" +
+        "background:#b91c1c;color:#fff;font-weight:900;" +
+        "padding:8px 10px;text-align:center;font-size:12px;";
+      doc.body.appendChild(banner);
+
+      // empurra a página para baixo (pra não cobrir o topo)
+      doc.body.style.paddingTop = "40px";
+    }
+
+    // desativa cliques em botões/campos/links, mas mantém rolagem
+    let style = doc.getElementById("TESOURA_JOGADOR_LOCK");
+    if(!style){
+      style = doc.createElement("style");
+      style.id = "TESOURA_JOGADOR_LOCK";
+      style.textContent = `
+        button, input, select, textarea, a, [role="button"], [onclick] {
+          pointer-events: none !important;
+          opacity: 0.55 !important;
+          cursor: not-allowed !important;
+        }
+      `;
+      doc.head.appendChild(style);
+    }
+  }catch(e){
+    // se algum iframe não permitir acesso, só ignora
+  }
+}
+    
     function cacheBust(url){
       const sep = url.includes('?') ? '&' : '?';
       return url + sep + 'cb=' + Date.now();
@@ -269,6 +309,10 @@
       const base = iframe.getAttribute('data-src');
       if(!base) return;
       iframe.setAttribute('src', cacheBust(base));
+      iframe.addEventListener("load", ()=>{
+  const role = sessionStorage.getItem("TESOURA_ROLE");
+  if(role === "jogador") travarIframeJogador(iframe);
+}, { once: true });
     }
 
     function abrirAba(id){
@@ -341,6 +385,9 @@
       const s = prompt("Senha para VISUALIZAR (Jogadores):") || "";
       if(s.trim() === SENHA_JOGADORES){
         sessionStorage.setItem(KEY_ROLE, "jogador");
+        setTimeout(()=>{
+  document.querySelectorAll("iframe").forEach(travarIframeJogador);
+}, 400);
         tela.style.display = "none";
         setTimeout(bloquearEdicaoPresencaNoPublico, 300);
       }else{
