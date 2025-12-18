@@ -134,6 +134,49 @@
   <script src="app/js/config.js"></script>
 
   <script>
+    // ===== SENHA DE VISUALIZAÇÃO (JOGADORES) =====
+  const VIEW_PASSWORD = "TESOURA2026"; // <-- TROQUE AQUI PELA SUA SENHA
+  const VIEW_KEY = "TESOURA_VIEW_OK";
+
+  function openViewGate(){
+    const gate = document.getElementById("viewGate");
+    if(gate) gate.style.display = "flex";
+  }
+  function closeViewGate(){
+    const gate = document.getElementById("viewGate");
+    if(gate) gate.style.display = "none";
+  }
+
+  function initViewGate(){
+    try{
+      if(localStorage.getItem(VIEW_KEY) === "1"){
+        closeViewGate();
+      }else{
+        openViewGate();
+      }
+    }catch(e){
+      openViewGate();
+    }
+
+    const btn = document.getElementById("viewEnter");
+    const inp = document.getElementById("viewPass");
+    const msg = document.getElementById("viewMsg");
+
+    function tryEnter(){
+      const v = (inp.value || "").trim();
+      if(v === VIEW_PASSWORD){
+        try{ localStorage.setItem(VIEW_KEY, "1"); }catch(e){}
+        closeViewGate();
+        msg.textContent = "";
+      }else{
+        msg.textContent = "Senha incorreta.";
+      }
+    }
+
+    if(btn) btn.onclick = tryEnter;
+    if(inp) inp.onkeydown = (e)=>{ if(e.key === "Enter") tryEnter(); };
+  }
+  // ============================================
     // --- SUPABASE (login diretoria) ---
     const cfg = window.TESOURA_CONFIG || {};
     const sb = window.supabase?.createClient ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY) : null;
