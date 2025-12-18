@@ -41,6 +41,27 @@
 </head>
 
 <body>
+ <!-- BLOQUEIO DE VISUALIZAÇÃO (JOGADORES) -->
+  <div id="viewGate" style="position:fixed;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:9998;padding:16px;">
+    <div style="width:min(420px,100%);background:#111827;border:1px solid #334155;border-radius:10px;padding:14px;">
+      <div style="color:#ff7f27;font-weight:bold;font-size:18px;margin-bottom:8px;">TESOURA – Visualização</div>
+      <div style="font-size:12px;opacity:.9;margin-bottom:10px;">
+        Digite a senha para <b>apenas visualizar</b> os painéis.
+      </div>
+
+      <label style="display:block;font-size:12px;margin-top:10px;opacity:.9;">Senha</label>
+      <input id="viewPass" type="password"
+        style="width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border-radius:8px;border:1px solid #334155;background:#0b1220;color:#ffffff"
+        placeholder="Senha de visualização" />
+
+      <button id="viewEnter"
+        style="margin-top:12px;width:100%;border:none;border-radius:8px;padding:10px;font-weight:bold;cursor:pointer;background:#22c55e;color:#052e16">
+        ENTRAR
+      </button>
+
+      <div id="viewMsg" style="margin-top:10px;font-size:12px;opacity:.9;min-height:16px;"></div>
+    </div>
+  </div> 
   <div class="topbar">
     <div class="title">TESOURA – APLICATIVO DO GRUPO</div>
     <div class="actions">
