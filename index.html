@@ -269,7 +269,7 @@
     }
 
     // carrega a primeira aba ao abrir
-    window.addEventListener('load', async ()=>{
+    window.addEventListener('load', async ()=>{initViewGate();
       await refreshMode();
       setIframeSrc(document.getElementById('f-jogadores'));
     });
