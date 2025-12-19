@@ -245,21 +245,26 @@
       total += val;
 
       const tdObs = document.createElement("td");
-      tdObs.textContent = l.obs || "";
-
-      const tdEditar = document.createElement("td");
-      const btnEd = document.createElement("button");
-      btnEd.textContent = "EDITAR";
-      btnEd.className = "btn-mini";
-      btnEd.addEventListener("click", () => editarLancamento(l));
-      tdEditar.appendChild(btnEd);
-
+      tdObs.textContent = l.obs || "";      const tdEditar = document.createElement("td");
       const tdExc = document.createElement("td");
-      const btnEx = document.createElement("button");
-      btnEx.textContent = "EXCLUIR";
-      btnEx.className = "btn-mini btn-excluir";
-      btnEx.addEventListener("click", () => excluirLancamento(l.id));
-      tdExc.appendChild(btnEx);
+
+      const isMensalidade = ((l.tipo || "").toUpperCase() === "MENSALIDADE");
+      if (isMensalidade) {
+        tdEditar.textContent = "-";
+        tdExc.textContent = "-";
+      } else {
+        const btnEd = document.createElement("button");
+        btnEd.textContent = "EDITAR";
+        btnEd.className = "btn btn-azul";
+        btnEd.onclick = () => editarLancamento(l);
+        tdEditar.appendChild(btnEd);
+
+        const btnEx = document.createElement("button");
+        btnEx.textContent = "EXCLUIR";
+        btnEx.className = "btn btn-vermelho";
+        btnEx.onclick = () => excluirLancamento(l);
+        tdExc.appendChild(btnEx);
+      }
 
       tr.appendChild(tdData);
       tr.appendChild(tdTipo);

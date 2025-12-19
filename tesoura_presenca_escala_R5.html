@@ -810,7 +810,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
     async function escalarPrimeiroTempo(){
       const dataISO = getDataJogoISO();
-      const listaHoje = (presencasHoje || []).filter(p => !p.naoVaiJogar);
+      const listaHoje = (presentesHoje || []).filter(p => !p.naoVaiJogar);
 
       // Apenas quem chegou até o corte (06:15)
       const listaCorte = listaHoje
@@ -868,7 +868,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
       const { amarelo, azul } = distribuiEquilibrado(entradas);
 
-      escala1t = {
+      escala1 = {
         amarelo: amarelo.map(x=>x.apelido),
         azul: azul.map(x=>x.apelido),
         saiu: {} // marcações do botão SAÍU
@@ -876,9 +876,9 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
       // Atualiza status: quem escalou 1º tempo = "1"
       // quem estava presente até corte e não entrou = "C"
-      const entrouSet = new Set([...escala1t.amarelo, ...escala1t.azul]);
+      const entrouSet = new Set([...escala1.amarelo, ...escala1.azul]);
 
-      for (const p of presencasHoje){
+      for (const p of presentesHoje){
         if (p.naoVaiJogar) continue;
         const ap = p.apelido;
         if (entrouSet.has(ap)){
@@ -889,7 +889,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
         }
       }
 
-      renderEscalacao();
+      renderEscalacoes();
       toast("1º tempo escalado.");
     }
 
@@ -905,8 +905,8 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
     async function escalarSegundoTempo(){
       const dataISO = getDataJogoISO();
 
-      const presentes = (presencasHoje || []).filter(p => !p.naoVaiJogar);
-      const jogou1tSet = new Set([...(escala1t?.amarelo||[]), ...(escala1t?.azul||[])]);
+      const presentes = (presentesHoje || []).filter(p => !p.naoVaiJogar);
+      const jogou1tSet = new Set([...(escala1?.amarelo||[]), ...(escala1?.azul||[])]);
       const naoJogou1t = presentes.filter(p => !jogou1tSet.has(p.apelido));
       const jogou1t = presentes.filter(p => jogou1tSet.has(p.apelido));
 
@@ -933,7 +933,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
           const ap = p.apelido;
           const m = metricas[ap] || {};
           const j = jogadoresPorApelido[ap] || {};
-          const saiuMarcado = !!(escala1t?.saiu && escala1t.saiu[ap]);
+          const saiuMarcado = !!(escala1?.saiu && escala1.saiu[ap]);
           const idade = Number(j.idade||0); // idade maior = mais velho
           return [
             saiuMarcado ? 0 : 1,                 // 0 sai primeiro
@@ -969,7 +969,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
       const { amarelo, azul } = distribuiEquilibrado(entradas);
 
-      escala2t = {
+      escala2 = {
         amarelo: amarelo.map(x=>x.apelido),
         azul: azul.map(x=>x.apelido)
       };
@@ -977,8 +977,8 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       // Atualiza status:
       // - quem jogou 2º tempo e já tinha "1" vira "1-2"
       // - quem jogou 2º tempo e não tinha "1" vira "2"
-      const jogou2tSet = new Set([...(escala2t?.amarelo||[]), ...(escala2t?.azul||[])]);
-      for (const p of presencasHoje){
+      const jogou2tSet = new Set([...(escala2?.amarelo||[]), ...(escala2?.azul||[])]);
+      for (const p of presentesHoje){
         if (p.naoVaiJogar) continue;
         if (jogou2tSet.has(p.apelido)){
           if (p.status === "1") p.status = "1-2";
@@ -986,7 +986,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
         }
       }
 
-      renderEscalacao();
+      renderEscalacoes();
       toast("2º tempo escalado.");
     }
 
