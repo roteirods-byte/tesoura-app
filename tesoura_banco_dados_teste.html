@@ -126,7 +126,13 @@
 /** ===== CONFIG SUPABASE ===== */
 const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabase = null;
+if (!window.supabase || !window.supabase.createClient) {
+  // supabase-js not loaded (CDN blocked / offline / mixed content)
+  supabase = null;
+} else {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 /** ===== DOM ===== */
 const selPainel = document.getElementById("selPainel");
@@ -141,6 +147,14 @@ const btnCarregar = document.getElementById("btnCarregar");
 const btnLimpar = document.getElementById("btnLimpar");
 const statusEl = document.getElementById("status");
 const erroEl = document.getElementById("erro");
+
+window.addEventListener("error", (e) => {
+  try {
+    const msg = (e && e.message) ? e.message : "Erro inesperado no painel.";
+    setErro("ERRO: " + msg);
+    setStatus("");
+  } catch {}
+});
 const hintEl = document.getElementById("hint");
 const metaEl = document.getElementById("meta");
 const renderEl = document.getElementById("render");
@@ -256,6 +270,7 @@ async function carregarPeriodosDoPainel(){
     return;
   }
 
+  if(!supabase){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
   const { data, error } = await supabase
     .from("arquivos_app")
     .select("periodo")
@@ -280,6 +295,8 @@ async function carregarPeriodosDoPainel(){
 
 /** ===== CONSULTA NO BANCO (arquivos_app) ===== */
 async function carregarArquivo(){
+  if(!supabase){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
+
   setErro("");
   setStatus("Carregando...");
   limparResultado();
