@@ -261,14 +261,15 @@
             pontos: r.pontos ?? "",
             ativo: (r.ativo ?? true)
           }));
-          const payload = { rows: payloadRows, gerado_em: new Date().toISOString() };
-
+          // Conteúdo do arquivo deve ser a lista de linhas (igual ao painel).
           const { error: err2 } = await supabase.from("arquivos_app").insert([{
             painel: "jogadores",
             periodo: "unico",
+            data_ref: new Date().toISOString().slice(0,10),
+            mes_ref: (new Date().getMonth()+1),
             ano_ref,
             titulo: "Jogadores (vigente)",
-            conteudo: payload
+            conteudo: payloadRows
           }]);
           if(err2) throw err2;
 
