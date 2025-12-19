@@ -95,8 +95,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
     const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
@@ -127,14 +125,7 @@
     }
 
     function mostrarFiltro(){
-      const raw = elTabela.value;
-      const alias = {
-        presenca: "presencas",
-        mensalidade: "mensalidades",
-        gol: "gols",
-        jogador: "jogadores"
-      };
-      const t = alias[raw] || raw;
+      const t = elTabela.value;
 
       // Padrão: esconder tudo
       elAno.style.display = "none";
@@ -174,15 +165,10 @@
         // Mapeamento: select -> arquivos_app.painel
         const painelMap = {
           jogadores: "jogadores",
-          jogador: "jogadores",
           gols: "gols",
-          gol: "gols",
           presencas: "presenca",
-          presenca: "presenca",
           escalacao: "escalacao",
           mensalidades: "mensalidade",
-          mensalidade: "mensalidade",
-          mensalidade: "mensalidade",
           caixa: "caixa",
           controle_geral: "controle_geral"
         };
