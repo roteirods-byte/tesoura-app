@@ -240,11 +240,28 @@
         try{
           btnSalvarPainel.disabled = true;
           btnSalvarPainel.textContent = "SALVANDO...";
-          const { data: rows, error } = await supabase.from("jogadores").select("*").order("apelido", { ascending: true });
+          const { data: rows, error } = await supabase.from("jogadores")
+            .select("id,camisa,apelido,nome,data_nasc,celular,posicao,hab,vel,mov,pontos,ativo")
+            .order("apelido", { ascending: true });
           if(error) throw error;
 
           const ano_ref = new Date().getFullYear();
-          const payload = { rows: rows || [], gerado_em: new Date().toISOString() };
+          const payloadRows = (rows || []).map(r => ({
+            id: r.id,
+            camisa: r.camisa ?? "",
+            apelido: (r.apelido || "").toUpperCase(),
+            nome: (r.nome || "").toUpperCase(),
+            data_nasc: r.data_nasc || "",
+            idade: (typeof calcularIdade === "function") ? (calcularIdade(r.data_nasc) || "") : "",
+            celular: r.celular || "",
+            posicao: (r.posicao || "").toUpperCase(),
+            hab: r.hab ?? "",
+            vel: r.vel ?? "",
+            mov: r.mov ?? "",
+            pontos: r.pontos ?? "",
+            ativo: (r.ativo ?? true)
+          }));
+          const payload = { rows: payloadRows, gerado_em: new Date().toISOString() };
 
           const { error: err2 } = await supabase.from("arquivos_app").insert([{
             painel: "jogadores",
