@@ -1,316 +1,566 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>TESOURA - BANCO DE DADOS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Export (PDF / Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
-    body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb}
-    header{background:#020617;padding:12px 16px;text-align:center;font-weight:bold;letter-spacing:1px;text-transform:uppercase}
-    .container{max-width:1200px;margin:0 auto;padding:16px}
-    h2{margin:8px 0;color:#f97316;text-transform:uppercase}
-    .painel{background:#020617;border-radius:6px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,.4);margin-bottom:16px;font-size:13px}
-    button{padding:6px 10px;border-radius:4px;border:none;cursor:pointer;font-weight:bold;text-transform:uppercase;font-size:11px}
-    .btn-sec{background:#0ea5e9;color:#0f172a}
-    .btn-ok{background:#22c55e;color:#022c22}
-    .btn-del{background:#ef4444;color:#f9fafb}
-    .btn-warn{background:#f97316;color:#0f172a}
-    select,input{padding:6px;border-radius:4px;border:1px solid #334155;background:#0b1120;color:#f9fafb;font-size:12px}
-    table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
-    th,td{border:1px solid #4b5563;padding:3px 4px;text-align:center;text-transform:uppercase;white-space:nowrap}
-    th{background:#f97316;color:#0f172a;position:sticky;top:0;z-index:1}
-    tr:nth-child(even){background:#0b1120}
-    tr:nth-child(odd){background:#020617}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .grow{flex:1;min-width:180px}
-    .small{min-width:140px}
-    .status{margin-top:6px;font-size:12px}
-    .scroll{overflow:auto;max-height:520px}
-    .erroBox{margin-top:8px;padding:10px;border:1px solid #ef4444;border-radius:6px;color:#fecaca;background:#1f0a0a;display:none}
-    @media print{
-      header,.printbar,.actions{display:none !important}
-      .scroll{max-height:none;overflow:visible}
-      th{position:static}
+    :root{
+      --bg:#071426;
+      --card:#0b1f3a;
+      --line:#163a63;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --accent:#f97316; /* abóbora */
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --btn:#60a5fa;
     }
-  
-  /* Banco de Dados é somente leitura */
-  .painel h2{display:none;}
-  #editJson, #btnSalvarEdicao, #btnCancelarEdicao, #statusEdit{display:none !important;}
-</style>
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    header{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:800;letter-spacing:.5px;color:var(--accent)}
+    .container{max-width:1200px;margin:0 auto;padding:14px}
+    .painel{background:linear-gradient(180deg,#071426 0%, #081a33 50%, #071426 100%);
+      border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+    .titulo{color:var(--accent);font-weight:900;margin:0 0 10px 0}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+    label{font-size:12px;color:var(--muted);font-weight:700}
+    select,input{height:34px;border-radius:10px;border:1px solid var(--line);background:#06162b;color:var(--text);padding:6px 10px}
+    select{min-width:220px}
+    input.small{width:120px}
+    input.date{width:170px}
+    .btn{height:34px;border-radius:10px;border:0;padding:0 12px;font-weight:800;cursor:pointer}
+    .btn-ok{background:var(--ok);color:#05210e}
+    .btn-warn{background:var(--warn);color:#2b1b00}
+    .btn-sec{background:var(--btn);color:#071426}
+    .btn-danger{background:var(--danger);color:#2b0606}
+    .status{margin-top:10px;font-weight:800}
+    .muted{color:var(--muted);font-weight:700;font-size:12px}
+    .erro{margin-top:10px;color:#fecaca;font-weight:800}
+    .tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{border-bottom:1px solid #102d4d;padding:8px 8px;text-align:left;vertical-align:top}
+    th{color:var(--accent);font-weight:900}
+    .chip{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-weight:800;color:var(--text);background:#06162b}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 900px){ .grid2{grid-template-columns:1fr} select{min-width:100%} }
+    .sec-title{margin:10px 0 6px 0;color:var(--accent);font-weight:900}
+    .list{border:1px solid var(--line);border-radius:12px;padding:10px;background:#06162b}
+    .list ul{margin:0;padding-left:18px}
+    .list li{margin:4px 0}
+  </style>
 </head>
 <body>
-  <header>TESOURA - BANCO DE DADOS</header>
-
-  <div class="printbar" style="text-align:right; padding:4px 16px 0 16px;">
-    <button class="btn-sec" onclick="window.print()">IMPRIMIR / BAIXAR PAINEL</button>
-  </div>
+  <header>TESOURA - BANCO DE DADOS (GUARDIÃO)</header>
 
   <div class="container">
 
     <div class="painel">
-      <h2>Selecionar tabela</h2>
+      <h3 class="titulo">CONSULTAR ARQUIVOS</h3>
+
       <div class="row">
-        <select id="tabela" class="small">
-          <option value="jogadores">JOGADORES</option>
-          <option value="controle_geral">CONTROLE GERAL</option>
-            <option value="mensalidades">MENSALIDADES</option>
-          <option value="caixa">CAIXA</option>
-          <option value="presencas">PRESENÇAS</option>
-          <option value="escalacao">ESCALAÇÃO</option>
-          <option value="gols">GOLS</option>
-        </select>
+        <div>
+          <label>PAINEL / ARQUIVO</label><br/>
+          <select id="selPainel"></select>
+        </div>
 
-        <input id="filtroData" class="small" type="date" />
-        <input id="filtroMes" class="small" type="text" placeholder="MÊS (ex: 12)" />
-        <input id="filtroAno" class="small" type="text" placeholder="ANO (ex: 2025)" />
+        <div>
+          <label>PERÍODO</label><br/>
+          <select id="selPeriodo" class="small"></select>
+        </div>
 
-        <button id="btnCarregar" class="btn-ok">CARREGAR</button>
-        <button id="btnLimpar" class="btn-warn">LIMPAR FILTROS</button>
+        <div id="boxDomingo" style="display:none">
+          <label>DOMINGO (DATA DO JOGO)</label><br/>
+          <input id="inpDomingo" class="date" type="date"/>
+        </div>
+
+        <div id="boxMesAno" style="display:none">
+          <label>MÊS</label><br/>
+          <input id="inpMes" class="small" type="number" min="1" max="12" placeholder="12"/>
+        </div>
+
+        <div id="boxAno" style="display:none">
+          <label>ANO</label><br/>
+          <input id="inpAno" class="small" type="number" min="2020" max="2100" placeholder="2025"/>
+        </div>
+
+        <button id="btnCarregar" class="btn btn-ok">CARREGAR</button>
+        <button id="btnLimpar" class="btn btn-warn">LIMPAR</button>
+
+        <span class="muted" id="hint"></span>
       </div>
 
       <div id="status" class="status"></div>
-      <div id="erroBox" class="erroBox"></div>
+      <div id="erro" class="erro"></div>
     </div>
 
     <div class="painel">
-      <h2>Registros</h2>
-      <div class="scroll">
-        <table>
-          <thead id="thead"></thead>
-          <tbody id="tbody"></tbody>
-        </table>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <h3 class="titulo" style="margin:0">RESULTADO</h3>
+          <div class="muted" id="meta"></div>
+        </div>
+        <div class="tools">
+          <button id="btnPdf" class="btn btn-sec" disabled>BAIXAR PDF</button>
+          <button id="btnCsv" class="btn btn-sec" disabled>BAIXAR CSV</button>
+          <button id="btnXlsx" class="btn btn-sec" disabled>BAIXAR EXCEL</button>
+        </div>
       </div>
-    </div>
 
-    <div class="painel">
-      <h2>Editar (linha selecionada)</h2>
-      <div class="row">
-        <input id="editJson" class="grow" placeholder='Cole aqui o JSON da linha' />
-        <button id="btnSalvarEdicao" class="btn-ok actions">SALVAR EDIÇÃO</button>
-        <button id="btnCancelarEdicao" class="btn-warn actions">CANCELAR</button>
-      </div>
-      <div class="status" id="statusEdit"></div>
+      <div id="render"></div>
     </div>
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+/** ===== CONFIG SUPABASE ===== */
+const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const elTabela = document.getElementById("tabela");
-    const elAno = document.getElementById("filtroAno");
-    const elMes = document.getElementById("filtroMes");
-    const elData = document.getElementById("filtroData");
-    function lerFiltrosAtuais(painel) {
-  const ano = (anoEl && anoEl.value) ? String(anoEl.value).trim() : "";
-  const mes = (mesEl && mesEl.value) ? String(mesEl.value).trim() : "";
-  const domingo = (domingoEl && domingoEl.value) ? String(domingoEl.value).trim() : "";
-  return { ano, mes, domingo };
-}
-
-async function carregarAoVivo(painel, filtros) {
-  const p = (painel || "").toUpperCase();
-
-  // Tabelas do Supabase (nomes reais)
-  const MAP = {
-    "JOGADORES": "jogadores",
-    "PRESENCA": "presencas",
-    "PRESENÇA": "presencas",
-    "ESCALACAO": "escalacao",
-    "ESCALAÇÃO": "escalacao",
-    "CONTROLE_GERAL": "controle_geral",
-    "MENSALIDADE": "mensalidades",
-    "CAIXA": "caixa",
-    "GOLS": "gols"
-  };
-
-  const table = MAP[p] || null;
-  if (!table) throw new Error("Tabela não reconhecida: " + painel);
-
-  let q = supabase.from(table).select("*");
-
-  // Filtros por painel
-  if (table === "presencas" || table === "escalacao") {
-    // precisa do DOMINGO (data do jogo)
-    if (!filtros.domingo) throw new Error("Escolha o DOMINGO no filtro.");
-    q = q.eq("data_jogo", filtros.domingo);
-  }
-
-  if (table === "mensalidades" || table === "caixa" || table === "controle_geral") {
-    // filtro por mês (quando existir)
-    if (filtros.mes) {
-      // coluna mes_ref no formato YYYY-MM (se não existir, o filtro é ignorado)
-      q = q.eq("mes_ref", filtros.ano + "-" + String(filtros.mes).padStart(2, "0"));
-    }
-  }
-
-  // Ordenação padrão
-  if (table === "jogadores") q = q.order("apelido", { ascending: true });
-  if (table === "gols") q = q.order("gols", { ascending: false });
-  if (table === "presencas") q = q.order("ordem", { ascending: true });
-
-  const { data, error } = await q.limit(500);
-  if (error) throw error;
-  return data || [];
-}
-
-function renderAoVivo(rows, painel) {
-  if (!rows || rows.length === 0) {
-    registrosEl.innerHTML = '<div style="padding:10px;color:#fff;">Nenhum registro encontrado.</div>';
-    return;
-  }
-
-  const cols = Object.keys(rows[0]);
-  let html = '<div style="overflow:auto;max-height:520px;"><table class="tbl">';
-  html += "<thead><tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr></thead>";
-  html += "<tbody>";
-  for (const r of rows) {
-    html += "<tr>" + cols.map(c => `<td>${(r[c] ?? "")}</td>`).join("") + "</tr>";
-  }
-  html += "</tbody></table></div>";
-  registrosEl.innerHTML = html;
-}
-
-function renderArquivos(arquivos, painel) {
-  // Mostra o arquivo mais recente
-  const arq = arquivos[0];
-  let conteudo = arq.conteudo_json;
-
-  try {
-    if (typeof conteudo === "string") conteudo = JSON.parse(conteudo);
-  } catch (_) {}
-
-  // Se tiver rows dentro
-  const rows = Array.isArray(conteudo) ? conteudo : (conteudo && conteudo.rows ? conteudo.rows : null);
-
-  if (rows && Array.isArray(rows) && rows.length > 0) {
-    renderAoVivo(rows, painel);
-    return;
-  }
-
-  // Fallback: lista arquivos
-  let html = '<div style="padding:10px;color:#fff;">Arquivos arquivados encontrados, mas sem conteúdo para exibir.</div>';
-  html += '<div style="padding:10px;color:#fff;">Arquivos:</div>';
-  html += '<ul style="padding-left:20px;color:#fff;">';
-  for (const a of arquivos) {
-    html += `<li>${a.created_at || ""} — ${a.painel || ""} — ${a.periodo || ""} — ${a.data_ref || ""}</li>`;
-  }
-  html += "</ul>";
-  registrosEl.innerHTML = html;
-}
-
+/** ===== DOM ===== */
+const selPainel = document.getElementById("selPainel");
+const selPeriodo = document.getElementById("selPeriodo");
+const boxDomingo = document.getElementById("boxDomingo");
+const boxMesAno = document.getElementById("boxMesAno");
+const boxAno = document.getElementById("boxAno");
+const inpDomingo = document.getElementById("inpDomingo");
+const inpMes = document.getElementById("inpMes");
+const inpAno = document.getElementById("inpAno");
 const btnCarregar = document.getElementById("btnCarregar");
-    const btnLimpar = document.getElementById("btnLimpar");
-    const status = document.getElementById("status");
-    const thead = document.getElementById("thead");
-    const tbody = document.getElementById("tbody");
+const btnLimpar = document.getElementById("btnLimpar");
+const statusEl = document.getElementById("status");
+const erroEl = document.getElementById("erro");
+const hintEl = document.getElementById("hint");
+const metaEl = document.getElementById("meta");
+const renderEl = document.getElementById("render");
+const btnPdf = document.getElementById("btnPdf");
+const btnCsv = document.getElementById("btnCsv");
+const btnXlsx = document.getElementById("btnXlsx");
 
-    // Ano padrão = ano vigente
-    const anoVigente = new Date().getFullYear();
-    if(elAno){ elAno.value = String(anoVigente); }
+/** ===== ESTADO ===== */
+let ultimoArquivo = null; // registro de arquivos_app
+let ultimaTabelaParaExport = null; // {headers, rows}
 
-    function setStatus(msg){
-      if(status) status.textContent = msg || "";
-    }
+/** ===== HELPERS ===== */
+function setStatus(msg, ok=true){
+  statusEl.textContent = msg || "";
+  statusEl.style.color = ok ? "var(--ok)" : "var(--warn)";
+}
+function setErro(msg){
+  erroEl.textContent = msg || "";
+}
+function limparResultado(){
+  ultimoArquivo = null;
+  ultimaTabelaParaExport = null;
+  metaEl.textContent = "";
+  renderEl.innerHTML = "";
+  btnPdf.disabled = true;
+  btnCsv.disabled = true;
+  btnXlsx.disabled = true;
+}
+function pad2(n){ return String(n).padStart(2,"0"); }
+function hojeAno(){
+  const d = new Date();
+  return d.getFullYear();
+}
+function baixarBlob(blob, nome){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function tableFromArray(headers, rows){
+  const thead = "<thead><tr>" + headers.map(h=>`<th>${h}</th>`).join("") + "</tr></thead>";
+  const tbody = "<tbody>" + rows.map(r=>"<tr>"+r.map(c=>`<td>${c ?? ""}</td>`).join("")+"</tr>").join("") + "</tbody>";
+  return `<table>${thead}${tbody}</table>`;
+}
 
-    function limparTabela(){
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
-      setStatus("");
-    }
+/** ===== UI FILTROS ===== */
+function aplicarUIFiltros(){
+  const periodo = selPeriodo.value;
 
-    function mostrarFiltro(){
-      const t = elTabela.value;
+  // esconde tudo
+  boxDomingo.style.display = "none";
+  boxMesAno.style.display = "none";
+  boxAno.style.display = "none";
+  hintEl.textContent = "";
 
-      // Padrão: esconder tudo
-      elAno.style.display = "none";
-      elMes.style.display = "none";
-      elData.style.display = "none";
+  if(periodo === "unico"){
+    hintEl.textContent = "Sem filtro.";
+  }
+  else if(periodo === "semanal"){
+    boxDomingo.style.display = "";
+    hintEl.textContent = "Escolha o domingo do jogo (data).";
+  }
+  else if(periodo === "mensal"){
+    boxMesAno.style.display = "";
+    boxAno.style.display = "";
+    hintEl.textContent = "Digite MÊS e ANO.";
+  }
+  else if(periodo === "anual"){
+    boxAno.style.display = "";
+    hintEl.textContent = "Digite o ANO.";
+  }
+}
 
-      // Jogadores / Gols: sem filtro
-      if(t === "jogadores" || t === "gols"){
-        return;
-      }
+/** ===== CARREGAR LISTA DE PAINÉIS ===== */
+async function carregarOpcoes(){
+  setErro("");
+  setStatus("Carregando opções...");
+  limparResultado();
 
-      // Presenças / Escalação: filtro por DOMINGO (data)
-      if(t === "presencas" || t === "escalacao"){
-        elAno.style.display = "";
-        elData.style.display = "";
-        elAno.value = String(anoVigente);
-        return;
-      }
+  // pegar painéis existentes
+  const { data: paineis, error } = await supabase
+    .from("arquivos_app")
+    .select("painel")
+    .order("painel", { ascending: true });
 
-      // Mensalidades / Caixa / Controle Geral: filtro por MÊS
-      if(t === "mensalidades" || t === "caixa" || t === "controle_geral"){
-        elAno.style.display = "";
-        elMes.style.display = "";
-        elAno.value = String(anoVigente);
-        if(!elMes.value) elMes.value = String(new Date().getMonth()+1);
-        return;
-      }
-    }
+  if(error){
+    setErro("Erro ao listar painéis no Banco de Dados.");
+    console.error(error);
+    setStatus("", true);
+    return;
+  }
 
-    async function carregar() {
-  try {
-    statusEl.textContent = "Carregando...";
-    registrosEl.innerHTML = "";
+  const uniq = Array.from(new Set((paineis||[]).map(x=>x.painel))).filter(Boolean);
+  selPainel.innerHTML = uniq.map(p=>`<option value="${p}">${p.toUpperCase()}</option>`).join("");
 
-    const painel = (tabelaEl.value || "").trim();
+  // carregar períodos do primeiro painel
+  await carregarPeriodosDoPainel();
+  setStatus("Pronto.");
+}
 
-    // 1) Tenta carregar do ARQUIVO (tabela arquivos_app)
-    const filtros = lerFiltrosAtuais(painel);
-    const { data: arquivos, error: errArq } = await supabase
-      .from("arquivos_app")
-      .select("id,painel,periodo,data_ref,conteudo_json,created_at")
-      .eq("painel", painel)
-      .order("created_at", { ascending: false })
-      .limit(50);
+async function carregarPeriodosDoPainel(){
+  setErro("");
+  limparResultado();
 
-    if (errArq) {
-      console.error(errArq);
-    }
+  const painel = selPainel.value;
+  if(!painel){
+    selPeriodo.innerHTML = "";
+    aplicarUIFiltros();
+    return;
+  }
 
-    if (arquivos && arquivos.length > 0) {
-      // Mostra os arquivos arquivados
-      renderArquivos(arquivos, painel);
-      statusEl.textContent = `Encontrado(s) ${arquivos.length} arquivo(s) arquivado(s).`;
+  const { data, error } = await supabase
+    .from("arquivos_app")
+    .select("periodo")
+    .eq("painel", painel)
+    .order("periodo", { ascending: true });
+
+  if(error){
+    setErro("Erro ao listar períodos.");
+    console.error(error);
+    return;
+  }
+
+  const uniq = Array.from(new Set((data||[]).map(x=>x.periodo))).filter(Boolean);
+  selPeriodo.innerHTML = uniq.map(p=>`<option value="${p}">${p.toUpperCase()}</option>`).join("");
+
+  // defaults
+  inpAno.value = hojeAno();
+  inpMes.value = "";
+  inpDomingo.value = "";
+  aplicarUIFiltros();
+}
+
+/** ===== CONSULTA NO BANCO (arquivos_app) ===== */
+async function carregarArquivo(){
+  setErro("");
+  setStatus("Carregando...");
+  limparResultado();
+
+  const painel = selPainel.value;
+  const periodo = selPeriodo.value;
+
+  if(!painel || !periodo){
+    setErro("Selecione PAINEL e PERÍODO.");
+    setStatus("", true);
+    return;
+  }
+
+  let query = supabase
+    .from("arquivos_app")
+    .select("*")
+    .eq("painel", painel)
+    .eq("periodo", periodo);
+
+  // filtros por período
+  if(periodo === "semanal"){
+    const dom = String(inpDomingo.value || "").trim();
+    if(!dom){
+      setErro("Selecione a DATA (domingo).");
+      setStatus("", true);
       return;
     }
-
-    // 2) Se NÃO existir arquivo arquivado, carrega direto da tabela do painel (modo "ao vivo")
-    statusEl.textContent = "Sem arquivo arquivado. Carregando dados do painel (ao vivo)...";
-    const live = await carregarAoVivo(painel, filtros);
-    renderAoVivo(live, painel);
-    statusEl.textContent = "Dados carregados (ao vivo).";
-  } catch (e) {
-    console.error(e);
-    statusEl.textContent = "Erro ao carregar.";
-    registrosEl.innerHTML = `<div style="padding:10px;color:#ff5555;font-weight:700;">ERRO: ${String(e.message || e)}</div>`;
+    query = query.eq("data_ref", dom);
   }
+  if(periodo === "mensal"){
+    const mes = String(inpMes.value || "").trim();
+    const ano = String(inpAno.value || "").trim();
+    if(!mes || !ano){
+      setErro("Digite MÊS e ANO.");
+      setStatus("", true);
+      return;
+    }
+    query = query.eq("mes_ref", Number(mes)).eq("ano_ref", Number(ano));
+  }
+  if(periodo === "anual"){
+    const ano = String(inpAno.value || "").trim();
+    if(!ano){
+      setErro("Digite o ANO.");
+      setStatus("", true);
+      return;
+    }
+    query = query.eq("ano_ref", Number(ano));
+  }
+
+  // sempre pegar o último gravado
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(1);
+
+  if(error){
+    setErro("Erro ao carregar arquivo do Banco de Dados.");
+    console.error(error);
+    setStatus("", true);
+    return;
+  }
+  if(!data || data.length === 0){
+    setErro("Nenhum arquivo encontrado para este filtro.");
+    setStatus("", true);
+    return;
+  }
+
+  ultimoArquivo = data[0];
+  renderArquivo(ultimoArquivo);
+  setStatus("Carregado ✅");
 }
 
-    function renderTabela(rows){
-      limparTabela();
-      if(!rows || rows.length === 0){
-        setStatus("Sem registros.");
-        return;
-      }
+/** ===== RENDER ===== */
+function renderArquivo(arq){
+  const painel = arq.painel;
+  const periodo = arq.periodo;
+  const titulo = arq.titulo || "";
+  const criado = arq.created_at ? new Date(arq.created_at) : null;
+  const criadoStr = criado ? (criado.toLocaleString("pt-BR")) : "";
 
-      const cols = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
-      thead.innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
-      tbody.innerHTML = rows.map(r => "<tr>" + cols.map(c => `<td>${(r[c] ?? "")}</td>`).join("") + "</tr>").join("");
-    }
+  metaEl.innerHTML = `
+    <span class="chip">${(painel||"").toUpperCase()}</span>
+    <span class="chip">${(periodo||"").toUpperCase()}</span>
+    ${arq.data_ref ? `<span class="chip">DATA: ${arq.data_ref}</span>` : ""}
+    ${(arq.mes_ref && arq.ano_ref) ? `<span class="chip">MÊS: ${pad2(arq.mes_ref)}/${arq.ano_ref}</span>` : ""}
+    ${(!arq.mes_ref && arq.ano_ref) ? `<span class="chip">ANO: ${arq.ano_ref}</span>` : ""}
+    ${criadoStr ? `<span class="chip">SALVO: ${criadoStr}</span>` : ""}
+    ${titulo ? `<span class="chip">${titulo}</span>` : ""}
+  `;
 
-    elTabela.addEventListener("change", () => { mostrarFiltro(); limparTabela(); });
-    btnCarregar.addEventListener("click", carregar);
-    btnLimpar.addEventListener("click", () => { limparTabela(); });
+  const c = arq.conteudo || {};
+  // Regras de exibição por painel conhecido
+  if(painel === "jogadores" && Array.isArray(c.rows)){
+    renderTabelaGenerica("Jogadores (vigente)", c.rows);
+    return;
+  }
+  if(painel === "presenca" && Array.isArray(c.presentes)){
+    renderTabelaPresenca(c);
+    return;
+  }
+  if(painel === "escalacao" && (c.escala1 || c.escala2)){
+    renderEscalacao(c);
+    return;
+  }
 
-    // Inicial
-    mostrarFiltro();
-    limparTabela();
-  </script>
+  // fallback: mostrar JSON em tabela simples (1 coluna)
+  const jsonTxt = JSON.stringify(c, null, 2);
+  ultimaTabelaParaExport = { headers:["CONTEÚDO (JSON)"], rows: [[jsonTxt]] };
+  renderEl.innerHTML = `<div class="muted">Conteúdo em formato JSON:</div>` + tableFromArray(["CONTEÚDO (JSON)"], [[`<pre style="white-space:pre-wrap;margin:0">${escapeHtml(jsonTxt)}</pre>`]]);
+  habilitarExport("conteudo_json");
+}
+
+function renderTabelaGenerica(titulo, rows){
+  // escolher colunas por union de chaves (limitado)
+  const keys = Array.from(new Set(rows.flatMap(r=>Object.keys(r||{}))));
+
+  // prioridade
+  const prioridade = ["id","camisa","apelido","nome","data_nasc","idade","celular","posicao","hab","vel","mov","pontos"];
+  const headers = [];
+  prioridade.forEach(k=>{ if(keys.includes(k)) headers.push(k.toUpperCase()); });
+  keys.forEach(k=>{ if(!prioridade.includes(k)) headers.push(k.toUpperCase()); });
+
+  const body = rows.map(r=>{
+    return headers.map(h=>{
+      const k = h.toLowerCase();
+      let v = r[k];
+      if(v === null || v === undefined) return "";
+      return String(v);
+    });
+  });
+
+  ultimaTabelaParaExport = { headers, rows: body };
+  renderEl.innerHTML = `<div class="sec-title">${titulo}</div>` + tableFromArray(headers, body.map(row=>row.map(escapeHtml)));
+  habilitarExport(titulo.toLowerCase().replaceAll(" ","_"));
+}
+
+function renderTabelaPresenca(c){
+  const headers = ["APELIDO","CHEGADA","VAI JOGAR","SAIU 1T","OBS","PONTOS"];
+  const rows = (c.presentes||[]).map(p=>[
+    p.apelido ?? "",
+    p.horaChegada ?? "",
+    (p.vaiJogar ? "SIM" : "NÃO"),
+    (p.saiu ? "SIM" : "NÃO"),
+    p.obs ?? "",
+    (p.pontos ?? "")
+  ]);
+
+  ultimaTabelaParaExport = { headers, rows };
+  renderEl.innerHTML = `<div class="sec-title">Presença (${c.data_jogo || ""})</div>` + tableFromArray(headers, rows.map(r=>r.map(escapeHtml)));
+  habilitarExport("presenca");
+}
+
+function renderEscalacao(c){
+  const e1 = c.escala1 || { amarelo:[], azul:[] };
+  const e2 = c.escala2 || { amarelo:[], azul:[] };
+
+  // para export, criar tabela combinada (Time / 1T / 2T)
+  const max = Math.max(e1.amarelo.length, e1.azul.length, e2.amarelo.length, e2.azul.length);
+  const headers = ["TIME","1º TEMPO","2º TEMPO"];
+  const rows = [];
+
+  for(let i=0;i<max;i++){
+    rows.push(["AMARELO",
+      (e1.amarelo[i]?.apelido || ""),
+      (e2.amarelo[i]?.apelido || "")
+    ]);
+    rows.push(["AZUL",
+      (e1.azul[i]?.apelido || ""),
+      (e2.azul[i]?.apelido || "")
+    ]);
+  }
+
+  // render visual em 2 colunas
+  const listHtml = `
+    <div class="sec-title">Escalação (${c.data_jogo || ""})</div>
+    <div class="grid2">
+      <div class="list">
+        <div class="muted"><b>1º TEMPO</b></div>
+        <div class="sec-title" style="margin-top:6px">AMARELO</div>
+        <ul>${(e1.amarelo||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
+        <div class="sec-title">AZUL</div>
+        <ul>${(e1.azul||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
+      </div>
+      <div class="list">
+        <div class="muted"><b>2º TEMPO</b></div>
+        <div class="sec-title" style="margin-top:6px">AMARELO</div>
+        <ul>${(e2.amarelo||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
+        <div class="sec-title">AZUL</div>
+        <ul>${(e2.azul||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
+      </div>
+    </div>
+    <div style="margin-top:12px" class="muted">Para exportar (PDF/Excel/CSV) será usada uma tabela combinada.</div>
+  `;
+
+  ultimaTabelaParaExport = { headers, rows };
+  renderEl.innerHTML = listHtml;
+  habilitarExport("escalacao");
+}
+
+function habilitarExport(prefix){
+  btnPdf.disabled = false;
+  btnCsv.disabled = false;
+  btnXlsx.disabled = false;
+
+  btnPdf.onclick = ()=>exportarPDF(prefix);
+  btnCsv.onclick = ()=>exportarCSV(prefix);
+  btnXlsx.onclick = ()=>exportarXLSX(prefix);
+}
+
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/** ===== EXPORT ===== */
+function nomeBase(prefix){
+  const p = (ultimoArquivo?.painel || prefix || "arquivo").toString().replaceAll(" ","_");
+  const per = (ultimoArquivo?.periodo || "periodo").toString();
+  const tag = ultimoArquivo?.data_ref ? ultimoArquivo.data_ref : (ultimoArquivo?.mes_ref ? `${pad2(ultimoArquivo.mes_ref)}-${ultimoArquivo.ano_ref}` : (ultimoArquivo?.ano_ref ? `${ultimoArquivo.ano_ref}` : "vigente"));
+  return `TESOURA_${p}_${per}_${tag}`;
+}
+
+function exportarCSV(prefix){
+  if(!ultimaTabelaParaExport){ return; }
+  const { headers, rows } = ultimaTabelaParaExport;
+  const csv = [
+    headers.join(";"),
+    ...rows.map(r=>r.map(v=>String(v ?? "").replaceAll("\n"," ").replaceAll(";"," , ")).join(";"))
+  ].join("\n");
+  baixarBlob(new Blob([csv], {type:"text/csv;charset=utf-8"}), nomeBase(prefix)+".csv");
+}
+
+function exportarXLSX(prefix){
+  if(!ultimaTabelaParaExport){ return; }
+  const { headers, rows } = ultimaTabelaParaExport;
+  const data = [headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "TESOURA");
+  const out = XLSX.write(wb, { bookType:"xlsx", type:"array" });
+  baixarBlob(new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), nomeBase(prefix)+".xlsx");
+}
+
+function exportarPDF(prefix){
+  if(!ultimaTabelaParaExport){ return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:"portrait", unit:"pt", format:"a4" });
+
+  const titulo = (ultimoArquivo?.titulo || "TESOURA").toString();
+  doc.setFontSize(12);
+  doc.text(titulo, 40, 40);
+
+  const { headers, rows } = ultimaTabelaParaExport;
+  doc.autoTable({
+    startY: 60,
+    head: [headers],
+    body: rows,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [249,115,22] } // cor abóbora
+  });
+
+  doc.save(nomeBase(prefix)+".pdf");
+}
+
+/** ===== EVENTOS ===== */
+selPainel.addEventListener("change", carregarPeriodosDoPainel);
+selPeriodo.addEventListener("change", aplicarUIFiltros);
+btnCarregar.addEventListener("click", carregarArquivo);
+btnLimpar.addEventListener("click", ()=>{
+  inpDomingo.value = "";
+  inpMes.value = "";
+  inpAno.value = hojeAno();
+  setErro("");
+  setStatus("");
+  limparResultado();
+});
+
+/** ===== START ===== */
+carregarOpcoes();
+</script>
+
 </body>
 </html>
