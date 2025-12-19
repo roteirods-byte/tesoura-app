@@ -3,579 +3,428 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>TESOURA - BANCO DE DADOS</title>
+  <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
+  <style>
+    :root{
+      --bg:#061424;
+      --panel:#071c33;
+      --line:#0f2c4a;
+      --txt:#e9f2ff;
+      --pumpkin:#ff7a1a;
+      --ok:#27d07d;
+      --warn:#ffb020;
+      --btn:#8ad0ff;
+      --btnTxt:#052033;
+    }
+    html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--txt);}
+    .wrap{max-width:1180px;margin:0 auto;padding:18px;}
+    h1{margin:0 0 14px 0;font-size:18px;color:var(--pumpkin);letter-spacing:.5px;}
+    .card{background:linear-gradient(180deg,var(--panel),#061528);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);margin-bottom:14px;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    label{font-size:12px;color:#cfe4ff}
+    select,input{height:34px;border-radius:9px;border:1px solid #204a73;background:#041021;color:var(--txt);padding:0 10px;min-width:220px;outline:none}
+    .btn{height:34px;border-radius:9px;border:0;padding:0 14px;font-weight:700;cursor:pointer}
+    .btn-ok{background:var(--ok);color:#052033}
+    .btn-warn{background:var(--warn);color:#052033}
+    .btn-blue{background:var(--btn);color:var(--btnTxt)}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .status{margin-top:10px;font-size:12px;color:#cfe4ff}
+    .status b{color:var(--pumpkin)}
+    .box{margin-top:12px;border:1px dashed #2a5b86;border-radius:12px;padding:12px;min-height:70px;background:rgba(0,0,0,.15)}
+    .k{color:var(--pumpkin);font-weight:700}
+    .muted{opacity:.85}
+    .small{font-size:12px}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:980px){.grid{grid-template-columns:1fr 1fr}}
+    .err{color:#ff6b6b}
+    .ok{color:#76ffb0}
+  </style>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Export (PDF / Excel) -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
+  <!-- CSV/Excel/PDF libs (only used on download) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <style>
-    :root{
-      --bg:#071426;
-      --card:#0b1f3a;
-      --line:#163a63;
-      --text:#e5e7eb;
-      --muted:#9ca3af;
-      --accent:#f97316; /* abóbora */
-      --ok:#22c55e;
-      --warn:#f59e0b;
-      --danger:#ef4444;
-      --btn:#60a5fa;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    header{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:800;letter-spacing:.5px;color:var(--accent)}
-    .container{max-width:1200px;margin:0 auto;padding:14px}
-    .painel{background:linear-gradient(180deg,#071426 0%, #081a33 50%, #071426 100%);
-      border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0;box-shadow:0 10px 24px rgba(0,0,0,.25)}
-    .titulo{color:var(--accent);font-weight:900;margin:0 0 10px 0}
-    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
-    label{font-size:12px;color:var(--muted);font-weight:700}
-    select,input{height:34px;border-radius:10px;border:1px solid var(--line);background:#06162b;color:var(--text);padding:6px 10px}
-    select{min-width:220px}
-    input.small{width:120px}
-    input.date{width:170px}
-    .btn{height:34px;border-radius:10px;border:0;padding:0 12px;font-weight:800;cursor:pointer}
-    .btn-ok{background:var(--ok);color:#05210e}
-    .btn-warn{background:var(--warn);color:#2b1b00}
-    .btn-sec{background:var(--btn);color:#071426}
-    .btn-danger{background:var(--danger);color:#2b0606}
-    .status{margin-top:10px;font-weight:800}
-    .muted{color:var(--muted);font-weight:700;font-size:12px}
-    .erro{margin-top:10px;color:#fecaca;font-weight:800}
-    .tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    th,td{border-bottom:1px solid #102d4d;padding:8px 8px;text-align:left;vertical-align:top}
-    th{color:var(--accent);font-weight:900}
-    .chip{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-weight:800;color:var(--text);background:#06162b}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width: 900px){ .grid2{grid-template-columns:1fr} select{min-width:100%} }
-    .sec-title{margin:10px 0 6px 0;color:var(--accent);font-weight:900}
-    .list{border:1px solid var(--line);border-radius:12px;padding:10px;background:#06162b}
-    .list ul{margin:0;padding-left:18px}
-    .list li{margin:4px 0}
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
+
 <body>
-  <header>TESOURA - BANCO DE DADOS (GUARDIÃO)</header>
+  <div class="wrap">
+    <h1>TESOURA - BANCO DE DADOS (GUARDIÃO)</h1>
 
-  <div class="container">
-
-    <div class="painel">
-      <h3 class="titulo">CONSULTAR ARQUIVOS</h3>
-
+    <div class="card">
       <div class="row">
         <div>
           <label>PAINEL / ARQUIVO</label><br/>
-          <select id="selPainel"></select>
+          <select id="selPainel">
+            <option value="">Carregando...</option>
+          </select>
         </div>
 
         <div>
           <label>PERÍODO</label><br/>
-          <select id="selPeriodo" class="small"></select>
+          <select id="selPeriodo" disabled>
+            <option value="">Selecione o painel</option>
+          </select>
         </div>
 
-        <div id="boxDomingo" style="display:none">
-          <label>DOMINGO (DATA DO JOGO)</label><br/>
-          <input id="inpDomingo" class="date" type="date"/>
-        </div>
-
-        <div id="boxMesAno" style="display:none">
-          <label>MÊS</label><br/>
-          <input id="inpMes" class="small" type="number" min="1" max="12" placeholder="12"/>
-        </div>
-
-        <div id="boxAno" style="display:none">
-          <label>ANO</label><br/>
-          <input id="inpAno" class="small" type="number" min="2020" max="2100" placeholder="2025"/>
-        </div>
-
-        <button id="btnCarregar" class="btn btn-ok">CARREGAR</button>
-        <button id="btnLimpar" class="btn btn-warn">LIMPAR</button>
-
-        <span class="muted" id="hint"></span>
-      </div>
-
-      <div id="status" class="status"></div>
-      <div id="erro" class="erro"></div>
-    </div>
-
-    <div class="painel">
-      <div class="row" style="justify-content:space-between;align-items:center">
         <div>
-          <h3 class="titulo" style="margin:0">RESULTADO</h3>
-          <div class="muted" id="meta"></div>
-        </div>
-        <div class="tools">
-          <button id="btnPdf" class="btn btn-sec" disabled>BAIXAR PDF</button>
-          <button id="btnCsv" class="btn btn-sec" disabled>BAIXAR CSV</button>
-          <button id="btnXlsx" class="btn btn-sec" disabled>BAIXAR EXCEL</button>
+          <label class="muted">AÇÕES</label><br/>
+          <button class="btn btn-ok" id="btnCarregar">CARREGAR</button>
+          <button class="btn btn-warn" id="btnLimpar">LIMPAR</button>
         </div>
       </div>
 
-      <div id="render"></div>
-    </div>
+      <div class="status" id="status">
+        <span class="muted">Status:</span> <b>iniciando…</b>
+      </div>
 
+      <div class="box" id="boxResultado">
+        <span class="muted">RESULTADO: carregue um arquivo.</span>
+      </div>
+
+      <div class="row" style="justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-blue" id="btnPdf" disabled>BAIXAR PDF</button>
+        <button class="btn btn-blue" id="btnCsv" disabled>BAIXAR CSV</button>
+        <button class="btn btn-blue" id="btnXlsx" disabled>BAIXAR EXCEL</button>
+      </div>
+
+      <div class="small muted" style="margin-top:10px">
+        Banco de Dados é <span class="k">somente leitura</span>: não edita, não salva e não exclui.
+      </div>
+    </div>
   </div>
 
 <script>
-(()=>{
-/** ===== CONFIG SUPABASE ===== */
-const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-const supabaseClient = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
-/** ===== DOM ===== */
-const selPainel = document.getElementById("selPainel");
-const selPeriodo = document.getElementById("selPeriodo");
-const boxDomingo = document.getElementById("boxDomingo");
-const boxMesAno = document.getElementById("boxMesAno");
-const boxAno = document.getElementById("boxAno");
-const inpDomingo = document.getElementById("inpDomingo");
-const inpMes = document.getElementById("inpMes");
-const inpAno = document.getElementById("inpAno");
-const btnCarregar = document.getElementById("btnCarregar");
-const btnLimpar = document.getElementById("btnLimpar");
-const statusEl = document.getElementById("status");
-const erroEl = document.getElementById("erro");
+(() => {
+  // === CONFIG (usar as mesmas do seu projeto) ===
+  // Se já existir no window (definido em outro painel), reaproveita.
+  const SUPABASE_URL = window.TESOURA_SUPABASE_URL || "https://xuplzpsipukvtggjtasx.supabase.co";
+  const SUPABASE_ANON = window.TESOURA_SUPABASE_ANON_KEY || "COLE_AQUI_SUA_ANON_KEY_SE_NAO_EXISTIR";
+  // Observação: se seu site já define TESOURA_SUPABASE_URL e TESOURA_SUPABASE_ANON_KEY em outro arquivo,
+  // não precisa mexer aqui. Se não define, cole a ANON KEY correta acima.
 
-window.addEventListener("error", (e) => {
-  try {
-    const msg = (e && e.message) ? e.message : "Erro inesperado no painel.";
-    setErro("ERRO: " + msg);
-    setStatus("");
-  } catch {}
-});
-const hintEl = document.getElementById("hint");
-const metaEl = document.getElementById("meta");
-const renderEl = document.getElementById("render");
-const btnPdf = document.getElementById("btnPdf");
-const btnCsv = document.getElementById("btnCsv");
-const btnXlsx = document.getElementById("btnXlsx");
+  const elPainel = document.getElementById("selPainel");
+  const elPeriodo = document.getElementById("selPeriodo");
+  const elStatus = document.getElementById("status");
+  const elBox = document.getElementById("boxResultado");
 
-/** ===== ESTADO ===== */
-let ultimoArquivo = null; // registro de arquivos_app
-let ultimaTabelaParaExport = null; // {headers, rows}
+  const btnCarregar = document.getElementById("btnCarregar");
+  const btnLimpar = document.getElementById("btnLimpar");
+  const btnPdf = document.getElementById("btnPdf");
+  const btnCsv = document.getElementById("btnCsv");
+  const btnXlsx = document.getElementById("btnXlsx");
 
-/** ===== HELPERS ===== */
-function setStatus(msg, ok=true){
-  statusEl.textContent = msg || "";
-  statusEl.style.color = ok ? "var(--ok)" : "var(--warn)";
-}
-function setErro(msg){
-  erroEl.textContent = msg || "";
-}
-function limparResultado(){
-  ultimoArquivo = null;
-  ultimaTabelaParaExport = null;
-  metaEl.textContent = "";
-  renderEl.innerHTML = "";
-  btnPdf.disabled = true;
-  btnCsv.disabled = true;
-  btnXlsx.disabled = true;
-}
-function pad2(n){ return String(n).padStart(2,"0"); }
-function hojeAno(){
-  const d = new Date();
-  return d.getFullYear();
-}
-function baixarBlob(blob, nome){
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nome;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-function tableFromArray(headers, rows){
-  const thead = "<thead><tr>" + headers.map(h=>`<th>${h}</th>`).join("") + "</tr></thead>";
-  const tbody = "<tbody>" + rows.map(r=>"<tr>"+r.map(c=>`<td>${c ?? ""}</td>`).join("")+"</tr>").join("") + "</tbody>";
-  return `<table>${thead}${tbody}</table>`;
-}
+  // Evita conflito: NÃO use "supabase" como nome global
+  const tesouraSupabase = (window.tesouraSupabaseClient)
+    ? window.tesouraSupabaseClient
+    : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-/** ===== UI FILTROS ===== */
-function aplicarUIFiltros(){
-  const periodo = selPeriodo.value;
+  // Opcional: salva para reaproveitar em outros painéis sem redeclarar
+  window.tesouraSupabaseClient = tesouraSupabase;
 
-  // esconde tudo
-  boxDomingo.style.display = "none";
-  boxMesAno.style.display = "none";
-  boxAno.style.display = "none";
-  hintEl.textContent = "";
+  let loadedRow = null;     // linha carregada de arquivos_app
+  let loadedData = null;    // conteudo (json)
 
-  if(periodo === "unico"){
-    hintEl.textContent = "Sem filtro.";
-  }
-  else if(periodo === "semanal"){
-    boxDomingo.style.display = "";
-    hintEl.textContent = "Escolha o domingo do jogo (data).";
-  }
-  else if(periodo === "mensal"){
-    boxMesAno.style.display = "";
-    boxAno.style.display = "";
-    hintEl.textContent = "Digite MÊS e ANO.";
-  }
-  else if(periodo === "anual"){
-    boxAno.style.display = "";
-    hintEl.textContent = "Digite o ANO.";
-  }
-}
-
-/** ===== CARREGAR LISTA DE PAINÉIS ===== */
-async function carregarOpcoes(){
-  setErro("");
-  setStatus("Carregando opções...");
-  limparResultado();
-
-  // pegar painéis existentes
-  const { data: paineis, error } = await supabaseClient
-    .from("arquivos_app")
-    .select("painel")
-    .order("painel", { ascending: true });
-
-  if(error){
-    setErro("Erro ao listar painéis no Banco de Dados.");
-    console.error(error);
-    setStatus("", true);
-    return;
+  function setStatus(msg, kind="") {
+    const cls = kind === "err" ? "err" : (kind === "ok" ? "ok" : "");
+    elStatus.innerHTML = `<span class="muted">Status:</span> <b class="${cls}">${escapeHtml(msg)}</b>`;
   }
 
-  const uniq = Array.from(new Set((paineis||[]).map(x=>x.painel))).filter(Boolean);
-  selPainel.innerHTML = uniq.map(p=>`<option value="${p}">${p.toUpperCase()}</option>`).join("");
-
-  // carregar períodos do primeiro painel
-  await carregarPeriodosDoPainel();
-  setStatus("Pronto.");
-}
-
-async function carregarPeriodosDoPainel(){
-  setErro("");
-  limparResultado();
-
-  const painel = selPainel.value;
-  if(!painel){
-    selPeriodo.innerHTML = "";
-    aplicarUIFiltros();
-    return;
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, s => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+    }[s]));
   }
 
-  if(!supabaseClient){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
-  const { data, error } = await supabaseClient
-    .from("arquivos_app")
-    .select("periodo")
-    .eq("painel", painel)
-    .order("periodo", { ascending: true });
-
-  if(error){
-    setErro("Erro ao listar períodos.");
-    console.error(error);
-    return;
+  function enableDownloads(on) {
+    btnPdf.disabled = !on;
+    btnCsv.disabled = !on;
+    btnXlsx.disabled = !on;
   }
 
-  const uniq = Array.from(new Set((data||[]).map(x=>x.periodo))).filter(Boolean);
-  selPeriodo.innerHTML = uniq.map(p=>`<option value="${p}">${p.toUpperCase()}</option>`).join("");
-
-  // defaults
-  inpAno.value = hojeAno();
-  inpMes.value = "";
-  inpDomingo.value = "";
-  aplicarUIFiltros();
-}
-
-/** ===== CONSULTA NO BANCO (arquivos_app) ===== */
-async function carregarArquivo(){
-  if(!supabaseClient){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
-
-  setErro("");
-  setStatus("Carregando...");
-  limparResultado();
-
-  const painel = selPainel.value;
-  const periodo = selPeriodo.value;
-
-  if(!painel || !periodo){
-    setErro("Selecione PAINEL e PERÍODO.");
-    setStatus("", true);
-    return;
+  function resetLoaded() {
+    loadedRow = null;
+    loadedData = null;
+    enableDownloads(false);
+    elBox.innerHTML = `<span class="muted">RESULTADO: carregue um arquivo.</span>`;
   }
 
-  let query = supabaseClient
-    .from("arquivos_app")
-    .select("*")
-    .eq("painel", painel)
-    .eq("periodo", periodo);
+  async function loadPainelOptions() {
+    setStatus("carregando lista de painéis…");
+    elPainel.innerHTML = `<option value="">Carregando...</option>`;
+    elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
+    elPeriodo.disabled = true;
 
-  // filtros por período
-  if(periodo === "semanal"){
-    const dom = String(inpDomingo.value || "").trim();
-    if(!dom){
-      setErro("Selecione a DATA (domingo).");
-      setStatus("", true);
+    // Busca painéis existentes
+    const { data, error } = await tesouraSupabase
+      .from("arquivos_app")
+      .select("painel")
+      .order("painel", { ascending: true });
+
+    if (error) {
+      setStatus("Erro ao listar painéis (ver Console).", "err");
+      console.error("[BD] listar painéis:", error);
+      elPainel.innerHTML = `<option value="">(erro)</option>`;
       return;
     }
-    query = query.eq("data_ref", dom);
-  }
-  if(periodo === "mensal"){
-    const mes = String(inpMes.value || "").trim();
-    const ano = String(inpAno.value || "").trim();
-    if(!mes || !ano){
-      setErro("Digite MÊS e ANO.");
-      setStatus("", true);
+
+    const unique = [...new Set((data || []).map(x => x.painel).filter(Boolean))];
+
+    if (!unique.length) {
+      setStatus("Nenhum arquivo salvo no Banco de Dados.", "err");
+      elPainel.innerHTML = `<option value="">(vazio)</option>`;
       return;
     }
-    query = query.eq("mes_ref", Number(mes)).eq("ano_ref", Number(ano));
+
+    elPainel.innerHTML = `<option value="">Selecione…</option>` + unique.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+    setStatus("pronto. selecione um painel.");
   }
-  if(periodo === "anual"){
-    const ano = String(inpAno.value || "").trim();
-    if(!ano){
-      setErro("Digite o ANO.");
-      setStatus("", true);
+
+  async function loadPeriodoOptions(painel) {
+    resetLoaded();
+    elPeriodo.disabled = true;
+    elPeriodo.innerHTML = `<option value="">Carregando…</option>`;
+    setStatus("carregando períodos…");
+
+    const { data, error } = await tesouraSupabase
+      .from("arquivos_app")
+      .select("periodo")
+      .eq("painel", painel)
+      .order("periodo", { ascending: true });
+
+    if (error) {
+      setStatus("Erro ao listar períodos (ver Console).", "err");
+      console.error("[BD] listar períodos:", error);
+      elPeriodo.innerHTML = `<option value="">(erro)</option>`;
       return;
     }
-    query = query.eq("ano_ref", Number(ano));
+
+    const unique = [...new Set((data || []).map(x => x.periodo).filter(Boolean))];
+
+    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + unique.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+    elPeriodo.disabled = false;
+    setStatus("pronto. selecione o período e clique CARREGAR.");
   }
 
-  // sempre pegar o último gravado
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(1);
-
-  if(error){
-    setErro("Erro ao carregar arquivo do Banco de Dados.");
-    console.error(error);
-    setStatus("", true);
-    return;
-  }
-  if(!data || data.length === 0){
-    setErro("Nenhum arquivo encontrado para este filtro.");
-    setStatus("", true);
-    return;
+  function buildFileNameBase() {
+    const p = elPainel.value || "arquivo";
+    const per = elPeriodo.value || "periodo";
+    const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+    return `tesoura_${p}_${per}_${stamp}`.toLowerCase();
   }
 
-  ultimoArquivo = data[0];
-  renderArquivo(ultimoArquivo);
-  setStatus("Carregado ✅");
-}
-
-/** ===== RENDER ===== */
-function renderArquivo(arq){
-  const painel = arq.painel;
-  const periodo = arq.periodo;
-  const titulo = arq.titulo || "";
-  const criado = arq.created_at ? new Date(arq.created_at) : null;
-  const criadoStr = criado ? (criado.toLocaleString("pt-BR")) : "";
-
-  metaEl.innerHTML = `
-    <span class="chip">${(painel||"").toUpperCase()}</span>
-    <span class="chip">${(periodo||"").toUpperCase()}</span>
-    ${arq.data_ref ? `<span class="chip">DATA: ${arq.data_ref}</span>` : ""}
-    ${(arq.mes_ref && arq.ano_ref) ? `<span class="chip">MÊS: ${pad2(arq.mes_ref)}/${arq.ano_ref}</span>` : ""}
-    ${(!arq.mes_ref && arq.ano_ref) ? `<span class="chip">ANO: ${arq.ano_ref}</span>` : ""}
-    ${criadoStr ? `<span class="chip">SALVO: ${criadoStr}</span>` : ""}
-    ${titulo ? `<span class="chip">${titulo}</span>` : ""}
-  `;
-
-  const c = arq.conteudo || {};
-  // Regras de exibição por painel conhecido
-  if(painel === "jogadores" && Array.isArray(c.rows)){
-    renderTabelaGenerica("Jogadores (vigente)", c.rows);
-    return;
-  }
-  if(painel === "presenca" && Array.isArray(c.presentes)){
-    renderTabelaPresenca(c);
-    return;
-  }
-  if(painel === "escalacao" && (c.escala1 || c.escala2)){
-    renderEscalacao(c);
-    return;
+  function normalizeToRows(obj) {
+    // Converte vários formatos para "linhas" (array de objetos)
+    if (!obj) return [];
+    if (Array.isArray(obj)) return obj;
+    if (typeof obj === "object") {
+      // caso venha { rows: [...] } ou { data: [...] }
+      if (Array.isArray(obj.rows)) return obj.rows;
+      if (Array.isArray(obj.data)) return obj.data;
+      // caso seja um único registro
+      return [obj];
+    }
+    return [];
   }
 
-  // fallback: mostrar JSON em tabela simples (1 coluna)
-  const jsonTxt = JSON.stringify(c, null, 2);
-  ultimaTabelaParaExport = { headers:["CONTEÚDO (JSON)"], rows: [[jsonTxt]] };
-  renderEl.innerHTML = `<div class="muted">Conteúdo em formato JSON:</div>` + tableFromArray(["CONTEÚDO (JSON)"], [[`<pre style="white-space:pre-wrap;margin:0">${escapeHtml(jsonTxt)}</pre>`]]);
-  habilitarExport("conteudo_json");
-}
+  function renderLoaded(row, content) {
+    const resumo = `
+      <div class="grid">
+        <div>
+          <div><span class="k">Painel:</span> ${escapeHtml(row.painel || "-")}</div>
+          <div><span class="k">Período:</span> ${escapeHtml(row.periodo || "-")}</div>
+          <div><span class="k">Título:</span> ${escapeHtml(row.titulo || "-")}</div>
+        </div>
+        <div>
+          <div><span class="k">Data ref:</span> ${escapeHtml(row.data_ref || "-")}</div>
+          <div><span class="k">Mês ref:</span> ${escapeHtml(row.mes_ref ?? "-")}</div>
+          <div><span class="k">Ano ref:</span> ${escapeHtml(row.ano_ref ?? "-")}</div>
+          <div><span class="k">Criado em:</span> ${escapeHtml(row.criado_em || "-")}</div>
+        </div>
+      </div>
+      <hr style="border:0;border-top:1px solid #123a62;margin:12px 0"/>
+      <div class="small muted">Prévia do conteúdo (primeiras 10 linhas):</div>
+    `;
 
-function renderTabelaGenerica(titulo, rows){
-  // escolher colunas por union de chaves (limitado)
-  const keys = Array.from(new Set(rows.flatMap(r=>Object.keys(r||{}))));
+    const rows = normalizeToRows(content);
+    const preview = rows.slice(0, 10);
 
-  // prioridade
-  const prioridade = ["id","camisa","apelido","nome","data_nasc","idade","celular","posicao","hab","vel","mov","pontos"];
-  const headers = [];
-  prioridade.forEach(k=>{ if(keys.includes(k)) headers.push(k.toUpperCase()); });
-  keys.forEach(k=>{ if(!prioridade.includes(k)) headers.push(k.toUpperCase()); });
+    let table = `<div class="muted small">(sem linhas para mostrar)</div>`;
+    if (preview.length) {
+      const cols = Object.keys(preview[0]);
+      table = `
+        <div style="overflow:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr>${cols.map(c => `<th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:${getComputedStyle(document.documentElement).getPropertyValue('--pumpkin')};">${escapeHtml(c)}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${preview.map(r => `<tr>${cols.map(c => `<td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r[c])}</td>`).join("")}</tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+    }
 
-  const body = rows.map(r=>{
-    return headers.map(h=>{
-      const k = h.toLowerCase();
-      let v = r[k];
-      if(v === null || v === undefined) return "";
-      return String(v);
-    });
+    elBox.innerHTML = resumo + table;
+  }
+
+  async function carregarArquivo() {
+    resetLoaded();
+    const painel = elPainel.value;
+    const periodo = elPeriodo.value;
+
+    if (!painel) { setStatus("Selecione o painel.", "err"); return; }
+    if (!periodo) { setStatus("Selecione o período.", "err"); return; }
+
+    setStatus("carregando arquivo…");
+
+    // Regra: pega o arquivo mais recente (criado_em DESC)
+    const { data, error } = await tesouraSupabase
+      .from("arquivos_app")
+      .select("id,painel,periodo,data_ref,mes_ref,ano_ref,titulo,conteudo,criado_em")
+      .eq("painel", painel)
+      .eq("periodo", periodo)
+      .order("criado_em", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      setStatus("Erro ao carregar arquivo do Banco de Dados.", "err");
+      console.error("[BD] carregar:", error);
+      return;
+    }
+
+    const row = (data || [])[0];
+    if (!row) {
+      setStatus("Não existe arquivo salvo para esse painel/período.", "err");
+      return;
+    }
+
+    loadedRow = row;
+    loadedData = row.conteudo;
+
+    renderLoaded(row, loadedData);
+    enableDownloads(true);
+    setStatus("arquivo carregado com sucesso.", "ok");
+  }
+
+  // ==== DOWNLOADS ====
+  function downloadBlob(filename, mime, content) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+
+  function baixarCSV() {
+    if (!loadedData) return;
+    const rows = normalizeToRows(loadedData);
+    if (!rows.length) { setStatus("Conteúdo vazio para CSV.", "err"); return; }
+
+    const cols = Object.keys(rows[0]);
+    const esc = (v) => {
+      const s = (v === null || v === undefined) ? "" : String(v);
+      const needs = /[",\n;]/.test(s);
+      const ss = s.replace(/"/g,'""');
+      return needs ? `"${ss}"` : ss;
+    };
+
+    const lines = [];
+    lines.push(cols.map(esc).join(";"));
+    rows.forEach(r => lines.push(cols.map(c => esc(r[c])).join(";")));
+
+    downloadBlob(buildFileNameBase() + ".csv", "text/csv;charset=utf-8", lines.join("\n"));
+    setStatus("CSV gerado.", "ok");
+  }
+
+  function baixarXLSX() {
+    if (!loadedData) return;
+    const rows = normalizeToRows(loadedData);
+    if (!rows.length) { setStatus("Conteúdo vazio para Excel.", "err"); return; }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DADOS");
+    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+
+    downloadBlob(buildFileNameBase() + ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", out);
+    setStatus("Excel gerado.", "ok");
+  }
+
+  async function baixarPDF() {
+    if (!loadedData) return;
+    const rows = normalizeToRows(loadedData);
+    if (!rows.length) { setStatus("Conteúdo vazio para PDF.", "err"); return; }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:"pt", format:"a4" });
+
+    const title = `TESOURA - ${loadedRow?.painel || ""} (${loadedRow?.periodo || ""})`;
+    doc.setFontSize(12);
+    doc.text(title, 40, 40);
+
+    const cols = Object.keys(rows[0]);
+    doc.setFontSize(9);
+
+    let y = 60;
+    const lineH = 14;
+    const maxLines = 35; // simples, sem tabela complexa (leve e estável)
+    const maxRows = Math.min(rows.length, maxLines);
+
+    doc.text(cols.join(" | "), 40, y); y += lineH;
+    doc.text("-".repeat(120).slice(0, 120), 40, y); y += lineH;
+
+    for (let i=0;i<maxRows;i++){
+      const r = rows[i];
+      const line = cols.map(c => String(r[c] ?? "")).join(" | ");
+      const chunks = doc.splitTextToSize(line, 520);
+      chunks.forEach(ch => {
+        if (y > 760) { doc.addPage(); y = 40; }
+        doc.text(ch, 40, y); y += lineH;
+      });
+    }
+
+    if (rows.length > maxRows) {
+      doc.text(`(Mostrando ${maxRows} de ${rows.length} linhas)`, 40, Math.min(y+10, 780));
+    }
+
+    doc.save(buildFileNameBase() + ".pdf");
+    setStatus("PDF gerado.", "ok");
+  }
+
+  // ==== EVENTS ====
+  elPainel.addEventListener("change", async () => {
+    const painel = elPainel.value;
+    if (!painel) {
+      elPeriodo.disabled = true;
+      elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
+      resetLoaded();
+      setStatus("selecione um painel.");
+      return;
+    }
+    await loadPeriodoOptions(painel);
   });
 
-  ultimaTabelaParaExport = { headers, rows: body };
-  renderEl.innerHTML = `<div class="sec-title">${titulo}</div>` + tableFromArray(headers, body.map(row=>row.map(escapeHtml)));
-  habilitarExport(titulo.toLowerCase().replaceAll(" ","_"));
-}
+  btnCarregar.addEventListener("click", carregarArquivo);
+  btnLimpar.addEventListener("click", () => { resetLoaded(); setStatus("limpo."); });
 
-function renderTabelaPresenca(c){
-  const headers = ["APELIDO","CHEGADA","VAI JOGAR","SAIU 1T","OBS","PONTOS"];
-  const rows = (c.presentes||[]).map(p=>[
-    p.apelido ?? "",
-    p.horaChegada ?? "",
-    (p.vaiJogar ? "SIM" : "NÃO"),
-    (p.saiu ? "SIM" : "NÃO"),
-    p.obs ?? "",
-    (p.pontos ?? "")
-  ]);
+  btnCsv.addEventListener("click", baixarCSV);
+  btnXlsx.addEventListener("click", baixarXLSX);
+  btnPdf.addEventListener("click", baixarPDF);
 
-  ultimaTabelaParaExport = { headers, rows };
-  renderEl.innerHTML = `<div class="sec-title">Presença (${c.data_jogo || ""})</div>` + tableFromArray(headers, rows.map(r=>r.map(escapeHtml)));
-  habilitarExport("presenca");
-}
-
-function renderEscalacao(c){
-  const e1 = c.escala1 || { amarelo:[], azul:[] };
-  const e2 = c.escala2 || { amarelo:[], azul:[] };
-
-  // para export, criar tabela combinada (Time / 1T / 2T)
-  const max = Math.max(e1.amarelo.length, e1.azul.length, e2.amarelo.length, e2.azul.length);
-  const headers = ["TIME","1º TEMPO","2º TEMPO"];
-  const rows = [];
-
-  for(let i=0;i<max;i++){
-    rows.push(["AMARELO",
-      (e1.amarelo[i]?.apelido || ""),
-      (e2.amarelo[i]?.apelido || "")
-    ]);
-    rows.push(["AZUL",
-      (e1.azul[i]?.apelido || ""),
-      (e2.azul[i]?.apelido || "")
-    ]);
+  // ==== START ====
+  // Validação mínima da chave (evita “morto” sem aviso)
+  if (!SUPABASE_ANON || SUPABASE_ANON.includes("COLE_AQUI")) {
+    setStatus("Falta ANON KEY do Supabase (ver topo do arquivo).", "err");
+    console.warn("[BD] ANON KEY não configurada.");
+  } else {
+    loadPainelOptions();
   }
-
-  // render visual em 2 colunas
-  const listHtml = `
-    <div class="sec-title">Escalação (${c.data_jogo || ""})</div>
-    <div class="grid2">
-      <div class="list">
-        <div class="muted"><b>1º TEMPO</b></div>
-        <div class="sec-title" style="margin-top:6px">AMARELO</div>
-        <ul>${(e1.amarelo||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
-        <div class="sec-title">AZUL</div>
-        <ul>${(e1.azul||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
-      </div>
-      <div class="list">
-        <div class="muted"><b>2º TEMPO</b></div>
-        <div class="sec-title" style="margin-top:6px">AMARELO</div>
-        <ul>${(e2.amarelo||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
-        <div class="sec-title">AZUL</div>
-        <ul>${(e2.azul||[]).map(x=>`<li>${escapeHtml(x.apelido||"")}</li>`).join("")}</ul>
-      </div>
-    </div>
-    <div style="margin-top:12px" class="muted">Para exportar (PDF/Excel/CSV) será usada uma tabela combinada.</div>
-  `;
-
-  ultimaTabelaParaExport = { headers, rows };
-  renderEl.innerHTML = listHtml;
-  habilitarExport("escalacao");
-}
-
-function habilitarExport(prefix){
-  btnPdf.disabled = false;
-  btnCsv.disabled = false;
-  btnXlsx.disabled = false;
-
-  btnPdf.onclick = ()=>exportarPDF(prefix);
-  btnCsv.onclick = ()=>exportarCSV(prefix);
-  btnXlsx.onclick = ()=>exportarXLSX(prefix);
-}
-
-function escapeHtml(s){
-  return String(s)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-/** ===== EXPORT ===== */
-function nomeBase(prefix){
-  const p = (ultimoArquivo?.painel || prefix || "arquivo").toString().replaceAll(" ","_");
-  const per = (ultimoArquivo?.periodo || "periodo").toString();
-  const tag = ultimoArquivo?.data_ref ? ultimoArquivo.data_ref : (ultimoArquivo?.mes_ref ? `${pad2(ultimoArquivo.mes_ref)}-${ultimoArquivo.ano_ref}` : (ultimoArquivo?.ano_ref ? `${ultimoArquivo.ano_ref}` : "vigente"));
-  return `TESOURA_${p}_${per}_${tag}`;
-}
-
-function exportarCSV(prefix){
-  if(!ultimaTabelaParaExport){ return; }
-  const { headers, rows } = ultimaTabelaParaExport;
-  const csv = [
-    headers.join(";"),
-    ...rows.map(r=>r.map(v=>String(v ?? "").replaceAll("\n"," ").replaceAll(";"," , ")).join(";"))
-  ].join("\n");
-  baixarBlob(new Blob([csv], {type:"text/csv;charset=utf-8"}), nomeBase(prefix)+".csv");
-}
-
-function exportarXLSX(prefix){
-  if(!ultimaTabelaParaExport){ return; }
-  const { headers, rows } = ultimaTabelaParaExport;
-  const data = [headers, ...rows];
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "TESOURA");
-  const out = XLSX.write(wb, { bookType:"xlsx", type:"array" });
-  baixarBlob(new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), nomeBase(prefix)+".xlsx");
-}
-
-function exportarPDF(prefix){
-  if(!ultimaTabelaParaExport){ return; }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:"portrait", unit:"pt", format:"a4" });
-
-  const titulo = (ultimoArquivo?.titulo || "TESOURA").toString();
-  doc.setFontSize(12);
-  doc.text(titulo, 40, 40);
-
-  const { headers, rows } = ultimaTabelaParaExport;
-  doc.autoTable({
-    startY: 60,
-    head: [headers],
-    body: rows,
-    styles: { fontSize: 8, cellPadding: 3 },
-    headStyles: { fillColor: [249,115,22] } // cor abóbora
-  });
-
-  doc.save(nomeBase(prefix)+".pdf");
-}
-
-/** ===== EVENTOS ===== */
-selPainel.addEventListener("change", carregarPeriodosDoPainel);
-selPeriodo.addEventListener("change", aplicarUIFiltros);
-btnCarregar.addEventListener("click", carregarArquivo);
-btnLimpar.addEventListener("click", ()=>{
-  inpDomingo.value = "";
-  inpMes.value = "";
-  inpAno.value = hojeAno();
-  setErro("");
-  setStatus("");
-  limparResultado();
-});
-
-/** ===== START ===== */
-carregarOpcoes();
-
 })();
 </script>
-
 </body>
 </html>
