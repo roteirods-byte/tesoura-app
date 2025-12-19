@@ -131,10 +131,20 @@
         grid-template-columns: repeat(2,minmax(0,1fr));
       }
     }
-  </style>
+  
+    .page-header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+    .btn-salvar-painel{
+        background:#2ecc71; color:#001a2e; border:none; padding:10px 14px; border-radius:10px;
+        font-weight:700; cursor:pointer;
+    }
+    .btn-salvar-painel:disabled{opacity:.6; cursor:not-allowed;}
+</style>
 </head>
 <body>
-  <header>TESOURA - CONTROLE DE JOGADORES</header>
+  <header class="page-header">
+        <h1>TESOURA - JOGADORES</h1>
+        <button id="btnSalvarPainel" class="btn-salvar-painel">SALVAR PAINEL</button>
+    </header>
 
   <div class="container">
     <div class="painel">
@@ -223,6 +233,40 @@
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
+    // Botão: SALVAR PAINEL (arquiva o painel no Banco de Dados)
+    const btnSalvarPainel = document.getElementById("btnSalvarPainel");
+    if(btnSalvarPainel){
+      btnSalvarPainel.addEventListener("click", async () => {
+        try{
+          btnSalvarPainel.disabled = true;
+          btnSalvarPainel.textContent = "SALVANDO...";
+          const { data: rows, error } = await supabase.from("jogadores").select("*").order("apelido", { ascending: true });
+          if(error) throw error;
+
+          const ano_ref = new Date().getFullYear();
+          const payload = { rows: rows || [], gerado_em: new Date().toISOString() };
+
+          const { error: err2 } = await supabase.from("arquivos_app").insert([{
+            painel: "jogadores",
+            periodo: "unico",
+            ano_ref,
+            titulo: "Jogadores (vigente)",
+            conteudo: payload
+          }]);
+          if(err2) throw err2;
+
+          alert("✅ Painel JOGADORES arquivado no BANCO DE DADOS.");
+        }catch(e){
+          console.error(e);
+          alert("❌ Não foi possível arquivar. Entre como DIRETOR e tente novamente.");
+        }finally{
+          btnSalvarPainel.disabled = false;
+          btnSalvarPainel.textContent = "SALVAR PAINEL";
+        }
+      });
+    }
+
+
     const camisaInput = document.getElementById("camisa");
     const nomeInput = document.getElementById("nome");
     const apelidoInput = document.getElementById("apelido");

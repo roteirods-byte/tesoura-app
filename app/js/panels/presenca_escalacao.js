@@ -17,7 +17,7 @@ window.TESOURA_PANELS["presenca_escalacao"] = {
     //
     // Se você preferir usar o R5 como modelo, troque o nome abaixo para:
     // "tesoura_presenca_escala_R5.html"
-    const arquivoModelo = "tesoura_presenca_escala_OFICIAL.html";
+    const arquivoModelo = "tesoura_presenca_escala_R5.html";
 
     root.innerHTML = `
       <div class="card">
