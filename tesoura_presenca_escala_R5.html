@@ -809,6 +809,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
 
     async function escalarPrimeiroTempo(){
+  try {
       const dataISO = getDataJogoISO();
       const listaHoje = (presencasHoje || []).filter(p => !p.naoVaiJogar);
 
@@ -824,12 +825,6 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       // - Se < 25 no corte: sem eliminação; 1º tempo pega até 20 por ordem de chegada (ou todos, se < 20)
       // - Observação: se tiver 15 ou 20 no corte, não tem eliminação (escala os presentes, até 20)
       let candidatos = [...listaCorte];
-
-      // Se ninguém chegou até o horário de corte (ex: teste depois das 06:15),
-      // usa TODOS os presentes de hoje para a escalação funcionar.
-      if (candidatos.length === 0 && listaHoje.length > 0) {
-        candidatos = [...listaHoje];
-      }
 
       if (qtdCorte >= 25){
         const apelidos = candidatos.map(p=>p.apelido);
@@ -897,7 +892,11 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
       renderEscalacao();
       toast("1º tempo escalado.");
-    }
+  } catch (e) {
+    console.error(e);
+    toast('ERRO na ESCALAÇÃO 1º TEMPO: ' + (e.message || e), false);
+  }
+}
 
 
     function toggleSaiu(apelido){

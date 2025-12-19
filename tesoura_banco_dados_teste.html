@@ -104,7 +104,105 @@
     const elAno = document.getElementById("filtroAno");
     const elMes = document.getElementById("filtroMes");
     const elData = document.getElementById("filtroData");
-    const btnCarregar = document.getElementById("btnCarregar");
+    function lerFiltrosAtuais(painel) {
+  const ano = (anoEl && anoEl.value) ? String(anoEl.value).trim() : "";
+  const mes = (mesEl && mesEl.value) ? String(mesEl.value).trim() : "";
+  const domingo = (domingoEl && domingoEl.value) ? String(domingoEl.value).trim() : "";
+  return { ano, mes, domingo };
+}
+
+async function carregarAoVivo(painel, filtros) {
+  const p = (painel || "").toUpperCase();
+
+  // Tabelas do Supabase (nomes reais)
+  const MAP = {
+    "JOGADORES": "jogadores",
+    "PRESENCA": "presencas",
+    "PRESENÇA": "presencas",
+    "ESCALACAO": "escalacao",
+    "ESCALAÇÃO": "escalacao",
+    "CONTROLE_GERAL": "controle_geral",
+    "MENSALIDADE": "mensalidades",
+    "CAIXA": "caixa",
+    "GOLS": "gols"
+  };
+
+  const table = MAP[p] || null;
+  if (!table) throw new Error("Tabela não reconhecida: " + painel);
+
+  let q = supabase.from(table).select("*");
+
+  // Filtros por painel
+  if (table === "presencas" || table === "escalacao") {
+    // precisa do DOMINGO (data do jogo)
+    if (!filtros.domingo) throw new Error("Escolha o DOMINGO no filtro.");
+    q = q.eq("data_jogo", filtros.domingo);
+  }
+
+  if (table === "mensalidades" || table === "caixa" || table === "controle_geral") {
+    // filtro por mês (quando existir)
+    if (filtros.mes) {
+      // coluna mes_ref no formato YYYY-MM (se não existir, o filtro é ignorado)
+      q = q.eq("mes_ref", filtros.ano + "-" + String(filtros.mes).padStart(2, "0"));
+    }
+  }
+
+  // Ordenação padrão
+  if (table === "jogadores") q = q.order("apelido", { ascending: true });
+  if (table === "gols") q = q.order("gols", { ascending: false });
+  if (table === "presencas") q = q.order("ordem", { ascending: true });
+
+  const { data, error } = await q.limit(500);
+  if (error) throw error;
+  return data || [];
+}
+
+function renderAoVivo(rows, painel) {
+  if (!rows || rows.length === 0) {
+    registrosEl.innerHTML = '<div style="padding:10px;color:#fff;">Nenhum registro encontrado.</div>';
+    return;
+  }
+
+  const cols = Object.keys(rows[0]);
+  let html = '<div style="overflow:auto;max-height:520px;"><table class="tbl">';
+  html += "<thead><tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr></thead>";
+  html += "<tbody>";
+  for (const r of rows) {
+    html += "<tr>" + cols.map(c => `<td>${(r[c] ?? "")}</td>`).join("") + "</tr>";
+  }
+  html += "</tbody></table></div>";
+  registrosEl.innerHTML = html;
+}
+
+function renderArquivos(arquivos, painel) {
+  // Mostra o arquivo mais recente
+  const arq = arquivos[0];
+  let conteudo = arq.conteudo_json;
+
+  try {
+    if (typeof conteudo === "string") conteudo = JSON.parse(conteudo);
+  } catch (_) {}
+
+  // Se tiver rows dentro
+  const rows = Array.isArray(conteudo) ? conteudo : (conteudo && conteudo.rows ? conteudo.rows : null);
+
+  if (rows && Array.isArray(rows) && rows.length > 0) {
+    renderAoVivo(rows, painel);
+    return;
+  }
+
+  // Fallback: lista arquivos
+  let html = '<div style="padding:10px;color:#fff;">Arquivos arquivados encontrados, mas sem conteúdo para exibir.</div>';
+  html += '<div style="padding:10px;color:#fff;">Arquivos:</div>';
+  html += '<ul style="padding-left:20px;color:#fff;">';
+  for (const a of arquivos) {
+    html += `<li>${a.created_at || ""} — ${a.painel || ""} — ${a.periodo || ""} — ${a.data_ref || ""}</li>`;
+  }
+  html += "</ul>";
+  registrosEl.innerHTML = html;
+}
+
+const btnCarregar = document.getElementById("btnCarregar");
     const btnLimpar = document.getElementById("btnLimpar");
     const status = document.getElementById("status");
     const thead = document.getElementById("thead");
@@ -155,115 +253,44 @@
       }
     }
 
-    async function carregar(){
-      try{
-        btnCarregar.disabled = true;
-        setStatus("Carregando...");
+    async function carregar() {
+  try {
+    statusEl.textContent = "Carregando...";
+    registrosEl.innerHTML = "";
 
-        const tabela = elTabela.value;
+    const painel = (tabelaEl.value || "").trim();
 
-        // Mapeamento: select -> arquivos_app.painel
-        const painelMap = {
-          jogadores: "jogadores",
-          gols: "gols",
-          presencas: "presenca",
-          escalacao: "escalacao",
-          mensalidades: "mensalidade",
-          caixa: "caixa",
-          controle_geral: "controle_geral"
-        };
-        const painel = painelMap[tabela];
+    // 1) Tenta carregar do ARQUIVO (tabela arquivos_app)
+    const filtros = lerFiltrosAtuais(painel);
+    const { data: arquivos, error: errArq } = await supabase
+      .from("arquivos_app")
+      .select("id,painel,periodo,data_ref,conteudo_json,created_at")
+      .eq("painel", painel)
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-        if(!painel){
-          setStatus("Selecione uma tabela.");
-          return;
-        }
-
-        let query = supabase.from("arquivos_app").select("*").eq("painel", painel);
-
-        // Filtros
-        if(tabela === "presencas" || tabela === "escalacao"){
-          const data = (elData.value || "").trim();
-          if(!data){
-            setStatus("Selecione o DOMINGO.");
-            return;
-          }
-          query = query.eq("data_ref", data);
-        }
-
-        if(tabela === "mensalidades" || tabela === "caixa" || tabela === "controle_geral"){
-          const ano = parseInt(elAno.value || String(anoVigente), 10);
-          const mes = parseInt(elMes.value || "0", 10);
-          if(!mes){
-            setStatus("Selecione o MÊS.");
-            return;
-          }
-          query = query.eq("ano_ref", ano).eq("mes_ref", mes);
-        }
-
-        // Jogadores/Gols: pegar o mais recente
-        query = query.order("criado_em", { ascending: false }).limit(1);
-
-        const { data, error } = await query;
-        if(error) throw error;
-
-        if(!data || data.length === 0){
-          setStatus("Nenhum arquivo arquivado encontrado.");
-          limparTabela();
-          return;
-        }
-
-        const arquivo = data[0];
-        const conteudo = arquivo.conteudo || {};
-
-        // Renderização: se tiver rows, mostra em tabela
-        const rows = conteudo.rows || conteudo.presenca || conteudo.linhas || null;
-
-        // Caso Presença: mostrar presentes (array simples)
-        if(painel === "presenca"){
-          const pres = conteudo.presentes || [];
-          renderTabela(pres.map(x => ({
-            id: x.id,
-            apelido: x.apelido,
-            hora: x.hora,
-            obs: x.obs,
-            nao_vai_jogar: x.nao_vai_jogar
-          })));
-          setStatus(`Presença do dia ${arquivo.data_ref || ""} carregada.`);
-          return;
-        }
-
-        // Caso Escalação: mostrar duas listas
-        if(painel === "escalacao"){
-          const e1 = conteudo.escala1 || [];
-          const e2 = conteudo.escala2 || [];
-          renderTabela([
-            { bloco: "1º TEMPO", ...{} },
-            ...e1.map((r,i)=>({ bloco:"1º TEMPO", pos:i+1, amarelo:r.amarelo||"", azul:r.azul||"", saiu:r.saiu||"" })),
-            { bloco: "2º TEMPO", ...{} },
-            ...e2.map((r,i)=>({ bloco:"2º TEMPO", pos:i+1, amarelo:r.amarelo||"", azul:r.azul||"", saiu:r.saiu||"" }))
-          ]);
-          setStatus(`Escalação do dia ${arquivo.data_ref || ""} carregada.`);
-          return;
-        }
-
-        // Padrão: rows
-        if(Array.isArray(rows)){
-          renderTabela(rows);
-          setStatus("Arquivo carregado.");
-        }else{
-          // fallback: mostrar JSON em 1 linha
-          renderTabela([{ conteudo_json: JSON.stringify(conteudo) }]);
-          setStatus("Arquivo carregado.");
-        }
-
-      }catch(e){
-        console.error(e);
-        setStatus("Erro ao carregar. Verifique se você está logado como DIRETOR.");
-      }finally{
-        btnCarregar.disabled = false;
-      }
+    if (errArq) {
+      console.error(errArq);
     }
+
+    if (arquivos && arquivos.length > 0) {
+      // Mostra os arquivos arquivados
+      renderArquivos(arquivos, painel);
+      statusEl.textContent = `Encontrado(s) ${arquivos.length} arquivo(s) arquivado(s).`;
+      return;
+    }
+
+    // 2) Se NÃO existir arquivo arquivado, carrega direto da tabela do painel (modo "ao vivo")
+    statusEl.textContent = "Sem arquivo arquivado. Carregando dados do painel (ao vivo)...";
+    const live = await carregarAoVivo(painel, filtros);
+    renderAoVivo(live, painel);
+    statusEl.textContent = "Dados carregados (ao vivo).";
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = "Erro ao carregar.";
+    registrosEl.innerHTML = `<div style="padding:10px;color:#ff5555;font-weight:700;">ERRO: ${String(e.message || e)}</div>`;
+  }
+}
 
     function renderTabela(rows){
       limparTabela();
