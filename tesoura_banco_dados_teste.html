@@ -123,17 +123,13 @@
   </div>
 
 <script>
+(()=>{
 /** ===== CONFIG SUPABASE ===== */
 const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-let supabase = null;
-if (!window.supabase || !window.supabase.createClient) {
-  // supabase-js not loaded (CDN blocked / offline / mixed content)
-  supabase = null;
-} else {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
-
+const supabaseClient = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 /** ===== DOM ===== */
 const selPainel = document.getElementById("selPainel");
 const selPeriodo = document.getElementById("selPeriodo");
@@ -239,7 +235,7 @@ async function carregarOpcoes(){
   limparResultado();
 
   // pegar painéis existentes
-  const { data: paineis, error } = await supabase
+  const { data: paineis, error } = await supabaseClient
     .from("arquivos_app")
     .select("painel")
     .order("painel", { ascending: true });
@@ -270,8 +266,8 @@ async function carregarPeriodosDoPainel(){
     return;
   }
 
-  if(!supabase){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
-  const { data, error } = await supabase
+  if(!supabaseClient){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
+  const { data, error } = await supabaseClient
     .from("arquivos_app")
     .select("periodo")
     .eq("painel", painel)
@@ -295,7 +291,7 @@ async function carregarPeriodosDoPainel(){
 
 /** ===== CONSULTA NO BANCO (arquivos_app) ===== */
 async function carregarArquivo(){
-  if(!supabase){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
+  if(!supabaseClient){ setErro('Supabase não carregou (CDN bloqueado/sem internet).'); setStatus(''); return; }
 
   setErro("");
   setStatus("Carregando...");
@@ -310,7 +306,7 @@ async function carregarArquivo(){
     return;
   }
 
-  let query = supabase
+  let query = supabaseClient
     .from("arquivos_app")
     .select("*")
     .eq("painel", painel)
@@ -577,6 +573,8 @@ btnLimpar.addEventListener("click", ()=>{
 
 /** ===== START ===== */
 carregarOpcoes();
+
+})();
 </script>
 
 </body>
