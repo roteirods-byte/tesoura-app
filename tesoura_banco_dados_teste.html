@@ -38,30 +38,55 @@
   <header>TESOURA - BANCO DE DADOS</header>
 
   <div class="printbar" style="text-align:right; padding:4px 16px 0 16px;">
-    <button class="btn-sec" onclick="window.print()">IMPRIMIR / BAIXAR PAINEL</button>
-  </div>
+  <button class="btn-sec" id="btnBaixarPDF">BAIXAR PDF</button>
+  <button class="btn-sec" id="btnBaixarCSV" style="margin-left:8px;">BAIXAR EXCEL/CSV</button>
+</div>
 
   <div class="container">
 
     <div class="painel">
-      <h2>Selecionar tabela</h2>
-      <div class="row">
-        <select id="tabela" class="small">
-          <option value="jogadores">JOGADORES</option>
-          <option value="mensalidades">MENSALIDADES</option>
-          <option value="caixa">CAIXA</option>
-          <option value="presencas">PRESENÇAS</option>
-          <option value="escalacao">ESCALAÇÃO</option>
-          <option value="gols">GOLS</option>
-        </select>
+  <div class="row" style="gap:16px; flex-wrap:wrap;">
+    <div style="display:flex; flex-direction:column; gap:6px; min-width:220px;">
+      <h2 style="margin:0;">Selecionar tabela</h2>
+      <select id="tabela" class="small">
+        <option value="jogadores">JOGADORES</option>
+        <option value="presencas">PRESENÇAS</option>
+        <option value="escalacao">ESCALAÇÃO</option>
+        <option value="controle_geral">CONTROLE GERAL</option>
+        <option value="mensalidades">MENSALIDADES</option>
+        <option value="caixa">CAIXA</option>
+        <option value="gols">GOLS</option>
+      </select>
+    </div>
 
-        <input id="filtroData" class="small" type="date" />
-        <input id="filtroMes" class="small" type="text" placeholder="MÊS (ex: 12)" />
-        <input id="filtroAno" class="small" type="text" placeholder="ANO (ex: 2025)" />
+    <div style="display:flex; flex-direction:column; gap:6px; min-width:260px;">
+      <h2 style="margin:0;">Filtro</h2>
 
-        <button id="btnCarregar" class="btn-ok">CARREGAR</button>
-        <button id="btnLimpar" class="btn-warn">LIMPAR FILTROS</button>
+      <!-- Filtro: Ano / Mês -->
+      <div class="row" id="filtroAnoMes" style="margin:0;">
+        <input id="filtroAno" class="small" type="text" placeholder="ANO (ex: 2026)" />
+        <input id="filtroMes" class="small" type="text" placeholder="MÊS (1 a 12)" />
       </div>
+
+      <!-- Filtro: Domingo (para Presenças / Escalação) -->
+      <div class="row" id="filtroDomingo" style="margin:0;">
+        <select id="filtroDomingoSelect" class="small grow">
+          <option value="">DOMINGO (selecione)</option>
+        </select>
+      </div>
+
+      <!-- Sem filtro -->
+      <div class="muted" id="filtroNenhum" style="display:none; margin-top:2px;">Este painel não precisa de filtro.</div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:6px; min-width:220px;">
+      <h2 style="margin:0;">Ações</h2>
+      <div class="row" style="margin:0;">
+        <button id="btnCarregar" class="btn-ok">CARREGAR</button>
+        <button id="btnLimpar" class="btn-warn">LIMPAR</button>
+      </div>
+    </div>
+  </div>
 
       <div id="status" class="status"></div>
       <div id="erroBox" class="erroBox"></div>
@@ -69,7 +94,7 @@
 
     <div class="painel">
       <h2>Registros</h2>
-      <div class="scroll">
+      <div class="scroll" id="areaTabela">
         <table>
           <thead id="thead"></thead>
           <tbody id="tbody"></tbody>
@@ -77,243 +102,298 @@
       </div>
     </div>
 
-    <div class="painel">
-      <h2>Editar (linha selecionada)</h2>
-      <div class="row">
-        <input id="editJson" class="grow" placeholder='Cole aqui o JSON da linha' />
-        <button id="btnSalvarEdicao" class="btn-ok actions">SALVAR EDIÇÃO</button>
-        <button id="btnCancelarEdicao" class="btn-warn actions">CANCELAR</button>
-      </div>
-      <div class="status" id="statusEdit"></div>
     </div>
-
-  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    var supabase = window.__TESOURA_SUPABASE__;
-    const elTabela = document.getElementById("tabela");
-    const elData = document.getElementById("filtroData");
-    const elMes = document.getElementById("filtroMes");
-    const elAno = document.getElementById("filtroAno");
-    const btnCarregar = document.getElementById("btnCarregar");
-    const btnLimpar = document.getElementById("btnLimpar");
-    const thead = document.getElementById("thead");
-    const tbody = document.getElementById("tbody");
-    const status = document.getElementById("status");
-    const erroBox = document.getElementById("erroBox");
+  const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
 
-    const editJson = document.getElementById("editJson");
-    const btnSalvarEdicao = document.getElementById("btnSalvarEdicao");
-    const btnCancelarEdicao = document.getElementById("btnCancelarEdicao");
-    const statusEdit = document.getElementById("statusEdit");
+  window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabase = window.__TESOURA_SUPABASE__;
 
-    let linhaSelecionada = null;
+  const elTabela = document.getElementById("tabela");
+  const elAno = document.getElementById("filtroAno");
+  const elMes = document.getElementById("filtroMes");
+  const elDomingoBox = document.getElementById("filtroDomingo");
+  const elAnoMesBox = document.getElementById("filtroAnoMes");
+  const elDomingo = document.getElementById("filtroDomingoSelect");
+  const elFiltroNenhum = document.getElementById("filtroNenhum");
 
-    function setStatus(msg){ status.textContent = msg || ""; }
-    function setEditStatus(msg){ statusEdit.textContent = msg || ""; }
+  const btnCarregar = document.getElementById("btnCarregar");
+  const btnLimpar = document.getElementById("btnLimpar");
 
-    function showErro(msg){
-      erroBox.style.display = "block";
-      erroBox.textContent = msg || "ERRO";
+  const thead = document.getElementById("thead");
+  const tbody = document.getElementById("tbody");
+  const status = document.getElementById("status");
+  const erroBox = document.getElementById("erroBox");
+
+  const btnBaixarPDF = document.getElementById("btnBaixarPDF");
+  const btnBaixarCSV = document.getElementById("btnBaixarCSV");
+
+  const areaTabela = document.getElementById("areaTabela") || document.querySelector(".scroll");
+
+  function setStatus(msg){ status.textContent = msg || ""; }
+  function setErro(msg){ erroBox.textContent = msg || ""; }
+
+  function yyyyMmDd(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  function getSundays(year, month){ // month 1-12
+    const y = Number(year), m = Number(month);
+    if(!y || !m || m<1 || m>12) return [];
+    const first = new Date(y, m-1, 1);
+    const last = new Date(y, m, 0);
+    const out = [];
+    for(let d = new Date(first); d <= last; d.setDate(d.getDate()+1)){
+      if(d.getDay() === 0) out.push(yyyyMmDd(d));
     }
-    function hideErro(){
-      erroBox.style.display = "none";
-      erroBox.textContent = "";
+    return out;
+  }
+
+  function preencherDomingos(){
+    const year = (elAno.value||"").trim();
+    const month = (elMes.value||"").trim();
+    const sundays = getSundays(year, month);
+
+    elDomingo.innerHTML = '<option value="">DOMINGO (selecione)</option>';
+    sundays.forEach(s=>{
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      elDomingo.appendChild(opt);
+    });
+  }
+
+  function limparTabela(){
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+  }
+
+  function renderTabela(rows){
+    limparTabela();
+    if(!rows || rows.length === 0){
+      thead.innerHTML = "<tr><th>SEM DADOS</th></tr>";
+      return;
+    }
+    const cols = Object.keys(rows[0]);
+    thead.innerHTML = "<tr>" + cols.map(c=>`<th>${String(c).toUpperCase()}</th>`).join("") + "</tr>";
+    tbody.innerHTML = rows.map(r=>{
+      return "<tr>" + cols.map(c=>`<td>${(r[c]===null||r[c]===undefined) ? "" : String(r[c])}</td>`).join("") + "</tr>";
+    }).join("");
+  }
+
+  function renderIframeControleGeral(){
+    // Mostra o painel vigente do Controle Geral (somente leitura)
+    limparTabela();
+    thead.innerHTML = "<tr><th>CONTROLE GERAL</th></tr>";
+    tbody.innerHTML = `<tr><td style="padding:0;">
+      <iframe src="tesoura_controle_geral_teste.html?cb=${Date.now()}" style="width:100%;height:78vh;border:none;background:#0b1220;"></iframe>
+    </td></tr>`;
+  }
+
+  function configurarFiltroPorPainel(){
+    const t = elTabela.value;
+
+    // padrão: mostra ano/mês; domingo desligado; mensagem escondida
+    elAnoMesBox.style.display = "flex";
+    elDomingoBox.style.display = "none";
+    elFiltroNenhum.style.display = "none";
+    btnBaixarCSV.style.display = "inline-block";
+
+    if(t === "jogadores" || t === "gols"){
+      elAnoMesBox.style.display = "none";
+      elDomingoBox.style.display = "none";
+      elFiltroNenhum.style.display = "block";
     }
 
-    window.onerror = function(message, source, lineno, colno){
-      showErro(`ERRO NO PAINEL: ${message} (linha ${lineno})`);
-    };
-
-    function limpar(){
-      elData.value = "";
-      elMes.value = "";
-      elAno.value = "";
-      setStatus("");
-      hideErro();
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
-      linhaSelecionada = null;
-      editJson.value = "";
-      setEditStatus("");
+    if(t === "presencas" || t === "escalacao"){
+      elAnoMesBox.style.display = "flex";
+      elDomingoBox.style.display = "flex";
+      preencherDomingos();
     }
 
-    function guessKey(table){
-      if (table === "jogadores") return ["apelido"];
-      if (table === "mensalidades") return ["apelido","ano","mes"];
-      if (table === "presencas") return ["data_jogo","apelido"];
-      if (table === "escalacao") return ["data_jogo","apelido","tempo","time"];
-      // caixa/gols: ideal ter id
-      return ["id"];
+    if(t === "controle_geral"){
+      // filtro opcional (por enquanto ano/mês), mas deixa simples
+      elAnoMesBox.style.display = "flex";
+      elDomingoBox.style.display = "none";
+      btnBaixarCSV.style.display = "none"; // não faz sentido exportar tabela aqui
+    }
+  }
+
+  function limparFiltros(){
+    const now = new Date();
+    elAno.value = String(now.getFullYear());
+    elMes.value = String(now.getMonth()+1);
+    elDomingo.value = "";
+    configurarFiltroPorPainel();
+    setErro("");
+    setStatus("");
+  }
+
+  async function carregar(){
+    setErro("");
+    setStatus("Carregando...");
+
+    const tabela = elTabela.value;
+
+    // Controle Geral (vigente)
+    if(tabela === "controle_geral"){
+      renderIframeControleGeral();
+      setStatus("OK (Controle Geral)");
+      return;
     }
 
-    function buildWhere(q, table){
-      const d = elData.value;
-      const mes = (elMes.value || "").trim();
-      const ano = (elAno.value || "").trim();
+    // Filtros
+    const ano = Number((elAno.value||"").trim());
+    const mes = Number((elMes.value||"").trim());
+    const domingo = (elDomingo.value||"").trim();
 
-      if (d){
-        if (table === "presencas" || table === "escalacao") q = q.eq("data_jogo", d);
-        if (table === "caixa") q = q.eq("data", d);
-        if (table === "gols") q = q.eq("data_jogo", d);
-      }
-      if (ano){
-        if (table === "mensalidades") q = q.eq("ano", parseInt(ano,10));
-      }
-      if (mes && ano){
-        if (table === "mensalidades") q = q.eq("mes", parseInt(mes,10));
-      }
-      return q;
-    }
-
-    async function carregar(){
-      hideErro();
-      const table = elTabela.value;
-      setStatus("Carregando...");
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
-      linhaSelecionada = null;
-      editJson.value = "";
-      setEditStatus("");
-
-      let q = supabase.from(table).select("*").limit(500);
-      q = buildWhere(q, table);
-
-      const { data, error } = await q;
-
-      if (error){
-        console.error(error);
-        setStatus("ERRO AO CARREGAR.");
-        showErro(
-          "Banco de Dados não conseguiu ler a tabela.\n" +
-          "Causas comuns: RLS bloqueando SELECT, tabela não existe, ou coluna diferente.\n\n" +
-          (error.message || "Sem detalhes do erro.")
-        );
+    try{
+      if(tabela === "jogadores"){
+        const { data, error } = await supabase.from("jogadores").select("*").order("apelido", { ascending:true });
+        if(error) throw error;
+        renderTabela(data || []);
+        setStatus("OK (Jogadores)");
         return;
       }
 
-      const rows = data || [];
-      if (!rows.length){
-        setStatus("Nenhum registro encontrado.");
-        return;
-      }
-
-      const cols = Object.keys(rows[0]);
-
-      const trH = document.createElement("tr");
-      cols.forEach(c=>{
-        const th=document.createElement("th");
-        th.textContent = c;
-        trH.appendChild(th);
-      });
-      const thEdit=document.createElement("th"); thEdit.textContent="EDITAR";
-      const thDel=document.createElement("th"); thDel.textContent="EXCLUIR";
-      trH.appendChild(thEdit); trH.appendChild(thDel);
-      thead.appendChild(trH);
-
-      rows.forEach(r=>{
-        const tr=document.createElement("tr");
-        cols.forEach(c=>{
-          const td=document.createElement("td");
-          td.textContent = (r[c] ?? "").toString();
-          tr.appendChild(td);
+      if(tabela === "gols"){
+        // ranking acumulado (arquivo único)
+        const { data, error } = await supabase.from("gols").select("*");
+        if(error) throw error;
+        const mapa = {};
+        (data||[]).forEach(r=>{
+          const ap = (r.apelido||"").toUpperCase().trim();
+          const g = Number(r.gols||0);
+          if(!ap) return;
+          mapa[ap] = (mapa[ap]||0) + (isNaN(g)?0:g);
         });
-
-        const tdE=document.createElement("td");
-        const bE=document.createElement("button");
-        bE.className="btn-sec";
-        bE.textContent="EDITAR";
-        bE.onclick=()=>{
-          linhaSelecionada = { table, data: r, keyCols: guessKey(table) };
-          editJson.value = JSON.stringify(r);
-          setEditStatus("Linha carregada para edição.");
-        };
-        tdE.appendChild(bE);
-
-        const tdD=document.createElement("td");
-        const bD=document.createElement("button");
-        bD.className="btn-del";
-        bD.textContent="EXCLUIR";
-        bD.onclick=()=>excluirLinha(table, r);
-        tdD.appendChild(bD);
-
-        tr.appendChild(tdE);
-        tr.appendChild(tdD);
-        tbody.appendChild(tr);
-      });
-
-      setStatus(`OK. Registros: ${rows.length}`);
-    }
-
-    async function excluirLinha(table, row){
-      if (!confirm("EXCLUIR este registro?")) return;
-
-      const keyCols = guessKey(table);
-      let q = supabase.from(table).delete();
-
-      keyCols.forEach(k=>{
-        if (row[k] == null) return;
-        q = q.eq(k, row[k]);
-      });
-
-      const { error } = await q;
-      if (error){
-        console.error(error);
-        alert("Erro ao excluir. Veja o console.");
-        return;
-      }
-      alert("Excluído.");
-      carregar();
-    }
-
-    async function salvarEdicao(){
-      if (!linhaSelecionada){
-        alert("Selecione uma linha para editar.");
+        const rows = Object.keys(mapa).map(ap=>({ apelido: ap, gols: mapa[ap] }))
+          .sort((a,b)=>b.gols-a.gols || a.apelido.localeCompare(b.apelido));
+        renderTabela(rows);
+        setStatus("OK (Gols - ranking)");
         return;
       }
 
-      let novo;
-      try{ novo = JSON.parse(editJson.value || "{}"); }
-      catch(e){ alert("JSON inválido."); return; }
+      if(tabela === "presencas" || tabela === "escalacao"){
+        if(!ano || !mes){ setErro("Preencha ANO e MÊS."); setStatus(""); return; }
+        preencherDomingos();
+        if(!domingo){ setErro("Selecione o DOMINGO."); setStatus(""); return; }
 
-      const { table, data: antigo, keyCols } = linhaSelecionada;
-
-      let q = supabase.from(table).update(novo);
-      keyCols.forEach(k=>{
-        if (antigo[k] == null) return;
-        q = q.eq(k, antigo[k]);
-      });
-
-      const { error } = await q;
-      if (error){
-        console.error(error);
-        alert("Erro ao salvar edição. Veja o console.");
+        let q = supabase.from(tabela).select("*").eq("data_jogo", domingo);
+        // ordenar por apelido quando existir
+        q = q.order("apelido", { ascending:true });
+        const { data, error } = await q;
+        if(error) throw error;
+        renderTabela(data || []);
+        setStatus(`OK (${tabela.toUpperCase()} - ${domingo})`);
         return;
       }
 
-      setEditStatus("Edição salva.");
-      carregar();
-    }
+      if(tabela === "mensalidades"){
+        if(!ano || !mes){ setErro("Preencha ANO e MÊS."); setStatus(""); return; }
+        const { data, error } = await supabase.from("mensalidades").select("*").eq("ano", ano).eq("mes", mes).order("apelido", {ascending:true});
+        if(error) throw error;
+        renderTabela(data || []);
+        setStatus(`OK (Mensalidades - ${ano}/${mes})`);
+        return;
+      }
 
-    btnCarregar.addEventListener("click", carregar);
-    btnLimpar.addEventListener("click", limpar);
-    btnSalvarEdicao.addEventListener("click", salvarEdicao);
-    btnCancelarEdicao.addEventListener("click", ()=>{
-      linhaSelecionada=null;
-      editJson.value="";
-      setEditStatus("");
+      if(tabela === "caixa"){
+        // últimos lançamentos se não tiver ano/mês
+        let q = supabase.from("caixa").select("*").order("data", {ascending:false});
+        if(ano && mes){
+          const start = new Date(ano, mes-1, 1);
+          const end = new Date(ano, mes, 0);
+          q = supabase.from("caixa")
+            .select("*")
+            .gte("data", yyyyMmDd(start))
+            .lte("data", yyyyMmDd(end))
+            .order("data", {ascending:false});
+        }
+        const { data, error } = await q;
+        if(error) throw error;
+        renderTabela(data || []);
+        setStatus(ano && mes ? `OK (Caixa - ${ano}/${mes})` : "OK (Caixa - últimos lançamentos)");
+        return;
+      }
+
+      setErro("Tabela não reconhecida.");
+      setStatus("");
+    }catch(err){
+      console.error(err);
+      setErro("Erro ao carregar. Verifique permissões e conexão.");
+      setStatus("");
+    }
+  }
+
+  function baixarCSV(){
+    // Exporta a tabela da tela (CSV) para abrir no Excel
+    const rows = [];
+    const ths = Array.from(thead.querySelectorAll("th")).map(th=>th.innerText.trim());
+    if(ths.length === 0 || (ths.length === 1 && ths[0] === "SEM DADOS")){
+      alert("Não há dados para baixar.");
+      return;
+    }
+    rows.push(ths);
+
+    Array.from(tbody.querySelectorAll("tr")).forEach(tr=>{
+      const tds = Array.from(tr.querySelectorAll("td")).map(td=>{
+        const txt = (td.innerText || "").replace(/
+?
+/g, " ").trim();
+        // CSV safe
+        if(txt.includes('"') || txt.includes(",") || txt.includes(";")){
+          return '"' + txt.replace(/"/g,'""') + '"';
+        }
+        return txt;
+      });
+      rows.push(tds);
     });
 
-    (function init(){
-      const d = new Date();
-      const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-      elData.value = iso;
-      carregar();
-    })();
-  </script>
+    const csv = rows.map(r=>r.join(";")).join("
+");
+    const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    const t = elTabela.value;
+    const now = new Date();
+    const file = `TESOURA_${t}_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}.csv`;
+    a.href = URL.createObjectURL(blob);
+    a.download = file;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  btnCarregar.addEventListener("click", carregar);
+  btnLimpar.addEventListener("click", ()=>{
+    limparFiltros();
+    limparTabela();
+  });
+
+  elTabela.addEventListener("change", ()=>{
+    configurarFiltroPorPainel();
+    limparTabela();
+    setErro("");
+    setStatus("");
+  });
+
+  elAno.addEventListener("input", ()=>{ if(elTabela.value==="presencas"||elTabela.value==="escalacao") preencherDomingos(); });
+  elMes.addEventListener("input", ()=>{ if(elTabela.value==="presencas"||elTabela.value==="escalacao") preencherDomingos(); });
+
+  btnBaixarPDF.addEventListener("click", ()=>window.print());
+  btnBaixarCSV.addEventListener("click", baixarCSV);
+
+  // Inicialização
+  (function(){
+    limparFiltros();
+    configurarFiltroPorPainel();
+  })();
+</script>
 </body>
 </html>
