@@ -1,1221 +1,648 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
   <title>TESOURA - PRESENÇA / ESCALAÇÃO</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
-    header{background:#020617;padding:12px 16px;text-align:center;font-weight:bold;letter-spacing:1px;text-transform:uppercase}
-    .container{max-width:1400px;margin:0 auto;padding:16px}
-    h2{margin:8px 0;color:#f97316;text-transform:uppercase}
-    .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
-    .linhas-topo{display:flex;gap:16px;margin-bottom:16px}
-    .col-50{flex:1;min-width:0}
-    button{
-      padding:6px 10px;
-      border-radius:6px;
-      border:none;
-      cursor:pointer;
-      font-weight:bold;
-      text-transform:uppercase;
-      font-size:11px;
-      line-height:1;
-      height:30px;
-      min-width:110px;
-    }
-    .btn-primario{background:#22c55e;color:#022c22}
-    .btn-secundario{background:#0ea5e9;color:#0f172a}
-    .btn-perigo{background:#ef4444;color:#f9fafb}
-    .btn-neutro{background:#f97316;color:#0f172a}
-    .btn-chegou{background:#10b981;color:#022c22;min-width:120px}
-    .btn-sair{background:#f97316;color:#0f172a;min-width:70px;height:34px;border-radius:6px;font-size:11px}
-    .btn-nao-joga{background:#64748b;color:#e5e7eb;min-width:140px}
-    .btn-excluir{background:#ef4444;color:#f9fafb;min-width:90px}
-    table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
-    th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:uppercase;white-space:nowrap;font-size:11px}
-    th{background:#111827;color:#f97316;position:sticky;top:0;z-index:1}
-    tr:nth-child(even){background:#0b1120}
-    tr:nth-child(odd){background:#020617}
-    .status-info{font-size:12px;margin-top:6px;color:#cbd5e1}
-    .painel-scroll{overflow-y:auto;max-height:320px}
-    .riscado{text-decoration:line-through;opacity:.55}
-    .obs-pago{color:#22c55e;font-weight:bold}
-    .obs-inad{color:#ef4444;font-weight:bold}
-    .grid-escalacao{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media (max-width: 980px){.grid-escalacao{grid-template-columns:1fr}}
-    .col-escalacao{flex:1;min-width:0}
-    .totais{font-weight:bold;text-align:right;margin-top:6px;font-size:12px;color:#cbd5e1}
-    .msg-salvar{font-size:13px;font-weight:bold;color:#22c55e;margin:6px 0 0;text-align:right;min-height:18px}
-    .legenda{font-size:11px;margin-top:10px;color:#cbd5e1}
-    .t-amarelo{color:#facc15;font-weight:bold}
-    .t-azul{color:#38bdf8;font-weight:bold}
-    @media print{
-      body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
-      header,.no-print{display:none !important}
-      .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
-      table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
-      th{background:#eee;color:#000}
-      tr:nth-child(even),tr:nth-child(odd){background:#fff}
-      .t-amarelo,.t-azul,.obs-pago,.obs-inad{color:#000 !important}
-      .riscado{opacity:1}
-      .page-break{page-break-before:always}
-    
-/* PRINT_SEPARADO_R5 */
-/* Não imprimir lista de jogadores */
-.linhas-topo .col-50:first-child{display:none !important;}
-.linhas-topo{display:block !important;}
-.linhas-topo .col-50{width:100% !important; display:block !important;}
-/* Presença ocupa a página(s) inicial(is) */
-.painel-presenca{page-break-inside: avoid;}
-/* Escalação em página separada */
-.grid-escalacao{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media (max-width: 980px){.grid-escalacao{grid-template-columns:1fr}}
-.grid-escalacao table{page-break-inside: avoid;}
-/* Remover sombras/efeitos para imprimir limpo */
-*{box-shadow:none !important; text-shadow:none !important;}
-body{background:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
-}
-  
-    /* === AJUSTES PADRÃO (compacto) === */
-    body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
-    .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
-    .painel-scroll{overflow-y:auto;max-height:320px}
-    table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
-    th, td { padding: 2px 3px; }
-    button{
-      padding:6px 10px;
-      border-radius:6px;
-      border:none;
-      cursor:pointer;
-      font-weight:bold;
-      text-transform:uppercase;
-      font-size:11px;
-      line-height:1;
-      height:30px;
-      min-width:110px;
-    }
-    .btn-chegou { width:120px; }
-    .btn-nao-joga { width:140px; }
-    .btn-excluir { width:90px; }
-    .btn-sair { width:70px; }
 
-    /* ESCALAÇÃO: 1º e 2º tempo com MESMO tamanho */
-    .grid-escalacao{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media (max-width: 980px){.grid-escalacao{grid-template-columns:1fr}}
-    .col-escalacao { display: flex; flex-direction: column; }
-    .col-escalacao table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
-
-    /* TÍTULOS AMARELO/AZUL SEM FUNDO */
-    th { background: #f97316; color: #0f172a; } /* padrão do projeto */
-    .grid-escalacao th { background: transparent; }
-    /* cabeçalhos específicos da escalação */
-    .th-amarelo { color: #facc15 !important; font-weight: 900; }
-    .th-azul { color: #38bdf8 !important; font-weight: 900; }
-
-    /* === IMPRESSÃO / PDF (não quebrar um painel em 2 folhas) === */
-    @media print {
-      body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
-      header { color: #000000 !important; background: #ffffff !important; }
-      .painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
-      .linhas-topo { page-break-after: always; break-after: page; }
-      button, .btn-primario, .btn-secundario, .btn-perigo, .btn-neutro { display: none !important; }
-      .painel-scroll{overflow-y:auto;max-height:320px}
-      th, td { border: 1px solid #444 !important; }
-    }
-
-  
-/* R2 - Ajustes de layout (padrão do projeto) */
-table th, table td { padding: 6px 8px !important; font-size: 12px !important; }
-button{
-      padding:6px 10px;
-      border-radius:6px;
-      border:none;
-      cursor:pointer;
-      font-weight:bold;
-      text-transform:uppercase;
-      font-size:11px;
-      line-height:1;
-      height:30px;
-      min-width:110px;
-    }
-#listaJogadores, #listaPresentes { max-height: 320px !important; overflow: auto !important; }
-#painelEscalacao .col { flex: 1 1 0 !important; }
-#painelEscalacao .col table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
-#painelEscalacao .col { min-height: 420px !important; }
-#painelEscalacao .col .tblwrap { max-height: 360px !important; overflow: auto !important; }
-
-/* Impressão: 1 página (evitar quebrar o painel no meio) */
-@media print {
-  body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
-  .container, .card, #painelEscalacao { page-break-inside: avoid; break-inside: avoid; }
-  .btn, button{
-      padding:6px 10px;
-      border-radius:6px;
-      border:none;
-      cursor:pointer;
-      font-weight:bold;
-      text-transform:uppercase;
-      font-size:11px;
-      line-height:1;
-      height:30px;
-      min-width:110px;
-    }
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-}
-
-/* === R3: layout compacto (linhas e botões menores) === */
-header{padding:10px 14px}
-.container{padding:12px;max-width:1400px}
-.painel{background:#020617;border-radius:10px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,0.35);margin-bottom:14px;font-size:12px}
-.status-info{font-size:11px}
-label{font-size:10px}
-button{
-      padding:6px 10px;
-      border-radius:6px;
-      border:none;
-      cursor:pointer;
-      font-weight:bold;
-      text-transform:uppercase;
-      font-size:11px;
-      line-height:1;
-      height:30px;
-      min-width:110px;
-    }
-table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
-th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:uppercase;white-space:nowrap;font-size:11px}
-.painel-scroll{overflow-y:auto;max-height:320px}
-.btn-chegou{width:120px}
-.btn-nao-joga{width:140px}
-.btn-excluir{width:90px}
-.btn-sair{width:70px}
-
-
-/* LAYOUT_ALTURA_R5 */
-.grid-escalacao{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media (max-width: 980px){.grid-escalacao{grid-template-columns:1fr}}
-.col-escalacao{display:flex; flex-direction:column;}
-.col-escalacao table{flex:1; width:100%;}
-/* Padroniza altura de linha nas tabelas da escalação */
-.grid-escalacao table td, .grid-escalacao table th{padding-top:6px; padding-bottom:6px; line-height:1.1;}
-
-  .subinfo{margin-top:6px;font-size:13px;color:#cfd9ff;opacity:.95}
-  .cutinfo{margin-left:12px;font-size:13px;color:#cfd9ff;opacity:.95}
-  .legend-inline{margin-top:10px;font-size:12px;color:#cfd9ff;opacity:.95;line-height:1.3}
-
-
-.bloco-regras{margin-top:14px;background:rgba(0,0,0,0.15);border:1px solid rgba(255,127,39,0.35);border-radius:12px;padding:12px}
-.bloco-regras .col-regras h3{margin:0 0 8px 0;color:#ffb35a;font-size:14px}
-.bloco-regras .col-regras ul{margin:0 0 8px 18px;padding:0;font-size:12px;line-height:1.35}
-.bloco-regras{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.bloco-regras .obs-legenda{grid-column:1 / -1;font-size:12px;margin-top:2px}
-.pago-ok{color:#22c55e;font-weight:bold}
-.pago-bad{color:#ef4444;font-weight:bold}
-@media (max-width: 980px){.bloco-regras{grid-template-columns:1fr}}
-.painel-1t, .painel-2t{min-width:0}
-
-</style>
-</head>
-<body>
-  <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
-
-  <div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
-    <button class="btn-secundario" onclick="window.print()">IMPRIMIR / BAIXAR</button>
-  </div>
-
-  <div class="container">
-
-    <div class="linhas-topo">
-      <div class="col-50">
-        <div class="painel">
-          <h2>Jogadores (todos)</h2>
-          <div class="status-info">Clique em <b>CHEGOU AGORA</b> quando o jogador chegar.</div>
-          <div id="status-jogadores" class="status-info"></div>
-
-          <div class="painel-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:70px">ID</th>
-                  <th>APELIDO</th>
-                  <th style="width:170px">CHEGOU AGORA</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-jogadores-todos"></tbody>
-            </table>
-          </div>
-
-          <div id="status-total-jogadores" class="status-info"></div>
-        </div>
-      </div>
-
-      <div class="col-50">
-        <div class="painel">
-          <h2>Presença hoje</h2>
-
-          <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
-            <div id="info-presentes" class="status-info"></div>
-            <div id="info-data-jogo" class="status-info"></div>
-          </div>
-
-          <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
-<button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
-<span style="margin-left:10px;color:#cbd5e1;font-size:12px;">Horário de corte: 06:15</span>
-            
-          </div>
-
-          <div id="status-presentes" class="status-info"></div>
-
-          <div class="painel-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:70px">ID</th>
-                  <th style="width:70px">ORDEM</th>
-                  <th>APELIDO</th>
-                  <th style="width:110px">HORA</th>
-                  <th style="width:110px">OBS</th>
-                  <th style="width:170px">NÃO VAI JOGAR</th>
-                  <th style="width:120px">EXCLUIR</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-presentes-hoje"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="painel">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-        <h2 style="margin:0;">Escalação do jogo</h2>
-        <div class="no-print" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-          <div id="msg-salvar" class="msg-salvar"></div>
-          <button id="btn-escalar-2t" class="btn-primario">Escalar 2º tempo</button>
-          <button id="btn-salvar-jogo" class="btn-neutro">Salvar</button>
-        </div>
-      </div>
-
-      <div class="grid-escalacao">
-        <div class="col-escalacao">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-           <div class="t-amarelo" style="font-size:13px">1º TEMPO — JOGO DAS 06:40 ÀS 07:40</div> 
-            <div class="status-info">Botão <b>SAIU</b> risca o nome.</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width:70px">ID</th>
-                <th style="width:60px">POS</th>
-                <th class="t-amarelo">AMARELO</th>
-                <th style="width:90px">SAIU</th>
-                <th class="t-azul">AZUL</th>
-                <th style="width:90px">SAIU</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-1t"></tbody>
-          </table>
-          <div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
-         <div style="margin-top:8px;font-size:12px;line-height:1.35;color:#cbd5e1;">
-  <b>Regras 1º tempo (corte 06:15):</b><br/>
-  • Se até 06:15 tiver <b>até 20 presentes</b> (ex.: 15, 19, 20): <b>sem eliminação</b> (todos jogam).<br/>
-  • Se até 06:15 tiver <b>mais de 20 presentes</b> (ex.: 25): o app corta até ficar 20, na ordem:
-  <b>faltou no domingo anterior</b> → <b>inadimplente</b> → <b>maior nº de faltas</b>.
-</div>
-     <div class="legend-inline">
-            C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | P (verde) pagou | P (vermelho) não pagou | F (faltou)
-          </div>
-        </div>
-
-        <div class="col-escalacao">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="t-amarelo" style="font-size:13px">2º TEMPO — JOGO DAS 08:00 ÀS 09:00</div>
-             <div class="status-info">Prioridade: quem não jogou.</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width:70px">ID</th>
-                <th style="width:60px">POS</th>
-                <th class="t-amarelo">AMARELO</th>
-                <th class="t-azul">AZUL</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-2t"></tbody>
-          </table>
-          <div class="totais" id="totais-2t">TOTAL PONTOS: 0 x 0</div>
-        </div>
-      </div>
-
-      <div class="legenda">
-        <b>OBS:</b>
-C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
-<span class="obs-pago">P (verde) pagou</span> |
-<span class="obs-inad">P (vermelho) não pagou</span>
-      </div>
-    </div>
-
-  </div>
-
+  <!-- SUPABASE + CONFIG DO APP (obrigatórios dentro do iframe) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // ===== SUPABASE =====
-    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    var supabase = window.__TESOURA_SUPABASE__;
-    // ===== ESTADO =====
-    let dataJogoIso = null;
-    let todosJogadores = [];  // {id, apelido, pontos, inadimplente}
-    let mapaJogadores = {};   // apelido -> jogador
+  <script src="app/js/config.js"></script>
 
-    // presentesHoje: {id, apelido, horaChegada, naoVaiJogar, escalou1, escalou2, saiu, obs, pontos}
-    let presentesHoje = [];
-
-    // escalações: cada item {id, apelido}
-    let escala1 = { amarelo: [], azul: [] };
-    let escala2 = { amarelo: [], azul: [] };
-
-    // ===== DOM =====
-    const statusJogadoresEl = document.getElementById("status-jogadores");
-    const statusTotalJogadoresEl = document.getElementById("status-total-jogadores");
-    const tbodyJogadoresTodos = document.getElementById("tbody-jogadores-todos");
-
-    const infoDataJogoEl = document.getElementById("info-data-jogo");
-    const infoPresentesEl = document.getElementById("info-presentes");
-    const statusPresentesEl = document.getElementById("status-presentes");
-    const tbodyPresentesHoje = document.getElementById("tbody-presentes-hoje");
-
-    const btnLimparPresentes = document.getElementById("btn-limpar-presentes");
-    const btnEscalar1T = document.getElementById("btn-escalar-1t");
-    const btnEscalar2T = document.getElementById("btn-escalar-2t");
-    const btnSalvarJogo = document.getElementById("btn-salvar-jogo");
-
-    const tbody1T = document.getElementById("tbody-1t");
-    const tbody2T = document.getElementById("tbody-2t");
-    const totais1TEl = document.getElementById("totais-1t");
-    const totais2TEl = document.getElementById("totais-2t");
-    const msgSalvarEl = document.getElementById("msg-salvar");
-
-    // ===== DATA/HORA =====
-    function hojeIso() {
-      const d = new Date();
-      const ano = d.getFullYear();
-      const mes = String(d.getMonth() + 1).padStart(2, "0");
-      const dia = String(d.getDate()).padStart(2, "0");
-      return `${ano}-${mes}-${dia}`;
+  <style>
+    :root{
+      --bg:#071a2b; --panel:#0b2640; --panel2:#082033;
+      --txt:#e8f0ff; --muted:#a9bfdc; --accent:#ff8a00;
+      --btn:#1da2ff; --btn2:#00c26a; --danger:#ff3b3b;
+      --line:rgba(255,255,255,.12);
+      --ok:#00c26a;
     }
-    function formatHora(d) {
-      return d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false });
+    body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif;}
+    .wrap{max-width:1180px;margin:16px auto;padding:0 12px;}
+    h1{margin:0 0 10px;color:var(--accent);font-size:16px;letter-spacing:.4px}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:12px;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn{padding:9px 12px;border-radius:10px;border:0;color:#00121f;font-weight:800;cursor:pointer}
+    .btn-primario{background:var(--btn2)}
+    .btn-sec{background:#ffb000}
+    .btn-blue{background:var(--btn)}
+    .btn-danger{background:var(--danger);color:#fff}
+    .small{font-size:12px;color:var(--muted)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{color:var(--accent);font-size:12px}
+    tr:hover{background:rgba(255,255,255,.04)}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:800}
+    .pill-ok{background:rgba(0,194,106,.15);color:var(--ok);border:1px solid rgba(0,194,106,.35)}
+    .pill-bad{background:rgba(255,59,59,.12);color:#ffb0b0;border:1px solid rgba(255,59,59,.35)}
+    .toast{
+      position:fixed;left:50%;transform:translateX(-50%);
+      bottom:12px;z-index:9999;
+      background:#031220;border:1px solid var(--line);
+      padding:10px 12px;border-radius:12px;display:none;
+      max-width:92vw;white-space:pre-wrap
     }
-    function comparaHoraStr(a,b){ return (a||"").localeCompare(b||""); }
+    .toast.show{display:block}
+    .toast .t{color:var(--accent);font-weight:900}
+    .toast .m{color:var(--txt);margin-top:4px;font-size:12px}
+    .cols{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}
+    @media (max-width: 980px){ .cols{grid-template-columns:1fr;} }
+    .kpi{display:flex;gap:10px;flex-wrap:wrap}
+    .kpi b{color:var(--accent)}
+    .btn-chegou{background:#173a5b;color:var(--txt);border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:10px;font-weight:800;cursor:pointer}
+    .btn-saiu{background:#1a2f45;color:#fff;border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:10px;font-weight:900;cursor:pointer}
+  </style>
+</head>
 
-    function atualizarInfoPresentes(){
-      infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}`;
-    }
+<body>
+<div class="wrap">
+  <h1>PRESENÇA / ESCALAÇÃO</h1>
 
-    // ===== REGRA PAGAMENTO =====
-    // - Até 1 dia depois do 2º domingo do mês: TODO MUNDO É P VERDE (ninguém é inadimplente).
-    // - Depois disso: P vermelho só para quem estiver atrasado (mês atual em aberto) OU meses anteriores em aberto.
-    function segundoDomingo(ano, mes){ // mes 1-12
-      const d = new Date(ano, mes-1, 1);
-      let domingos = 0;
-      while (true){
-        if (d.getDay() === 0) { // domingo
-          domingos++;
-          if (domingos === 2) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        }
-        d.setDate(d.getDate()+1);
-      }
-    }
-    function addDias(dt, n){
-      const d = new Date(dt.getTime());
-      d.setDate(d.getDate()+n);
-      return d;
-    }
-    function ymd(dt){
-      const y=dt.getFullYear();
-      const m=String(dt.getMonth()+1).padStart(2,"0");
-      const d=String(dt.getDate()).padStart(2,"0");
-      return `${y}-${m}-${d}`;
-    }
+  <div class="card">
+    <div class="row">
+      <div class="kpi small">
+        <span><b id="infoDataJogo">DIA DO JOGO:</b> <span id="infoDataJogoVal">-</span></span>
+        <span>|</span>
+        <span><b>Presentes hoje:</b> <span id="infoPresentes">0</span></span>
+        <span>|</span>
+        <span><b>Status:</b> <span id="statusSupabase">-</span></span>
+      </div>
+    </div>
 
-    // mensMap: { "YYYY-MM": {apelido: {pago, status, data_pagamento}} }
-    let mensPorApelido = {}; // apelido -> array de {ano,mes,pago,status,data_pagamento}
+    <div class="row" style="margin-top:10px">
+      <button id="btn-limpar-presentes" class="btn btn-sec">Limpar hoje</button>
+      <button id="btn-escalar-1t" class="btn btn-primario">Escalar 1º tempo</button>
+      <button id="btn-escalar-2t" class="btn btn-primario">Escalar 2º tempo</button>
+      <button id="btn-salvar-jogo" class="btn btn-blue">Salvar (Presença + Escalação)</button>
+      <span class="small" id="msgSalvar"></span>
+    </div>
 
-    function isPagoHoje(apelido){
-      const hoje = new Date();
-      const ano = hoje.getFullYear();
-      const mes = hoje.getMonth()+1;
+    <div class="small" style="margin-top:10px">
+      Regras: 1º tempo usa corte <b>06:15</b> para quem entra no “corte”. (Não bloqueia o botão.)
+    </div>
+  </div>
 
-      const venc = segundoDomingo(ano, mes);
-      const viraVermelho = addDias(venc, 1); // segunda-feira após 2º domingo (venc+1)
+  <div class="cols" style="margin-top:12px">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b style="color:var(--accent)">JOGADORES</b>
+        <span class="small" id="statusJogadores">-</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>apelido</th>
+            <th>pontos</th>
+            <th>inadimplente</th>
+            <th>ação</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-jogadores-todos"></tbody>
+      </table>
+    </div>
 
-      // antes da virada: todo mundo verde
-      if (hoje < viraVermelho) return true;
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b style="color:var(--accent)">PRESENTES HOJE</b>
+        <span class="small" id="statusPresentes">-</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ordem</th>
+            <th>apelido</th>
+            <th>hora</th>
+            <th>status</th>
+            <th>obs</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-presentes-hoje"></tbody>
+      </table>
+    </div>
+  </div>
 
-      const regs = mensPorApelido[apelido] || [];
+  <div class="cols" style="margin-top:12px">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b style="color:var(--accent)">ESCALAÇÃO 1º TEMPO</b>
+        <span class="small" id="totais-1t">-</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>time</th>
+            <th>apelido</th>
+            <th>ação</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-1t"></tbody>
+      </table>
+    </div>
 
-      // 1) se tem mês anterior em aberto => vermelho (já virou o mês seguinte)
-      for (const r of regs){
-        const key = r.ano*100 + r.mes;
-        const keyAtual = ano*100 + mes;
-        if (key < keyAtual){
-          if (!r.pago) return false;
-        }
-      }
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b style="color:var(--accent)">ESCALAÇÃO 2º TEMPO</b>
+        <span class="small" id="totais-2t">-</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>time</th>
+            <th>apelido</th>
+            <th>ação</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-2t"></tbody>
+      </table>
+    </div>
+  </div>
 
-      // 2) mês atual: se existe pago true => verde; se existe pago false => vermelho; se não existe => vermelho (após virada)
-      const regAtual = regs.find(r => r.ano===ano && r.mes===mes);
-      if (regAtual) return !!regAtual.pago;
-      return false;
-    }
+</div>
 
-    // ===== LOAD BASE =====
-    async function carregarBase(){
-      try{
-        dataJogoIso = hojeIso();
-        infoDataJogoEl.textContent = `DIA DO JOGO: ${dataJogoIso.split("-").reverse().join("/")}`;
-        msgSalvarEl.textContent = "";
+<div class="toast" id="toast">
+  <div class="t" id="toastTitle">TESOURA</div>
+  <div class="m" id="toastMsg"></div>
+</div>
 
-        statusJogadoresEl.textContent = "Carregando jogadores...";
-        tbodyJogadoresTodos.innerHTML = "";
-        tbodyPresentesHoje.innerHTML = "";
-        presentesHoje = [];
-        escala1 = { amarelo: [], azul: [] };
-        escala2 = { amarelo: [], azul: [] };
-
-        // jogadores
-        const { data: jogs, error: errJ } = await supabase
-          .from("jogadores")
-          .select("id, apelido, pontos, ativo")
-          .eq("ativo", true)
-          .order("apelido", { ascending: true });
-
-        if (errJ){
-          console.error(errJ);
-          statusJogadoresEl.textContent = "ERRO AO CARREGAR JOGADORES. (abra F12 > Console)";
-          return;
-        }
-
-        todosJogadores = jogs || [];
-        mapaJogadores = {};
-        todosJogadores.forEach(j => { mapaJogadores[j.apelido] = j; });
-
-        // mensalidades (carrega do mês atual e meses anteriores do mesmo ano)
-        const hoje = new Date();
-        const ano = hoje.getFullYear();
-        const mes = hoje.getMonth()+1;
-
-        const { data: mens, error: errMens } = await supabase
-          .from("mensalidades")
-          .select("apelido, ano, mes, pago, status, data_pagamento")
-          .lte("ano", ano);
-
-        if (errMens){
-          console.warn("mensalidades:", errMens);
-        }
-
-        mensPorApelido = {};
-        (mens || []).forEach(m=>{
-          if(!mensPorApelido[m.apelido]) mensPorApelido[m.apelido] = [];
-          mensPorApelido[m.apelido].push({
-            ano: Number(m.ano), mes: Number(m.mes),
-            pago: !!m.pago,
-            status: (m.status||"").toUpperCase(),
-            data_pagamento: m.data_pagamento || null
-          });
-        });
-
-        renderJogadoresTodos();
-        renderPresentes();
-        renderEscalacoes();
-
-        statusJogadoresEl.textContent = "Jogadores carregados.";
-        statusTotalJogadoresEl.textContent = `TOTAL DE JOGADORES: ${todosJogadores.length}`;
-        atualizarInfoPresentes();
-      }catch(e){
-        console.error(e);
-        statusJogadoresEl.textContent = "ERRO NO PAINEL. (abra F12 > Console)";
-      }
-    }
-
-    function renderJogadoresTodos(){
-      tbodyJogadoresTodos.innerHTML = "";
-      todosJogadores.forEach(j=>{
-        const tr=document.createElement("tr");
-
-        const tdId=document.createElement("td");
-        tdId.textContent = j.id ?? "";
-        tr.appendChild(tdId);
-
-        const tdAp=document.createElement("td");
-        tdAp.textContent = (j.apelido||"").toUpperCase();
-        tr.appendChild(tdAp);
-
-        const tdBtn=document.createElement("td");
-        const bt=document.createElement("button");
-        bt.textContent="CHEGOU AGORA";
-        bt.className="btn-chegou";
-        bt.onclick=()=>marcarChegada(j);
-        tdBtn.appendChild(bt);
-        tr.appendChild(tdBtn);
-
-        tbodyJogadoresTodos.appendChild(tr);
-      });
-    }
-
-    function marcarChegada(j){
-      const apelido = j?.apelido;
-      if(!apelido) return;
-
-      if(presentesHoje.find(p=>p.apelido===apelido)){
-        alert("Este jogador já está na lista de presença hoje.");
-        return;
-      }
-
-      const agora=new Date();
-      const registro = {
-        id: j.id,
-        apelido,
-        horaChegada: formatHora(agora),
-        naoVaiJogar: false,
-        escalou1: false,
-        escalou2: false,
-        saiu: false, // saiu do 1º tempo
-        obs: "",
-        pontos: j.pontos ?? 0
+<script>
+/* =========================
+   SUPABASE (config do app)
+========================= */
+function getCfgSafe(){
+  let cfg = window.TESOURA_CONFIG || {};
+  if((!cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) && window.parent && window.parent !== window){
+    try{
+      const pCfg = window.parent.TESOURA_CONFIG || {};
+      cfg = {
+        SUPABASE_URL: cfg.SUPABASE_URL || pCfg.SUPABASE_URL,
+        SUPABASE_KEY: cfg.SUPABASE_KEY || pCfg.SUPABASE_KEY,
       };
-      presentesHoje.push(registro);
-      presentesHoje.sort((a,b)=>comparaHoraStr(a.horaChegada,b.horaChegada));
-      atualizarInfoPresentes();
-      limparEscalacoes();
-      renderPresentes();
-      renderEscalacoes();
-    }
+    }catch(e){}
+  }
+  return cfg || {};
+}
+const __cfg = getCfgSafe();
+const SUPABASE_URL = (__cfg.SUPABASE_URL || "").trim();
+const SUPABASE_KEY = (__cfg.SUPABASE_KEY || "").trim();
 
-    function toggleNaoVaiJogar(apelido){
-      const p=presentesHoje.find(x=>x.apelido===apelido);
-      if(!p) return;
-      p.naoVaiJogar=!p.naoVaiJogar;
-      // risco visual imediato
-      limparEscalacoes();
-      renderPresentes();
-      renderEscalacoes();
-    }
+const statusSupabaseEl = document.getElementById("statusSupabase");
+if(!SUPABASE_URL || !SUPABASE_KEY){
+  statusSupabaseEl.innerHTML = '<span class="pill pill-bad">CONFIG AUSENTE</span>';
+  alert("ERRO: CONFIG SUPABASE ausente. Verifique app/js/config.js (TESOURA_CONFIG).");
+}
+window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var supabase = window.__TESOURA_SUPABASE__;
+statusSupabaseEl.innerHTML = '<span class="pill pill-ok">OK</span>';
 
-    function excluirPresente(apelido){
-      presentesHoje = presentesHoje.filter(p=>p.apelido!==apelido);
-      atualizarInfoPresentes();
-      limparEscalacoes();
-      renderPresentes();
-      renderEscalacoes();
-    }
+/* =========================
+   ESTADO + ELEMENTOS
+========================= */
+const infoDataJogoValEl = document.getElementById("infoDataJogoVal");
+const infoPresentesEl = document.getElementById("infoPresentes");
+const msgSalvarEl = document.getElementById("msgSalvar");
+const statusJogadoresEl = document.getElementById("statusJogadores");
+const statusPresentesEl = document.getElementById("statusPresentes");
 
-    function renderPresentes(){
-      tbodyPresentesHoje.innerHTML="";
-      presentesHoje.forEach((p,idx)=>{
-        const tr=document.createElement("tr");
+const tbodyJogadoresTodos = document.getElementById("tbody-jogadores-todos");
+const tbodyPresentesHoje = document.getElementById("tbody-presentes-hoje");
 
-        const tdId=document.createElement("td");
-        tdId.textContent = p.id ?? "";
-        tr.appendChild(tdId);
+const btnLimparPresentes = document.getElementById("btn-limpar-presentes");
+const btnEscalar1T = document.getElementById("btn-escalar-1t");
+const btnEscalar2T = document.getElementById("btn-escalar-2t");
+const btnSalvarJogo = document.getElementById("btn-salvar-jogo");
 
-        const tdOrd=document.createElement("td");
-        tdOrd.textContent=idx+1;
-        tr.appendChild(tdOrd);
+const tbody1T = document.getElementById("tbody-1t");
+const tbody2T = document.getElementById("tbody-2t");
+const totais1TEl = document.getElementById("totais-1t");
+const totais2TEl = document.getElementById("totais-2t");
 
-        const tdAp=document.createElement("td");
-        tdAp.textContent=p.apelido.toUpperCase();
-        // risco visual no painel presença:
-        // - NÃO VAI JOGAR
-        // - escalou 1º
-        // - escalou 2º
-        if(p.naoVaiJogar || p.escalou1 || p.escalou2){
-          tdAp.classList.add("riscado");
-        }
-        tr.appendChild(tdAp);
+let dataJogoIso = null;
+let todosJogadores = [];
+let mapaJogadores = {};
+let presentesHoje = [];
+let presencasHoje = []; // alias usado na escalação
+let escala1t = null;
+let escala2t = null;
 
-        const tdHora=document.createElement("td");
-        tdHora.textContent=p.horaChegada;
-        tr.appendChild(tdHora);
+const HORARIO_CORTE_1T = "06:15";
 
-        const tdObs=document.createElement("td");
-        // OBS: base (C/1/2/1-2) + pagamento (P verde/vermelho)
-        const base = (p.obs||"").split("-")[0] || "";
-        const pago = isPagoHoje(p.apelido);
-        const spanBase=document.createElement("span");
-        spanBase.textContent = base ? (base+"-") : "";
-        tdObs.appendChild(spanBase);
+/* =========================
+   TOAST (mensagem visível)
+========================= */
+function toast(msg, ok=true){
+  const t = document.getElementById("toast");
+  document.getElementById("toastTitle").textContent = ok ? "OK" : "ERRO";
+  document.getElementById("toastMsg").textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 5000);
+}
 
-        const spanP=document.createElement("span");
-        spanP.textContent="P";
-        spanP.className = pago ? "obs-pago" : "obs-inad";
-        tdObs.appendChild(spanP);
+/* =========================
+   HELPERS
+========================= */
+function hojeIso(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${dd}`;
+}
+function horaAgoraStr(){
+  const d = new Date();
+  return d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+}
+function horaMenorOuIgual(a,b){
+  return (a||"").localeCompare(b||"") <= 0;
+}
+function atualizarInfoPresentes(){
+  infoPresentesEl.textContent = String(presentesHoje.length);
+}
+function getDataJogoISO(){
+  return dataJogoIso || hojeIso();
+}
+function mesAnoRef(){
+  const d = new Date(getDataJogoISO()+"T00:00:00");
+  return { mes_ref: String(d.getMonth()+1), ano_ref: String(d.getFullYear()) };
+}
 
-        tr.appendChild(tdObs);
+/* =========================
+   RENDER
+========================= */
+function renderJogadores(){
+  tbodyJogadoresTodos.innerHTML = "";
+  todosJogadores.forEach(j=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${j.apelido||"-"}</td>
+      <td>${Number(j.pontos||0)}</td>
+      <td>${j.inadimplente ? '<span class="pill pill-bad">P</span>' : '<span class="pill pill-ok">OK</span>'}</td>
+      <td></td>
+    `;
+    const tdBtn = tr.querySelector("td:last-child");
+    const bt = document.createElement("button");
+    bt.textContent = "CHEGOU AGORA";
+    bt.className = "btn-chegou";
+    bt.onclick = ()=>marcarChegada(j);
+    tdBtn.appendChild(bt);
+    tbodyJogadoresTodos.appendChild(tr);
+  });
+}
 
-        const tdNao=document.createElement("td");
-        const btNao=document.createElement("button");
-        btNao.textContent = p.naoVaiJogar ? "VAI JOGAR" : "NÃO VAI JOGAR";
-        btNao.className="btn-nao-joga";
-        btNao.onclick=()=>toggleNaoVaiJogar(p.apelido);
-        tdNao.appendChild(btNao);
-        tr.appendChild(tdNao);
+function renderPresentes(){
+  tbodyPresentesHoje.innerHTML = "";
+  const ordenados = [...presentesHoje].sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  ordenados.forEach(p=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p.ordem||"-"}</td>
+      <td>${p.apelido||"-"}</td>
+      <td>${p.hora||"-"}</td>
+      <td>${p.status||"P"}</td>
+      <td>${p.obs||""}</td>
+    `;
+    tbodyPresentesHoje.appendChild(tr);
+  });
+  atualizarInfoPresentes();
+}
 
-        const tdExc=document.createElement("td");
-        const btExc=document.createElement("button");
-        btExc.textContent="EXCLUIR";
-        btExc.className="btn-excluir";
-        btExc.onclick=()=>excluirPresente(p.apelido);
-        tdExc.appendChild(btExc);
-        tr.appendChild(tdExc);
+function renderEscalacoes(){
+  tbody1T.innerHTML = "";
+  tbody2T.innerHTML = "";
 
-        tbodyPresentesHoje.appendChild(tr);
-      });
+  const a1 = escala1t?.amarelo || [];
+  const z1 = escala1t?.azul || [];
+  const a2 = escala2t?.amarelo || [];
+  const z2 = escala2t?.azul || [];
 
-      statusPresentesEl.textContent = presentesHoje.length ? "Lista carregada." : "Nenhum jogador cadastrado hoje.";
-    }
+  totais1TEl.textContent = `amarelo: ${a1.length} | azul: ${z1.length}`;
+  totais2TEl.textContent = `amarelo: ${a2.length} | azul: ${z2.length}`;
 
-    function limparEscalacoes(){
-      escala1={amarelo:[],azul:[]};
-      escala2={amarelo:[],azul:[]};
-      presentesHoje.forEach(p=>{
-        p.escalou1=false;
-        p.escalou2=false;
-        p.saiu=false;
-        p.obs="";
-      });
-      atualizarObs();
-    }
+  function linha(tbody, time, apelido, is1t){
+    const tr = document.createElement("tr");
+    const saiu = presentesHoje.find(x=>x.apelido===apelido)?.saiu ? " (SAIU)" : "";
+    tr.innerHTML = `
+      <td>${time}</td>
+      <td>${apelido}${saiu}</td>
+      <td></td>
+    `;
+    const td = tr.querySelector("td:last-child");
+    const bt = document.createElement("button");
+    bt.textContent = "SAÍU";
+    bt.className = "btn-saiu";
+    bt.onclick = ()=>toggleSaiu(apelido);
+    td.appendChild(bt);
+    tbody.appendChild(tr);
+  }
 
-    function atualizarObs(){
-      const set1 = new Set([...escala1.amarelo, ...escala1.azul].map(e=>e.apelido));
-      const set2 = new Set([...escala2.amarelo, ...escala2.azul].map(e=>e.apelido));
+  a1.forEach(ap=>linha(tbody1T, "amarelo", ap, true));
+  z1.forEach(ap=>linha(tbody1T, "azul", ap, true));
+  a2.forEach(ap=>linha(tbody2T, "amarelo", ap, false));
+  z2.forEach(ap=>linha(tbody2T, "azul", ap, false));
+}
 
-      presentesHoje.forEach(p=>{
-        const j1=set1.has(p.apelido);
-        const j2=set2.has(p.apelido);
+/* =========================
+   CARGA BASE
+========================= */
+async function carregarBase(){
+  try{
+    dataJogoIso = hojeIso();
+    infoDataJogoValEl.textContent = dataJogoIso.split("-").reverse().join("/");
+    msgSalvarEl.textContent = "";
 
-        if (j1 && j2) p.obs="1-2";
-        else if (j1) p.obs="1";
-        else if (j2) p.obs="2";
-        else p.obs="C";
-      });
-    }
+    statusJogadoresEl.textContent = "Carregando jogadores...";
+    statusPresentesEl.textContent = "Carregando presença...";
+    tbodyJogadoresTodos.innerHTML = "";
+    tbodyPresentesHoje.innerHTML = "";
+    presentesHoje = [];
+    presencasHoje = [];
+    escala1t = null;
+    escala2t = null;
 
-    // ===== ESCALAÇÃO (BALANCEAMENTO DE PONTOS) =====
-    function pts(apelido){
-      const j = mapaJogadores[apelido];
-      return (j && j.pontos!=null) ? Number(j.pontos) : 0;
-    }
+    // jogadores
+    const { data: jogs, error: errJ } = await supabase.from("jogadores").select("*").order("apelido",{ascending:true});
+    if(errJ) throw errJ;
 
-    function balancearEmDoisTimes(listaApelidos){
-      // algoritmo guloso: ordena por pontos desc e vai colocando no time com menor soma (e respeita 10 vagas)
-      const ordenada = [...listaApelidos].sort((a,b)=>pts(b)-pts(a));
-      const A=[], B=[];
-      let sa=0, sb=0;
-      for(const ap of ordenada){
-        if (A.length>=10){ B.push(ap); sb+=pts(ap); continue; }
-        if (B.length>=10){ A.push(ap); sa+=pts(ap); continue; }
-        if (sa<=sb){ A.push(ap); sa+=pts(ap); } else { B.push(ap); sb+=pts(ap); }
-      }
-      return { amarelo:A, azul:B, somaAm:sa, somaAz:sb };
-    }
+    // presença hoje
+    const dia = getDataJogoISO();
+    const { data: pres, error: errP } = await supabase
+      .from("presencas")
+      .select("*")
+      .eq("data_jogo", dia)
+      .order("ordem",{ascending:true});
+    if(errP) throw errP;
 
-    
-    // ===== Regras (REV 6) =====
-    const HORARIO_CORTE_1T = "06:15";
+    todosJogadores = (jogs||[]).map(j=>({
+      id:j.id, apelido:j.apelido, pontos:Number(j.pontos||0),
+      inadimplente: !!j.inadimplente
+    }));
+    mapaJogadores = {};
+    todosJogadores.forEach(j=>mapaJogadores[j.apelido]=j);
 
-    function pad2(n){ return String(n).padStart(2,"0"); }
+    presentesHoje = (pres||[]).map(p=>({
+      id:p.id, apelido:p.apelido, ordem:p.ordem||0,
+      hora:(p.hora_chegada||p.hora||""),
+      naoVaiJogar: !!p.nao_vai_jogar,
+      status: p.status||"P",
+      obs: p.obs||"",
+      saiu: !!p.saiu
+    }));
+    presencasHoje = presentesHoje;
 
-    function parseDataISO(iso){ // yyyy-mm-dd
-      const [y,m,d] = iso.split("-").map(Number);
-      return new Date(y, m-1, d, 0,0,0,0);
-    }
-
-    function formataDataISO(dt){
-      const y = dt.getFullYear();
-      const m = pad2(dt.getMonth()+1);
-      const d = pad2(dt.getDate());
-      return `${y}-${m}-${d}`;
-    }
-
-    function domingoAnterior(dataISO){
-      const dt = parseDataISO(dataISO);
-      // volta 7 dias
-      dt.setDate(dt.getDate()-7);
-      return formataDataISO(dt);
-    }
-
-    function horaMenorOuIgual(hhmm, limite){
-      // hhmm pode vir "06:14" ou "06:14:30"
-      const h = (hhmm||"").slice(0,5);
-      return h && h <= limite;
-    }
-
-    const cacheFaltas = {}; // chave: apelido|ano
-
-    async function getFaltasAno(apelido, ano){
-      const k = `${apelido}|${ano}`;
-      if (cacheFaltas[k] != null) return cacheFaltas[k];
-
-      // Conta quantas vezes status = 'F' no ano
-      const ini = `${ano}-01-01`;
-      const fim = `${ano}-12-31`;
-      const { data, error } = await supabase
-        .from("presencas")
-        .select("id, data_jogo, apelido, status")
-        .eq("apelido", apelido)
-        .eq("status", "F")
-        .gte("data_jogo", ini)
-        .lte("data_jogo", fim);
-
-      if (error) { console.warn("Erro faltas:", error.message); cacheFaltas[k]=0; return 0; }
-      cacheFaltas[k] = (data||[]).length;
-      return cacheFaltas[k];
-    }
-
-    async function getStatusDomingoAnterior(apelido, dataISO){
-      const prev = domingoAnterior(dataISO);
-      const { data, error } = await supabase
-        .from("presencas")
-        .select("status")
-        .eq("apelido", apelido)
-        .eq("data_jogo", prev)
-        .limit(1);
-
-      if (error) { console.warn("Erro domingo anterior:", error.message); return null; }
-      return (data && data[0] && data[0].status) ? data[0].status : null;
-    }
-
-    async function enrichMetricas(apelidos, dataISO){
-      const ano = Number((dataISO||"").slice(0,4)) || (new Date()).getFullYear();
-      const out = {};
-      for (const ap of apelidos){
-        const [faltasAno, statusPrev] = await Promise.all([
-          getFaltasAno(ap, ano),
-          getStatusDomingoAnterior(ap, dataISO),
-        ]);
-        out[ap] = {
-          faltasAno,
-          faltouDomingoAnterior: statusPrev === "F",
-          jogouDoisDomingoAnterior: statusPrev === "1-2"
-        };
-      }
-      return out;
-    }
-
-
-    async function escalarPrimeiroTempo(){
-  try {
-      const dataISO = getDataJogoISO();
-      const listaHoje = (presencasHoje || []).filter(p => !p.naoVaiJogar);
-
-      // Apenas quem chegou até o corte (06:15)
-      const listaCorte = listaHoje
-        .filter(p => horaMenorOuIgual(p.hora, HORARIO_CORTE_1T))
-        .sort((a,b)=> (a.ordem||0) - (b.ordem||0));
-
-      const qtdCorte = listaCorte.length;
-
-      // Regras:
-      // - Se >= 25 no corte: aplicar eliminação (faltou domingo anterior, inadimplente, mais faltas)
-      // - Se < 25 no corte: sem eliminação; 1º tempo pega até 20 por ordem de chegada (ou todos, se < 20)
-      // - Observação: se tiver 15 ou 20 no corte, não tem eliminação (escala os presentes, até 20)
-      let candidatos = [...listaCorte];
-
-      if (qtdCorte >= 25){
-        const apelidos = candidatos.map(p=>p.apelido);
-        const metricas = await enrichMetricas(apelidos, dataISO);
-
-        candidatos.sort((a,b)=>{
-          const ja = jogadoresPorApelido[a.apelido] || {};
-          const jb = jogadoresPorApelido[b.apelido] || {};
-          const ma = metricas[a.apelido] || {};
-          const mb = metricas[b.apelido] || {};
-
-          // 1) faltou domingo anterior (sai primeiro)
-          if (!!ma.faltouDomingoAnterior !== !!mb.faltouDomingoAnterior){
-            return (ma.faltouDomingoAnterior ? 1 : 0) - (mb.faltouDomingoAnterior ? 1 : 0);
-          }
-          // 2) inadimplente (sai primeiro)
-          if (!!ja.inadimplente !== !!jb.inadimplente){
-            return (ja.inadimplente ? 1 : 0) - (jb.inadimplente ? 1 : 0);
-          }
-          // 3) maior número de faltas (sai primeiro)
-          if ((ma.faltasAno||0) !== (mb.faltasAno||0)){
-            return (ma.faltasAno||0) - (mb.faltasAno||0);
-          }
-          // 4) desempate: ordem de chegada (quem chegou antes fica)
-          return (a.ordem||0) - (b.ordem||0);
-        });
-
-        // candidatos agora está em ordem "melhor para ficar" (menores primeiro),
-        // então pegamos os 20 primeiros.
-        candidatos = candidatos.slice(0, 20);
-
-      } else {
-        // Sem eliminação: pega até 20 por ordem
-        candidatos = candidatos.slice(0, 20);
-      }
-
-      // Distribuir em times por pontos (equilíbrio simples)
-      const entradas = candidatos.map(p=>{
-        const j = jogadoresPorApelido[p.apelido] || {};
-        return { apelido: p.apelido, pontos: Number(j.pontos||0) };
-      });
-
-      const { amarelo, azul } = distribuiEquilibrado(entradas);
-
-      escala1t = {
-        amarelo: amarelo.map(x=>x.apelido),
-        azul: azul.map(x=>x.apelido),
-        saiu: {} // marcações do botão SAÍU
-      };
-
-      // Atualiza status: quem escalou 1º tempo = "1"
-      // quem estava presente até corte e não entrou = "C"
-      const entrouSet = new Set([...escala1t.amarelo, ...escala1t.azul]);
-
-      for (const p of presencasHoje){
-        if (p.naoVaiJogar) continue;
-        const ap = p.apelido;
-        if (entrouSet.has(ap)){
-          p.status = "1";
-        } else {
-          // Só marca "C" para quem está presente hoje (e não jogou ainda)
-          if (!p.status || p.status === "P") p.status = "C";
-        }
-      }
-
-      renderEscalacao();
-      toast("1º tempo escalado.");
-  } catch (e) {
+    statusJogadoresEl.textContent = `OK (${todosJogadores.length})`;
+    statusPresentesEl.textContent = `OK (${presentesHoje.length})`;
+    renderJogadores();
+    renderPresentes();
+    renderEscalacoes();
+  }catch(e){
     console.error(e);
-    toast('ERRO na ESCALAÇÃO 1º TEMPO: ' + (e.message || e), false);
+    statusJogadoresEl.textContent = "ERRO";
+    statusPresentesEl.textContent = "ERRO";
+    toast("Falha ao carregar base (veja Console).", false);
+    alert("ERRO ao carregar base. Abra F12 > Console para ver o motivo.");
   }
 }
 
+/* =========================
+   PRESENÇA
+========================= */
+async function marcarChegada(j){
+  try{
+    const apelido = j?.apelido;
+    if(!apelido) return;
 
-    function toggleSaiu(apelido){
-      const p = presentesHoje.find(x=>x.apelido===apelido);
-      if(!p) return;
-      p.saiu = !p.saiu; // saiu do 1º tempo
-      renderEscalacoes();
+    const dia = getDataJogoISO();
+    const hora = horaAgoraStr();
+
+    // ordem = próximo
+    const maxOrdem = presentesHoje.reduce((m,x)=>Math.max(m, Number(x.ordem||0)), 0);
+    const ordem = maxOrdem + 1;
+
+    const payload = {
+      data_jogo: dia,
+      apelido,
+      hora_chegada: hora,
+      ordem,
+      nao_vai_jogar: false,
+      status: "P",
+      obs: ""
+    };
+
+    const { data, error } = await supabase.from("presencas").insert([payload]).select("*").single();
+    if(error) throw error;
+
+    presentesHoje.push({
+      id:data.id, apelido:data.apelido, ordem:data.ordem,
+      hora:data.hora_chegada, naoVaiJogar:false, status:"P", obs:"", saiu:false
+    });
+    presencasHoje = presentesHoje;
+    renderPresentes();
+    toast("Chegada registrada.");
+  }catch(e){
+    console.error(e);
+    toast("Erro ao registrar chegada.", false);
+  }
+}
+
+async function limparPresentesHoje(){
+  try{
+    const dia = getDataJogoISO();
+    const { error } = await supabase.from("presencas").delete().eq("data_jogo", dia);
+    if(error) throw error;
+
+    presentesHoje = [];
+    presencasHoje = [];
+    escala1t = null;
+    escala2t = null;
+    renderPresentes();
+    renderEscalacoes();
+    toast("Presença de hoje limpa.");
+  }catch(e){
+    console.error(e);
+    toast("Erro ao limpar presença.", false);
+  }
+}
+
+/* =========================
+   ESCALAÇÃO (1T / 2T)
+========================= */
+function distribuiEquilibrado(entradas){
+  // entradas: [{apelido, pontos}]
+  const sorted = [...entradas].sort((a,b)=>Number(b.pontos||0)-Number(a.pontos||0));
+  const amarelo=[], azul=[];
+  let sa=0, sz=0;
+  sorted.forEach(x=>{
+    if(sa<=sz){ amarelo.push(x); sa+=Number(x.pontos||0); }
+    else { azul.push(x); sz+=Number(x.pontos||0); }
+  });
+  return { amarelo, azul };
+}
+
+async function escalarPrimeiroTempo(){
+  try{
+    const listaHoje = (presencasHoje || []).filter(p => !p.naoVaiJogar);
+
+    const listaCorte = listaHoje
+      .filter(p => horaMenorOuIgual(p.hora, HORARIO_CORTE_1T))
+      .sort((a,b)=> (a.ordem||0) - (b.ordem||0));
+
+    let selecionados = [];
+
+    if(listaCorte.length >= 25){
+      // aqui você pode colocar regras de eliminação depois (se quiser)
+      selecionados = listaCorte.slice(0,20);
+    }else{
+      selecionados = listaHoje.sort((a,b)=> (a.ordem||0)-(b.ordem||0)).slice(0,20);
     }
 
-        
-    async function escalarSegundoTempo(){
-      const dataISO = getDataJogoISO();
+    const entradas = selecionados.map(p=>{
+      const j = mapaJogadores[p.apelido] || {};
+      return { apelido: p.apelido, pontos: Number(j.pontos||0) };
+    });
 
-      const presentes = (presencasHoje || []).filter(p => !p.naoVaiJogar);
-      const jogou1tSet = new Set([...(escala1t?.amarelo||[]), ...(escala1t?.azul||[])]);
-      const naoJogou1t = presentes.filter(p => !jogou1tSet.has(p.apelido));
-      const jogou1t = presentes.filter(p => jogou1tSet.has(p.apelido));
+    const { amarelo, azul } = distribuiEquilibrado(entradas);
 
-      const totalDesejado = Math.min(20, presentes.length);
+    escala1t = { amarelo: amarelo.map(x=>x.apelido), azul: azul.map(x=>x.apelido) };
 
-      // Se 20 que não jogaram 1º tempo: entram os 20
-      let selecionados = [];
-      if (naoJogou1t.length >= totalDesejado){
-        // pega por ordem de chegada (prioridade)
-        selecionados = naoJogou1t
-          .sort((a,b)=> (a.ordem||0) - (b.ordem||0))
-          .slice(0, totalDesejado);
-      } else {
-        // entram todos que não jogaram 1º tempo, e completa com quem jogou 1º tempo
-        const base = naoJogou1t.sort((a,b)=> (a.ordem||0) - (b.ordem||0));
-        const falta = totalDesejado - base.length;
+    const entrouSet = new Set([...escala1t.amarelo, ...escala1t.azul]);
+    presentesHoje.forEach(p=>{
+      if(p.naoVaiJogar) return;
+      if(entrouSet.has(p.apelido)) p.status = "1";
+      else if(!p.status || p.status==="P") p.status = "C";
+    });
 
-        // Para abrir vagas: retirar jogadores do 1º tempo seguindo ordem "quem sai primeiro"
-        // 1) marcou SAÍU, 2) faltou domingo anterior, 3) jogou dois tempos domingo anterior, 4) mais faltas, 5) mais novo
-        const apelidos1t = jogou1t.map(p=>p.apelido);
-        const metricas = await enrichMetricas(apelidos1t, dataISO);
+    renderPresentes();
+    renderEscalacoes();
+    toast("Escalação 1º tempo gerada.");
+  }catch(e){
+    console.error(e);
+    toast("ERRO na ESCALAÇÃO 1º TEMPO: " + (e.message||e), false);
+    alert("ERRO na ESCALAÇÃO 1º TEMPO. Veja Console (F12).");
+  }
+}
 
-        const ordenaSaida = (p)=>{
-          const ap = p.apelido;
-          const m = metricas[ap] || {};
-          const j = jogadoresPorApelido[ap] || {};
-          const saiuMarcado = !!(escala1t?.saiu && escala1t.saiu[ap]);
-          const idade = Number(j.idade||0); // idade maior = mais velho
-          return [
-            saiuMarcado ? 0 : 1,                 // 0 sai primeiro
-            m.faltouDomingoAnterior ? 0 : 1,     // 0 sai primeiro
-            m.jogouDoisDomingoAnterior ? 0 : 1,  // 0 sai primeiro
-            -(m.faltasAno||0),                   // mais faltas sai primeiro
-            idade                                 // mais novo (idade menor) sai primeiro
-          ];
-        };
+async function escalarSegundoTempo(){
+  try{
+    const presentes = (presencasHoje || []).filter(p => !p.naoVaiJogar);
+    const jogou1tSet = new Set([...(escala1t?.amarelo||[]), ...(escala1t?.azul||[])]);
+    const naoJogou1t = presentes.filter(p => !jogou1tSet.has(p.apelido));
+    const jogou1t = presentes.filter(p => jogou1tSet.has(p.apelido));
 
-        // Ordena quem sai primeiro (menores no vetor saem primeiro)
-        const jogouOrdenado = [...jogou1t].sort((a,b)=>{
-          const ka = ordenaSaida(a);
-          const kb = ordenaSaida(b);
-          for (let i=0;i<ka.length;i++){
-            if (ka[i] < kb[i]) return -1;
-            if (ka[i] > kb[i]) return 1;
-          }
-          return (a.ordem||0) - (b.ordem||0);
-        });
+    const totalDesejado = Math.min(20, presentes.length);
 
-        // Mantém os que ficam do 1º tempo
-        const ficam1t = jogouOrdenado.slice(falta); // remove os "falta" primeiros
-
-        selecionados = [...base, ...ficam1t];
-      }
-
-      // Agora distribuir entre Amarelo e Azul equilibrando pontos (simples)
-      const entradas = selecionados.map(p=>{
-        const j = jogadoresPorApelido[p.apelido] || {};
-        return { apelido: p.apelido, pontos: Number(j.pontos||0) };
-      });
-
-      const { amarelo, azul } = distribuiEquilibrado(entradas);
-
-      escala2t = {
-        amarelo: amarelo.map(x=>x.apelido),
-        azul: azul.map(x=>x.apelido)
-      };
-
-      // Atualiza status:
-      // - quem jogou 2º tempo e já tinha "1" vira "1-2"
-      // - quem jogou 2º tempo e não tinha "1" vira "2"
-      const jogou2tSet = new Set([...(escala2t?.amarelo||[]), ...(escala2t?.azul||[])]);
-      for (const p of presencasHoje){
-        if (p.naoVaiJogar) continue;
-        if (jogou2tSet.has(p.apelido)){
-          if (p.status === "1") p.status = "1-2";
-          else if (p.status !== "1-2") p.status = "2";
-        }
-      }
-
-      renderEscalacao();
-      toast("2º tempo escalado.");
+    let selecionados = [];
+    if(naoJogou1t.length >= totalDesejado){
+      selecionados = naoJogou1t.sort((a,b)=>(a.ordem||0)-(b.ordem||0)).slice(0,totalDesejado);
+    }else{
+      const falta = totalDesejado - naoJogou1t.length;
+      selecionados = [...naoJogou1t, ...jogou1t.sort((a,b)=>(a.ordem||0)-(b.ordem||0)).slice(0,falta)];
     }
 
+    const entradas = selecionados.map(p=>{
+      const j = mapaJogadores[p.apelido] || {};
+      return { apelido: p.apelido, pontos: Number(j.pontos||0) };
+    });
 
-    function calcularTotalPontos(lista){
-      return (lista||[]).reduce((s,e)=>s+(pts(e.apelido)||0),0);
-    }
+    const { amarelo, azul } = distribuiEquilibrado(entradas);
 
-    function renderEscalacoes(){
-      // 1º tempo
-      tbody1T.innerHTML="";
-      const maxPos=10;
-      for(let i=0;i<maxPos;i++){
-        const tr=document.createElement("tr");
+    escala2t = { amarelo: amarelo.map(x=>x.apelido), azul: azul.map(x=>x.apelido) };
 
-        const a=escala1.amarelo[i];
-        const b=escala1.azul[i];
+    const entrou2Set = new Set([...escala2t.amarelo, ...escala2t.azul]);
+    presentesHoje.forEach(p=>{
+      if(p.naoVaiJogar) return;
+      if(entrou2Set.has(p.apelido)) p.status = "2";
+    });
 
-        const tdId=document.createElement("td"); tdId.textContent = a?.id ?? b?.id ?? ""; tr.appendChild(tdId);
-        const tdPos=document.createElement("td"); tdPos.textContent=i+1; tr.appendChild(tdPos);
+    renderPresentes();
+    renderEscalacoes();
+    toast("Escalação 2º tempo gerada.");
+  }catch(e){
+    console.error(e);
+    toast("ERRO na ESCALAÇÃO 2º TEMPO: " + (e.message||e), false);
+    alert("ERRO na ESCALAÇÃO 2º TEMPO. Veja Console (F12).");
+  }
+}
 
-        const tdAm=document.createElement("td");
-        tdAm.textContent = a ? a.apelido.toUpperCase() : "";
-        tdAm.className = a ? "t-amarelo" : "";
-        // risca no 1º tempo quando: saiu OU está no 2º tempo também
-        if (a){
-          const p = presentesHoje.find(x=>x.apelido===a.apelido);
-          if (p && (p.saiu || p.escalou2)) tdAm.classList.add("riscado");
-        }
-        tr.appendChild(tdAm);
+function toggleSaiu(apelido){
+  const p = presentesHoje.find(x=>x.apelido===apelido);
+  if(!p) return;
+  p.saiu = !p.saiu;
+  renderEscalacoes();
+}
 
-        const tdSaiAm=document.createElement("td");
-        if(a){
-          const bt=document.createElement("button");
-          bt.textContent="SAIU";
-          bt.className="btn-sair";
-          bt.onclick=()=>toggleSaiu(a.apelido);
-          tdSaiAm.appendChild(bt);
-        }
-        tr.appendChild(tdSaiAm);
+/* =========================
+   SALVAR (arquivo histórico)
+   - evita acúmulo: 1 arquivo por data_ref
+========================= */
+async function salvarJogo(){
+  try{
+    const dia = getDataJogoISO();
+    const { mes_ref, ano_ref } = mesAnoRef();
 
-        const tdAz=document.createElement("td");
-        tdAz.textContent = b ? b.apelido.toUpperCase() : "";
-        tdAz.className = b ? "t-azul" : "";
-        if (b){
-          const p = presentesHoje.find(x=>x.apelido===b.apelido);
-          if (p && (p.saiu || p.escalou2)) tdAz.classList.add("riscado");
-        }
-        tr.appendChild(tdAz);
+    // Conteúdos
+    const conteudoPresenca = {
+      data_jogo: dia,
+      presentes: presentesHoje,
+      gerado_em: new Date().toISOString()
+    };
 
-        const tdSaiAz=document.createElement("td");
-        if(b){
-          const bt2=document.createElement("button");
-          bt2.textContent="SAIU";
-          bt2.className="btn-sair";
-          bt2.onclick=()=>toggleSaiu(b.apelido);
-          tdSaiAz.appendChild(bt2);
-        }
-        tr.appendChild(tdSaiAz);
+    const conteudoEscalacao = {
+      data_jogo: dia,
+      escala_1t: escala1t,
+      escala_2t: escala2t,
+      gerado_em: new Date().toISOString()
+    };
 
-        tbody1T.appendChild(tr);
-      }
+    msgSalvarEl.textContent = "Salvando…";
 
-      // 2º tempo
-      tbody2T.innerHTML="";
-      for(let i=0;i<10;i++){
-        const tr=document.createElement("tr");
-        const a=escala2.amarelo[i];
-        const b=escala2.azul[i];
+    // PRESENÇA: mantém 1 arquivo por domingo (delete + insert)
+    await supabase.from("arquivos_app").delete()
+      .eq("painel","presenca").eq("periodo","semanal").eq("data_ref",dia);
 
-        const tdId=document.createElement("td"); tdId.textContent = a?.id ?? b?.id ?? ""; tr.appendChild(tdId);
-        const tdPos=document.createElement("td"); tdPos.textContent=i+1; tr.appendChild(tdPos);
+    await supabase.from("arquivos_app").insert([{
+      painel: "presenca",
+      periodo: "semanal",
+      data_ref: dia,
+      mes_ref,
+      ano_ref,
+      titulo: `Presença ${dia}`,
+      conteudo: conteudoPresenca
+    }]);
 
-        const tdAm=document.createElement("td");
-        tdAm.textContent = a ? a.apelido.toUpperCase() : "";
-        tdAm.className = a ? "t-amarelo" : "";
-        tr.appendChild(tdAm);
+    // ESCALAÇÃO: mantém 1 arquivo por domingo (delete + insert)
+    await supabase.from("arquivos_app").delete()
+      .eq("painel","escalacao").eq("periodo","semanal").eq("data_ref",dia);
 
-        const tdAz=document.createElement("td");
-        tdAz.textContent = b ? b.apelido.toUpperCase() : "";
-        tdAz.className = b ? "t-azul" : "";
-        tr.appendChild(tdAz);
+    await supabase.from("arquivos_app").insert([{
+      painel: "escalacao",
+      periodo: "semanal",
+      data_ref: dia,
+      mes_ref,
+      ano_ref,
+      titulo: `Escalação ${dia}`,
+      conteudo: conteudoEscalacao
+    }]);
 
-        tbody2T.appendChild(tr);
-      }
+    msgSalvarEl.textContent = "Salvo.";
+    toast("Presença + Escalação arquivadas (1 arquivo por data).");
+  }catch(e){
+    console.error(e);
+    msgSalvarEl.textContent = "";
+    toast("Erro ao salvar. Veja Console (F12).", false);
+    alert("ERRO ao salvar. Veja Console (F12).");
+  }
+}
 
-      const totalAm1=calcularTotalPontos(escala1.amarelo);
-      const totalAz1=calcularTotalPontos(escala1.azul);
-      totais1TEl.textContent = `TOTAL PONTOS: ${totalAm1} x ${totalAz1}`;
+/* =========================
+   EVENTOS + INIT
+========================= */
+btnLimparPresentes.addEventListener("click", limparPresentesHoje);
+btnEscalar1T.addEventListener("click", escalarPrimeiroTempo);
+btnEscalar2T.addEventListener("click", escalarSegundoTempo);
+btnSalvarJogo.addEventListener("click", salvarJogo);
 
-      const totalAm2=calcularTotalPontos(escala2.amarelo);
-      const totalAz2=calcularTotalPontos(escala2.azul);
-      totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}`;
-    }
-
-    function limparPresentesHoje(){
-      if(!confirm("Limpar toda a presença de hoje?")) return;
-      presentesHoje=[];
-      limparEscalacoes();
-      atualizarInfoPresentes();
-      renderPresentes();
-      renderEscalacoes();
-    }
-
-    // ===== SALVAR (SEM UPSERT, PARA NÃO DEPENDER DE CONSTRAINT) =====
-    async function salvarJogo(){
-      try{
-        if(!dataJogoIso){ alert("Base não carregada."); return; }
-        msgSalvarEl.textContent="";
-
-        const dia=dataJogoIso;
-
-        // 1) presenças: apaga do dia e insere novamente
-        const { error: errDelPres } = await supabase.from("presencas").delete().eq("data_jogo", dia);
-        if(errDelPres){ console.error(errDelPres); alert("Erro ao limpar presenças do dia."); return; }
-
-        const presentesSet=new Set(presentesHoje.map(p=>p.apelido));
-        const presRows = todosJogadores.map(j=>({
-          data_jogo: dia,
-          apelido: j.apelido,
-          presenca: presentesSet.has(j.apelido),
-          faltoso: !presentesSet.has(j.apelido)
-        }));
-
-        if(presRows.length){
-          const { error: errInsPres } = await supabase.from("presencas").insert(presRows);
-          if(errInsPres){ console.error(errInsPres); alert("Erro ao salvar presenças."); return; }
-        }
-
-        // 2) escalação: apaga do dia e insere
-        const { error: errDelEsc } = await supabase.from("escalacao").delete().eq("data_jogo", dia);
-        if(errDelEsc){ console.error(errDelEsc); alert("Erro ao limpar escalação."); return; }
-
-        const escRows=[];
-        escala1.amarelo.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:1, time:"AMARELO"}));
-        escala1.azul.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:1, time:"AZUL"}));
-        escala2.amarelo.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:2, time:"AMARELO"}));
-        escala2.azul.forEach(e=>escRows.push({data_jogo:dia, apelido:e.apelido, tempo:2, time:"AZUL"}));
-
-        if(escRows.length){
-          const { error: errInsEsc } = await supabase.from("escalacao").insert(escRows);
-          if(errInsEsc){ console.error(errInsEsc); alert("Erro ao salvar escalação."); return; }
-        }
-
-        
-        // ===== ARQUIVAR NO BANCO DE DADOS (somente leitura no painel BANCO DE DADOS) =====
-        try{
-          const d = new Date(dia);
-          const ano_ref = d.getFullYear();
-          const mes_ref = d.getMonth() + 1;
-
-          // Presença (semanal)
-          await supabase.from("arquivos_app").insert([{
-            painel: "presenca",
-            periodo: "semanal",
-            data_ref: dia,
-            mes_ref,
-            ano_ref,
-            titulo: `Presença ${dia}`,
-            conteudo: {
-              data_jogo: dia,
-              presentes: presentesHoje,
-              gerado_em: new Date().toISOString()
-            }
-          }]);
-
-          // Escalação (semanal)
-          await supabase.from("arquivos_app").insert([{
-            painel: "escalacao",
-            periodo: "semanal",
-            data_ref: dia,
-            mes_ref,
-            ano_ref,
-            titulo: `Escalação ${dia}`,
-            conteudo: {
-              data_jogo: dia,
-              escala1,
-              escala2,
-              gerado_em: new Date().toISOString()
-            }
-          }]);
-        }catch(e){
-          console.warn("Aviso: não foi possível arquivar no Banco de Dados.", e);
-        }
-
-msgSalvarEl.textContent="PÁGINA SALVA";
-        alert("Página salva.");
-      }catch(e){
-        console.error(e);
-        alert("Erro ao salvar (veja F12 > Console).");
-      }
-    }
-
-    // ===== EVENTOS =====
-    btnLimparPresentes.addEventListener("click", limparPresentesHoje);
-    btnEscalar1T.addEventListener("click", escalarPrimeiroTempo);
-    btnEscalar2T.addEventListener("click", escalarSegundoTempo);
-    btnSalvarJogo.addEventListener("click", salvarJogo);
-
-    carregarBase();
-  </script>
-
-<div class="bloco-regras">
-  <div class="col-regras">
-    <h3>Regras 1º tempo (corte 06:15)</h3>
-    <ul>
-      <li>Se até 06:15 tiver até 20 presentes (ex.: 15, 19, 20): sem eliminação (todos jogam).</li>
-      <li>Se até 06:15 tiver mais de 20 presentes (ex.: 25): o app corta até ficar 20, na ordem: faltou no domingo anterior → inadimplente → maior nº de faltas.</li>
-    </ul>
-  </div>
-  <div class="col-regras">
-    <h3>Regras 2º tempo (resumo)</h3>
-    <ul>
-      <li>Prioridade: quem está presente e não jogou no 1º tempo.</li>
-      <li>Para abrir vagas, sai primeiro: (1) quem marcou SAIU/SAIU, (2) faltou no domingo anterior, (3) jogou os dois tempos no domingo anterior, (4) maior nº de faltas, (5) mais novos.</li>
-      <li>Manter base dos times e distribuir quem entra equilibrando pontos e posições.</li>
-    </ul>
-  </div>
-  <div class="obs-legenda">
-    <strong>OBS:</strong>
-    C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | 
-    <span class="pago-ok">P (verde) pagou</span> | <span class="pago-bad">P (vermelho) não pagou</span>
-  </div>
-</div>
-
+carregarBase();
+</script>
 </body>
 </html>
