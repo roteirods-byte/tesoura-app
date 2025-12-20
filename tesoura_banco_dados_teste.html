@@ -189,6 +189,18 @@
     elPeriodo.innerHTML = `<option value="">Carregando…</option>`;
     setStatus("carregando períodos…");
 
+    // períodos oficiais por painel (mesmo sem arquivo salvo)
+    const PERIODOS_FIXOS = {
+      jogadores: ["unico"],
+      presenca: ["semanal"],
+      escalacao: ["semanal"],
+      controle_geral: ["semanal","mensal","anual"],
+      mensalidade: ["mensal","anual"],
+      caixa: ["mensal","anual"],
+      gols: ["anual"],
+    };
+    const fixos = PERIODOS_FIXOS[painel] || [];
+
     const { data, error } = await tesouraSupabase
       .from("arquivos_app")
       .select("periodo")
@@ -202,7 +214,8 @@
       return;
     }
 
-    const unique = [...new Set((data || []).map(x => x.periodo).filter(Boolean))];
+    const doBanco = (data || []).map(x => x.periodo).filter(Boolean);
+    const unique = [...new Set([...fixos, ...doBanco])];
 
     elPeriodo.innerHTML = `<option value="">Selecione…</option>` + unique.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
     elPeriodo.disabled = false;

@@ -143,7 +143,6 @@
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
         <button class="btn-recarregar" id="btn-recarregar">RECARREGAR</button>
-        <button class="btn-recarregar" onclick="window.print()">IMPRIMIR / BAIXAR</button>
       </div>
     </div>
 
@@ -180,6 +179,92 @@
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
 
+
+    // ====== ARQUIVAMENTO AUTOMÁTICO (BANCO DE DADOS / arquivos_app) ======
+    async function inserirArquivoApp({ painel, periodo, titulo, conteudo, data_ref, mes_ref, ano_ref }) {
+      try {
+        const row = {
+          painel,
+          periodo,
+          titulo: titulo || "",
+          conteudo,
+          criado_em: new Date().toISOString(),
+          data_ref: data_ref || null,
+          mes_ref: (mes_ref === undefined ? null : mes_ref),
+          ano_ref: (ano_ref === undefined ? null : ano_ref),
+        };
+        const { error } = await supabase.from("arquivos_app").insert(row);
+        if (error) {
+          console.warn("[ARQUIVOS_APP] falha ao inserir:", error);
+          return false;
+        }
+        return true;
+      } catch (e) {
+        console.warn("[ARQUIVOS_APP] exceção ao inserir:", e);
+        return false;
+      }
+    }
+
+    async function arquivarMensalidadeAtual() {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = hoje.getMonth() + 1;
+      const dataRef = hoje.toISOString().slice(0, 10);
+
+      // snapshot mensal (mês atual)
+      const { data: rowsMes, error: errMes } = await supabase
+        .from("mensalidades")
+        .select("id,apelido,valor,status,data_pagamento,pago,ano,mes")
+        .eq("ano", ano)
+        .eq("mes", mes)
+        .order("apelido", { ascending: true });
+
+      if (!errMes && rowsMes) {
+        const totalPago = (rowsMes || []).reduce((acc, r) => acc + (r.pago ? Number(r.valor || 0) : 0), 0);
+        await inserirArquivoApp({
+          painel: "mensalidade",
+          periodo: "mensal",
+          titulo: `Mensalidade (${String(mes).padStart(2,"0")}/${ano})`,
+          conteudo: { rows: rowsMes, total_pago: totalPago, ano, mes },
+          data_ref: dataRef,
+          mes_ref: mes,
+          ano_ref: ano,
+        });
+      } else if (errMes) {
+        console.warn("[ARQUIVOS_APP] mensalidade mensal: erro ao ler:", errMes);
+      }
+
+      // snapshot anual (ano atual) – resumo por jogador
+      const { data: rowsAno, error: errAno } = await supabase
+        .from("mensalidades")
+        .select("apelido,valor,pago,ano,mes")
+        .eq("ano", ano);
+
+      if (!errAno && rowsAno) {
+        const mapa = {};
+        (rowsAno || []).forEach(r => {
+          const ap = (r.apelido || "").toUpperCase();
+          if (!ap) return;
+          if (!mapa[ap]) mapa[ap] = { apelido: ap, total_pago_ano: 0, meses_pagos: 0 };
+          if (r.pago) {
+            mapa[ap].total_pago_ano += Number(r.valor || 0);
+            mapa[ap].meses_pagos += 1;
+          }
+        });
+        const resumo = Object.values(mapa).sort((a,b)=> a.apelido.localeCompare(b.apelido));
+        await inserirArquivoApp({
+          painel: "mensalidade",
+          periodo: "anual",
+          titulo: `Mensalidade (Anual ${ano})`,
+          conteudo: { rows: resumo, ano },
+          data_ref: dataRef,
+          ano_ref: ano,
+        });
+      } else if (errAno) {
+        console.warn("[ARQUIVOS_APP] mensalidade anual: erro ao ler:", errAno);
+      }
+    }
+    // ==============================================================
     if (window.__TESOURA_INIT_MENSALIDADE__) {
       console.log('MENSALIDADE já inicializada');
     } else {
@@ -509,6 +594,7 @@
       editando.delete(id);
       statusEl.textContent = "SALVO.";
       await carregar();
+      try { await arquivarMensalidadeAtual(); } catch(e){ console.warn('Falha ao arquivar mensalidade:', e); }
     }
 
     btnRecarregar.addEventListener("click", carregar);

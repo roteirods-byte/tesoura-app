@@ -271,6 +271,7 @@
       }
 
       await carregarGolsDoDia();
+      try { await arquivarGolsAnoPorData(document.getElementById('gols-data').value); } catch(e){ console.warn('Falha ao arquivar gols:', e); }
     }
 
     // ===================== BUSCAR GOLS DO DIA =====================
@@ -389,6 +390,7 @@
       }
 
       await carregarGolsDoDia();
+      try { await arquivarGolsAnoPorData(document.getElementById('gols-data').value); } catch(e){ console.warn('Falha ao arquivar gols:', e); }
     }
 
     // ===================== EXCLUIR TODOS GOLS DO JOGADOR =====================
@@ -414,6 +416,7 @@
       }
 
       await carregarGolsDoDia();
+      try { await arquivarGolsAnoPorData(document.getElementById('gols-data').value); } catch(e){ console.warn('Falha ao arquivar gols:', e); }
     }
 
     // ===================== INICIALIZAÇÃO =====================
