@@ -67,6 +67,11 @@
           </select>
         </div>
 
+        <div id="refArea"></div>
+
+        </select>
+        </div>
+
         <div>
           <label class="muted">AÇÕES</label><br/>
           <button class="btn btn-ok" id="btnCarregar">CARREGAR</button>
@@ -79,9 +84,7 @@
       </div>
 
       <div class="box" id="boxResultado">
-        <div class="muted">Selecione <b>PAINEL</b> e <b>PERÍODO</b> e clique <b>CARREGAR</b>.</div>
-        <div class="small muted" style="margin-top:8px">Aqui você vê apenas o <span class="k">histórico de arquivos salvos</span> e pode baixar. Visualização/edição é feita no próprio painel.</div>
-        <div id="listaArquivos" style="margin-top:10px"></div>
+        <span class="muted">RESULTADO: carregue um arquivo.</span>
       </div>
 
       <div class="row" style="justify-content:flex-end;margin-top:10px">
@@ -110,7 +113,175 @@
   const elStatus = document.getElementById("status");
   const elBox = document.getElementById("boxResultado");
 
-  const btnCarregar = document.getElementById("btnCarregar");
+  
+  // === LISTA FIXA DE PAINÉIS (sempre mostrar todos) ===
+  const PAINEIS_FIXOS = [
+    { value:"jogadores",   label:"JOGADORES" },
+    { value:"presenca",    label:"PRESENÇA" },
+    { value:"escalacao",   label:"ESCALAÇÃO" },
+    { value:"controle_geral", label:"CONTROLE GERAL" },
+    { value:"mensalidade", label:"MENSALIDADE" },
+    { value:"caixa",       label:"CAIXA" },
+    { value:"gols",        label:"GOLS" }
+  ];
+
+  // Períodos permitidos por painel
+  const PERIODOS_POR_PAINEL = {
+    jogadores:      ["unico"],
+    presenca:       ["semanal"],
+    escalacao:      ["semanal"],
+    controle_geral: ["unico"],
+    mensalidade:    ["mensal"],
+    caixa:          ["semanal","mensal","anual"],
+    gols:           ["semanal","anual"]
+  };
+
+  // Área de referência (sem digitação: selects + calendários)
+  const elRefArea = document.getElementById("refArea");
+
+  function pad2(n){ return String(n).padStart(2,"0"); }
+
+  function buildYearOptions(minYear=2024, maxYear=(new Date()).getFullYear()+1){
+    const y0 = Math.min(minYear, maxYear);
+    const y1 = Math.max(minYear, maxYear);
+    const out=[];
+    for(let y=y1;y>=y0;y--) out.push(`<option value="${y}">${y}</option>`);
+    return out.join("");
+  }
+
+  function buildMonthOptions(){
+    const months = [
+      ["01","Janeiro"],["02","Fevereiro"],["03","Março"],["04","Abril"],
+      ["05","Maio"],["06","Junho"],["07","Julho"],["08","Agosto"],
+      ["09","Setembro"],["10","Outubro"],["11","Novembro"],["12","Dezembro"]
+    ];
+    return months.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+  }
+
+  function showRefControls(painel, periodo){
+    if(!elRefArea) return;
+    // padrão: sem referência
+    elRefArea.innerHTML = "";
+
+    if(periodo === "unico") return;
+
+    // mensal: mês+ano
+    if(periodo === "mensal"){
+      const now=new Date();
+      const mm=pad2(now.getMonth()+1);
+      const yy=now.getFullYear();
+      elRefArea.innerHTML = `
+        <div>
+          <label>REFERÊNCIA</label><br/>
+          <div class="row" style="gap:10px">
+            <div style="flex:1">
+              <label class="muted">MÊS</label><br/>
+              <select id="refMes">${buildMonthOptions()}</select>
+            </div>
+            <div style="flex:1">
+              <label class="muted">ANO</label><br/>
+              <select id="refAno">${buildYearOptions(2024, yy+1)}</select>
+            </div>
+          </div>
+        </div>
+      `;
+      const sMes=document.getElementById("refMes");
+      const sAno=document.getElementById("refAno");
+      if(sMes) sMes.value = mm;
+      if(sAno) sAno.value = String(yy);
+      return;
+    }
+
+    // anual: ano
+    if(periodo === "anual"){
+      const yy=(new Date()).getFullYear();
+      elRefArea.innerHTML = `
+        <div>
+          <label>REFERÊNCIA</label><br/>
+          <label class="muted">ANO</label><br/>
+          <select id="refAno">${buildYearOptions(2024, yy+1)}</select>
+        </div>
+      `;
+      const sAno=document.getElementById("refAno");
+      if(sAno) sAno.value = String(yy);
+      return;
+    }
+
+    // semanal:
+    // - presença/escalacao/gols: escolher DOMINGO (calendário)
+    // - caixa: intervalo livre (início/fim) por calendário
+    if(periodo === "semanal"){
+      if(painel === "caixa"){
+        elRefArea.innerHTML = `
+          <div>
+            <label>REFERÊNCIA</label><br/>
+            <div class="row" style="gap:10px">
+              <div style="flex:1">
+                <label class="muted">DATA INÍCIO</label><br/>
+                <input id="refIni" type="date" />
+              </div>
+              <div style="flex:1">
+                <label class="muted">DATA FIM</label><br/>
+                <input id="refFim" type="date" />
+              </div>
+            </div>
+          </div>
+        `;
+        // default: últimos 7 dias
+        const d=new Date();
+        const fim=new Date(d);
+        const ini=new Date(d); ini.setDate(ini.getDate()-6);
+        const toISO=(x)=>`${x.getFullYear()}-${pad2(x.getMonth()+1)}-${pad2(x.getDate())}`;
+        const i=document.getElementById("refIni");
+        const f=document.getElementById("refFim");
+        if(i) i.value = toISO(ini);
+        if(f) f.value = toISO(fim);
+      } else {
+        elRefArea.innerHTML = `
+          <div>
+            <label>REFERÊNCIA</label><br/>
+            <label class="muted">DOMINGO (data do jogo)</label><br/>
+            <input id="refDom" type="date" />
+          </div>
+        `;
+        // default: próximo domingo
+        const d=new Date();
+        const day=d.getDay(); // 0 dom
+        const addDays=(7 - day) % 7;
+        const dom=new Date(d); dom.setDate(dom.getDate()+addDays);
+        const toISO=(x)=>`${x.getFullYear()}-${pad2(x.getMonth()+1)}-${pad2(x.getDate())}`;
+        const r=document.getElementById("refDom");
+        if(r) r.value = toISO(dom);
+      }
+    }
+  }
+
+  function getRefFilter(painel, periodo){
+    // Retorna filtros para query em arquivos_app.
+    // Se coluna não existir, vamos tratar no carregarArquivo com fallback.
+    const out = {};
+    if(periodo === "mensal"){
+      const mes = document.getElementById("refMes")?.value;
+      const ano = document.getElementById("refAno")?.value;
+      if(mes) out.mes_ref = mes;
+      if(ano) out.ano_ref = Number(ano);
+    } else if(periodo === "anual"){
+      const ano = document.getElementById("refAno")?.value;
+      if(ano) out.ano_ref = Number(ano);
+    } else if(periodo === "semanal"){
+      if(painel === "caixa"){
+        const ini = document.getElementById("refIni")?.value;
+        const fim = document.getElementById("refFim")?.value;
+        if(ini) out.data_inicio = ini;
+        if(fim) out.data_fim = fim;
+      } else {
+        const dom = document.getElementById("refDom")?.value;
+        if(dom) out.data_ref = dom;
+      }
+    }
+    return out;
+  }
+const btnCarregar = document.getElementById("btnCarregar");
   const btnLimpar = document.getElementById("btnLimpar");
   const btnPdf = document.getElementById("btnPdf");
   const btnCsv = document.getElementById("btnCsv");
@@ -126,7 +297,6 @@
 
   let loadedRow = null;     // linha carregada de arquivos_app
   let loadedData = null;    // conteudo (json)
-  const elLista = document.getElementById("listaArquivos");
 
   function setStatus(msg, kind="") {
     const cls = kind === "err" ? "err" : (kind === "ok" ? "ok" : "");
@@ -149,27 +319,21 @@
     loadedRow = null;
     loadedData = null;
     enableDownloads(false);
-    if (elLista) elLista.innerHTML = "";
+    elBox.innerHTML = `<span class="muted">RESULTADO: carregue um arquivo.</span>`;
   }
 
   async function loadPainelOptions() {
     setStatus("carregando lista de painéis…");
-    elPainel.innerHTML = `<option value="">Carregando...</option>`;
-    elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
+    // Sempre mostrar todos os painéis (fixo)
+    elPainel.innerHTML = `<option value="">Selecione…</option>` + 
+      PAINEIS_FIXOS.map(p => `<option value="${escapeHtml(p.value)}">${escapeHtml(p.label)}</option>`).join("");
+
+    // limpa período e referência
     elPeriodo.disabled = true;
-
-    // Busca painéis existentes
-    const { data, error } = await tesouraSupabase
-      .from("arquivos_app")
-      .select("painel")
-      .order("painel", { ascending: true });
-
-    if (error) {
-      setStatus("Erro ao listar painéis (ver Console).", "err");
-      console.error("[BD] listar painéis:", error);
-      elPainel.innerHTML = `<option value="">(erro)</option>`;
-      return;
-    }
+    elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
+    if (elRefArea) elRefArea.innerHTML = "";
+    setStatus("pronto. selecione o painel.", "ok");
+  }
 
     // ✅ SEMPRE MOSTRAR PAINÉIS OFICIAIS (mesmo sem arquivo salvo)
     const FIXOS = ["jogadores","presenca","escalacao","controle_geral","mensalidade","caixa","gols"];
@@ -188,18 +352,35 @@
 
   async function loadPeriodoOptions(painel) {
     resetLoaded();
+    if (!painel) {
+      elPeriodo.disabled = true;
+      elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
+      if (elRefArea) elRefArea.innerHTML = "";
+      return;
+    }
+
+    const allowed = (PERIODOS_POR_PAINEL[painel] || []);
+    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + allowed.map(p => {
+      const lbl = (p === "unico") ? "ÚNICO" : (p === "semanal") ? "SEMANAL" : (p === "mensal") ? "MENSAL" : "ANUAL";
+      return `<option value="${p}">${lbl}</option>`;
+    }).join("");
     elPeriodo.disabled = false;
-    const PERIODOS = {
-      jogadores: ["unico"],
-      presenca: ["semanal"],
-      escalacao: ["semanal"],
-      controle_geral: ["mensal","anual"],
-      mensalidade: ["mensal","anual"],
-      caixa: ["mensal","anual"],
-      gols: ["anual"],
-    };
-    const opts = PERIODOS[painel] || ["unico","semanal","mensal","anual"];
-    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + opts.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+
+    // default: primeiro período
+    if (allowed.length === 1) {
+      elPeriodo.value = allowed[0];
+      showRefControls(painel, allowed[0]);
+      setStatus("pronto. clique CARREGAR.", "ok");
+    } else {
+      if (elRefArea) elRefArea.innerHTML = "";
+      setStatus("pronto. selecione o período.", "ok");
+    }
+  }
+
+    const unique = [...new Set((data || []).map(x => x.periodo).filter(Boolean))];
+
+    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + unique.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+    elPeriodo.disabled = false;
     setStatus("pronto. selecione o período e clique CARREGAR.");
   }
 
@@ -224,58 +405,25 @@
     return [];
   }
 
-  function renderListaArquivos(rows) {
-    if (!elLista) return;
-    if (!rows || !rows.length) {
-      elLista.innerHTML = `<div class="muted small">Nenhum arquivo salvo para esse painel/período.</div>`;
-      return;
-    }
+  function renderLoaded(row, content) {
+    const rows = normalizeToRows(content);
+    const qtd = rows.length;
 
-    const head = `
-      <div class="small muted" style="margin:6px 0 8px 0">Clique em um arquivo para habilitar o download:</div>
-      <div style="overflow:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead>
-            <tr>
-              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">criado em</th>
-              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">título</th>
-              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">data ref</th>
-              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">mês</th>
-              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">ano</th>
-            </tr>
-          </thead>
-          <tbody>
+    elBox.innerHTML = `
+      <div><b>${escapeHtml(row.titulo || "(sem título)")}</b></div>
+      <div class="small muted" style="margin-top:4px">Painel: <span class="k">${escapeHtml(row.painel)}</span> | Período: <span class="k">${escapeHtml(row.periodo)}</span></div>
+      <div class="small muted">Criado em: <span class="k">${escapeHtml(String(row.criado_em || ""))}</span></div>
+      <div class="small muted">Referência: 
+        <span class="k">${escapeHtml(row.data_ref || "")}</span> 
+        <span class="k">${escapeHtml(row.mes_ref || "")}</span> 
+        <span class="k">${escapeHtml(String(row.ano_ref || ""))}</span>
+        <span class="k">${escapeHtml(row.data_inicio || "")}</span>
+        <span class="k">${escapeHtml(row.data_fim || "")}</span>
+      </div>
+      <hr style="border:0;border-top:1px solid #123a62;margin:12px 0"/>
+      <div class="small muted">Registros no arquivo: <b>${qtd}</b></div>
+      <div class="small muted" style="margin-top:6px">Use os botões para baixar PDF / CSV / Excel.</div>
     `;
-
-    const body = rows.map((r, idx) => {
-      const criado = r.criado_em || r.created_at || "";
-      return `
-        <tr data-idx="${idx}" style="cursor:pointer">
-          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(criado)}</td>
-          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.titulo || "-")}</td>
-          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.data_ref || "-")}</td>
-          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.mes_ref ?? "-")}</td>
-          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.ano_ref ?? "-")}</td>
-        </tr>`;
-    }).join("");
-
-    const foot = `</tbody></table></div>`;
-    elLista.innerHTML = head + body + foot;
-
-    // click select
-    [...elLista.querySelectorAll("tr[data-idx]")].forEach(tr => {
-      tr.addEventListener("click", () => {
-        const i = Number(tr.getAttribute("data-idx"));
-        const row = rows[i];
-        loadedRow = row;
-        loadedData = row.conteudo;
-        enableDownloads(true);
-        // highlight selection
-        [...elLista.querySelectorAll("tr[data-idx]")].forEach(x => x.style.background = "");
-        tr.style.background = "rgba(138,208,255,.10)";
-        setStatus("arquivo selecionado. use BAIXAR.", "ok");
-      });
-    });
   }
 
   async function carregarArquivo() {
@@ -286,17 +434,47 @@
     if (!painel) { setStatus("Selecione o painel.", "err"); return; }
     if (!periodo) { setStatus("Selecione o período.", "err"); return; }
 
-    setStatus("carregando histórico…");
+    // valida referência quando necessário
+    const filtros = getRefFilter(painel, periodo);
+    if (periodo === "mensal" && (!filtros.mes_ref || !filtros.ano_ref)) { setStatus("Selecione mês e ano.", "err"); return; }
+    if (periodo === "anual" && (!filtros.ano_ref)) { setStatus("Selecione o ano.", "err"); return; }
+    if (periodo === "semanal" && painel !== "caixa" && (!filtros.data_ref)) { setStatus("Selecione o domingo.", "err"); return; }
+    if (periodo === "semanal" && painel === "caixa" && (!filtros.data_inicio || !filtros.data_fim)) { setStatus("Selecione início e fim.", "err"); return; }
 
-    // Lista últimos 20 arquivos do painel/período (mais recente primeiro)
-    const { data, error } = await tesouraSupabase
-      .from("arquivos_app")
-      .select("id,painel,periodo,data_ref,mes_ref,ano_ref,titulo,conteudo,criado_em,created_at")
-      .eq("painel", painel)
-      .eq("periodo", periodo)
-      .order("created_at", { ascending: false })
-      .order("criado_em", { ascending: false })
-      .limit(20);
+    setStatus("carregando arquivo…");
+
+    // Tentativa 1: schema novo (data_inicio/data_fim)
+    const selectColsNew = "id,painel,periodo,data_ref,mes_ref,ano_ref,data_inicio,data_fim,titulo,conteudo,criado_em";
+    const selectColsOld = "id,painel,periodo,data_ref,mes_ref,ano_ref,titulo,conteudo,criado_em";
+
+    async function runQuery(selectCols) {
+      let q = tesouraSupabase
+        .from("arquivos_app")
+        .select(selectCols)
+        .eq("painel", painel)
+        .eq("periodo", periodo);
+
+      // aplica filtros
+      if (filtros.data_ref) q = q.eq("data_ref", filtros.data_ref);
+      if (filtros.mes_ref)  q = q.eq("mes_ref", filtros.mes_ref);
+      if (filtros.ano_ref)  q = q.eq("ano_ref", filtros.ano_ref);
+      if (filtros.data_inicio) q = q.eq("data_inicio", filtros.data_inicio);
+      if (filtros.data_fim)    q = q.eq("data_fim", filtros.data_fim);
+
+      return await q.order("criado_em", { ascending: false }).limit(1);
+    }
+
+    let res = await runQuery(selectColsNew);
+
+    // Se der erro de coluna inexistente, cai para o schema antigo
+    if (res.error && /does not exist|unknown column|column/i.test(String(res.error.message || ""))) {
+      // remove filtros de data_inicio/data_fim no modo antigo
+      delete filtros.data_inicio;
+      delete filtros.data_fim;
+      res = await runQuery(selectColsOld);
+    }
+
+    const { data, error } = res;
 
     if (error) {
       setStatus("Erro ao carregar arquivo do Banco de Dados.", "err");
@@ -304,15 +482,22 @@
       return;
     }
 
-    renderListaArquivos(data || []);
-    if (!data || !data.length) {
-      setStatus("nenhum arquivo salvo para esse painel/período.", "err");
+    const row = (data || [])[0];
+    if (!row) {
+      setStatus("Não existe arquivo salvo para esse filtro.", "err");
       return;
     }
-    setStatus("histórico carregado. selecione um arquivo.", "ok");
+
+    loadedRow = row;
+    loadedData = row.conteudo;
+
+    renderLoaded(row, loadedData);
+    enableDownloads(true);
+    setStatus("arquivo carregado com sucesso.", "ok");
   }
 
   // ==== DOWNLOADS ====
+
   function downloadBlob(filename, mime, content) {
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
