@@ -79,7 +79,9 @@
       </div>
 
       <div class="box" id="boxResultado">
-        <span class="muted">RESULTADO: carregue um arquivo.</span>
+        <div class="muted">Selecione <b>PAINEL</b> e <b>PERÍODO</b> e clique <b>CARREGAR</b>.</div>
+        <div class="small muted" style="margin-top:8px">Aqui você vê apenas o <span class="k">histórico de arquivos salvos</span> e pode baixar. Visualização/edição é feita no próprio painel.</div>
+        <div id="listaArquivos" style="margin-top:10px"></div>
       </div>
 
       <div class="row" style="justify-content:flex-end;margin-top:10px">
@@ -124,6 +126,7 @@
 
   let loadedRow = null;     // linha carregada de arquivos_app
   let loadedData = null;    // conteudo (json)
+  const elLista = document.getElementById("listaArquivos");
 
   function setStatus(msg, kind="") {
     const cls = kind === "err" ? "err" : (kind === "ok" ? "ok" : "");
@@ -146,7 +149,7 @@
     loadedRow = null;
     loadedData = null;
     enableDownloads(false);
-    elBox.innerHTML = `<span class="muted">RESULTADO: carregue um arquivo.</span>`;
+    if (elLista) elLista.innerHTML = "";
   }
 
   async function loadPainelOptions() {
@@ -185,40 +188,18 @@
 
   async function loadPeriodoOptions(painel) {
     resetLoaded();
-    elPeriodo.disabled = true;
-    elPeriodo.innerHTML = `<option value="">Carregando…</option>`;
-    setStatus("carregando períodos…");
-
-    // períodos oficiais por painel (mesmo sem arquivo salvo)
-    const PERIODOS_FIXOS = {
+    elPeriodo.disabled = false;
+    const PERIODOS = {
       jogadores: ["unico"],
       presenca: ["semanal"],
       escalacao: ["semanal"],
-      controle_geral: ["semanal","mensal","anual"],
+      controle_geral: ["mensal","anual"],
       mensalidade: ["mensal","anual"],
       caixa: ["mensal","anual"],
       gols: ["anual"],
     };
-    const fixos = PERIODOS_FIXOS[painel] || [];
-
-    const { data, error } = await tesouraSupabase
-      .from("arquivos_app")
-      .select("periodo")
-      .eq("painel", painel)
-      .order("periodo", { ascending: true });
-
-    if (error) {
-      setStatus("Erro ao listar períodos (ver Console).", "err");
-      console.error("[BD] listar períodos:", error);
-      elPeriodo.innerHTML = `<option value="">(erro)</option>`;
-      return;
-    }
-
-    const doBanco = (data || []).map(x => x.periodo).filter(Boolean);
-    const unique = [...new Set([...fixos, ...doBanco])];
-
-    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + unique.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
-    elPeriodo.disabled = false;
+    const opts = PERIODOS[painel] || ["unico","semanal","mensal","anual"];
+    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + opts.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
     setStatus("pronto. selecione o período e clique CARREGAR.");
   }
 
@@ -243,45 +224,58 @@
     return [];
   }
 
-  function renderLoaded(row, content) {
-    const resumo = `
-      <div class="grid">
-        <div>
-          <div><span class="k">Painel:</span> ${escapeHtml(row.painel || "-")}</div>
-          <div><span class="k">Período:</span> ${escapeHtml(row.periodo || "-")}</div>
-          <div><span class="k">Título:</span> ${escapeHtml(row.titulo || "-")}</div>
-        </div>
-        <div>
-          <div><span class="k">Data ref:</span> ${escapeHtml(row.data_ref || "-")}</div>
-          <div><span class="k">Mês ref:</span> ${escapeHtml(row.mes_ref ?? "-")}</div>
-          <div><span class="k">Ano ref:</span> ${escapeHtml(row.ano_ref ?? "-")}</div>
-          <div><span class="k">Criado em:</span> ${escapeHtml(row.criado_em || "-")}</div>
-        </div>
-      </div>
-      <hr style="border:0;border-top:1px solid #123a62;margin:12px 0"/>
-      <div class="small muted">Prévia do conteúdo (primeiras 10 linhas):</div>
-    `;
-
-    const rows = normalizeToRows(content);
-    const preview = rows.slice(0, 10);
-
-    let table = `<div class="muted small">(sem linhas para mostrar)</div>`;
-    if (preview.length) {
-      const cols = Object.keys(preview[0]);
-      table = `
-        <div style="overflow:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead>
-              <tr>${cols.map(c => `<th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:${getComputedStyle(document.documentElement).getPropertyValue('--pumpkin')};">${escapeHtml(c)}</th>`).join("")}</tr>
-            </thead>
-            <tbody>
-              ${preview.map(r => `<tr>${cols.map(c => `<td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r[c])}</td>`).join("")}</tr>`).join("")}
-            </tbody>
-          </table>
-        </div>`;
+  function renderListaArquivos(rows) {
+    if (!elLista) return;
+    if (!rows || !rows.length) {
+      elLista.innerHTML = `<div class="muted small">Nenhum arquivo salvo para esse painel/período.</div>`;
+      return;
     }
 
-    elBox.innerHTML = resumo + table;
+    const head = `
+      <div class="small muted" style="margin:6px 0 8px 0">Clique em um arquivo para habilitar o download:</div>
+      <div style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">criado em</th>
+              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">título</th>
+              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">data ref</th>
+              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">mês</th>
+              <th style="text-align:left;padding:6px;border-bottom:1px solid #123a62;color:var(--pumpkin)">ano</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    const body = rows.map((r, idx) => {
+      const criado = r.criado_em || r.created_at || "";
+      return `
+        <tr data-idx="${idx}" style="cursor:pointer">
+          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(criado)}</td>
+          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.titulo || "-")}</td>
+          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.data_ref || "-")}</td>
+          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.mes_ref ?? "-")}</td>
+          <td style="padding:6px;border-bottom:1px solid rgba(18,58,98,.55)">${escapeHtml(r.ano_ref ?? "-")}</td>
+        </tr>`;
+    }).join("");
+
+    const foot = `</tbody></table></div>`;
+    elLista.innerHTML = head + body + foot;
+
+    // click select
+    [...elLista.querySelectorAll("tr[data-idx]")].forEach(tr => {
+      tr.addEventListener("click", () => {
+        const i = Number(tr.getAttribute("data-idx"));
+        const row = rows[i];
+        loadedRow = row;
+        loadedData = row.conteudo;
+        enableDownloads(true);
+        // highlight selection
+        [...elLista.querySelectorAll("tr[data-idx]")].forEach(x => x.style.background = "");
+        tr.style.background = "rgba(138,208,255,.10)";
+        setStatus("arquivo selecionado. use BAIXAR.", "ok");
+      });
+    });
   }
 
   async function carregarArquivo() {
@@ -292,16 +286,17 @@
     if (!painel) { setStatus("Selecione o painel.", "err"); return; }
     if (!periodo) { setStatus("Selecione o período.", "err"); return; }
 
-    setStatus("carregando arquivo…");
+    setStatus("carregando histórico…");
 
-    // Regra: pega o arquivo mais recente (criado_em DESC)
+    // Lista últimos 20 arquivos do painel/período (mais recente primeiro)
     const { data, error } = await tesouraSupabase
       .from("arquivos_app")
-      .select("id,painel,periodo,data_ref,mes_ref,ano_ref,titulo,conteudo,criado_em")
+      .select("id,painel,periodo,data_ref,mes_ref,ano_ref,titulo,conteudo,criado_em,created_at")
       .eq("painel", painel)
       .eq("periodo", periodo)
+      .order("created_at", { ascending: false })
       .order("criado_em", { ascending: false })
-      .limit(1);
+      .limit(20);
 
     if (error) {
       setStatus("Erro ao carregar arquivo do Banco de Dados.", "err");
@@ -309,18 +304,12 @@
       return;
     }
 
-    const row = (data || [])[0];
-    if (!row) {
-      setStatus("Não existe arquivo salvo para esse painel/período.", "err");
+    renderListaArquivos(data || []);
+    if (!data || !data.length) {
+      setStatus("nenhum arquivo salvo para esse painel/período.", "err");
       return;
     }
-
-    loadedRow = row;
-    loadedData = row.conteudo;
-
-    renderLoaded(row, loadedData);
-    enableDownloads(true);
-    setStatus("arquivo carregado com sucesso.", "ok");
+    setStatus("histórico carregado. selecione um arquivo.", "ok");
   }
 
   // ==== DOWNLOADS ====
