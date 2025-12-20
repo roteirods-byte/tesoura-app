@@ -1,620 +1,410 @@
+<!-- SUBSTITUA TODO O CONTEÚDO DO ARQUIVO tesoura_banco_dados_teste.html POR ESTE -->
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
   <style>
     :root{
-      --bg:#061424;
-      --panel:#071c33;
-      --line:#0f2c4a;
-      --txt:#e9f2ff;
-      --pumpkin:#ff7a1a;
-      --ok:#27d07d;
-      --warn:#ffb020;
-      --btn:#8ad0ff;
-      --btnTxt:#052033;
+      --bg:#071a2b; --panel:#0b2640; --panel2:#082033;
+      --txt:#e8f0ff; --muted:#a9bfdc; --accent:#ff8a00;
+      --btn:#1da2ff; --btn2:#00c26a; --danger:#ff3b3b;
+      --line:rgba(255,255,255,.12);
     }
-    html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--txt);}
-    .wrap{max-width:1180px;margin:0 auto;padding:18px;}
-    h1{margin:0 0 14px 0;font-size:18px;color:var(--pumpkin);letter-spacing:.5px;}
-    .card{background:linear-gradient(180deg,var(--panel),#061528);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);margin-bottom:14px;}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    label{font-size:12px;color:#cfe4ff}
-    select,input{height:34px;border-radius:9px;border:1px solid #204a73;background:#041021;color:var(--txt);padding:0 10px;min-width:220px;outline:none}
-    .btn{height:34px;border-radius:9px;border:0;padding:0 14px;font-weight:700;cursor:pointer}
-    .btn-ok{background:var(--ok);color:#052033}
-    .btn-warn{background:var(--warn);color:#052033}
-    .btn-blue{background:var(--btn);color:var(--btnTxt)}
-    .btn:disabled{opacity:.45;cursor:not-allowed}
-    .status{margin-top:10px;font-size:12px;color:#cfe4ff}
-    .status b{color:var(--pumpkin)}
-    .box{margin-top:12px;border:1px dashed #2a5b86;border-radius:12px;padding:12px;min-height:70px;background:rgba(0,0,0,.15)}
-    .k{color:var(--pumpkin);font-weight:700}
-    .muted{opacity:.85}
-    .small{font-size:12px}
-    .grid{display:grid;grid-template-columns:1fr;gap:10px}
-    @media(min-width:980px){.grid{grid-template-columns:1fr 1fr}}
-    .err{color:#ff6b6b}
-    .ok{color:#76ffb0}
+    body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif;}
+    .wrap{max-width:1100px;margin:18px auto;padding:0 12px;}
+    h1{margin:0 0 10px;color:var(--accent);font-size:18px;letter-spacing:.5px}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:14px;}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    .field{min-width:220px;flex:1}
+    label{display:block;color:var(--muted);font-size:12px;margin:0 0 6px}
+    select,input{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:#061626;color:var(--txt);outline:none}
+    .btn{padding:9px 14px;border-radius:10px;border:0;color:#00121f;font-weight:700;cursor:pointer}
+    .btnBuscar{background:var(--btn2)}
+    .btnLimpar{background:#ffb000}
+    .btnDl{background:var(--btn);color:#00121f}
+    .btnDl[disabled]{opacity:.35;cursor:not-allowed}
+    .status{margin:8px 0 0;color:var(--accent);font-size:12px}
+    .box{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:12px}
+    .small{font-size:12px;color:var(--muted)}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+    th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+    th{color:var(--accent);font-size:12px}
+    tr:hover{background:rgba(255,255,255,.04)}
+    .footer{margin-top:10px;font-size:12px;color:var(--muted)}
+    .note{margin-top:10px;font-size:12px;color:var(--muted)}
   </style>
-
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- CSV/Excel/PDF libs (only used on download) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
-
 <body>
   <div class="wrap">
     <h1>TESOURA - BANCO DE DADOS (GUARDIÃO)</h1>
 
     <div class="card">
       <div class="row">
-        <div>
-          <label>PAINEL / ARQUIVO</label><br/>
-          <select id="selPainel">
-            <option value="">Carregando...</option>
-          </select>
+        <div class="field">
+          <label>PAINEL / ARQUIVO</label>
+          <select id="selPainel"></select>
         </div>
 
-        <div>
-          <label>PERÍODO</label><br/>
-          <select id="selPeriodo" disabled>
-            <option value="">Selecione o painel</option>
-          </select>
+        <div class="field">
+          <label>PERÍODO</label>
+          <select id="selPeriodo"></select>
         </div>
 
-        <div id="refArea"></div>
+        <div class="field" id="refArea"></div>
 
-        </select>
-        </div>
-
-        <div>
-          <label class="muted">AÇÕES</label><br/>
-          <button class="btn btn-ok" id="btnCarregar">CARREGAR</button>
-          <button class="btn btn-warn" id="btnLimpar">LIMPAR</button>
+        <div class="field" style="min-width:260px;flex:0">
+          <label>AÇÕES</label>
+          <div class="row" style="gap:8px">
+            <button class="btn btnBuscar" id="btnBuscar">BUSCAR</button>
+            <button class="btn btnLimpar" id="btnLimpar">LIMPAR</button>
+          </div>
         </div>
       </div>
 
-      <div class="status" id="status">
-        <span class="muted">Status:</span> <b>iniciando…</b>
-      </div>
+      <div class="status" id="status">Selecione PAINEL e PERÍODO e clique BUSCAR.</div>
 
-      <div class="box" id="boxResultado">
-        <span class="muted">RESULTADO: carregue um arquivo.</span>
-      </div>
+      <div class="box">
+        <div class="small">
+          Aqui você vê apenas o <b>histórico de arquivos salvos</b> e pode baixar.
+          Visualização/edição é feita no próprio painel.
+        </div>
 
-      <div class="row" style="justify-content:flex-end;margin-top:10px">
-        <button class="btn btn-blue" id="btnPdf" disabled>BAIXAR PDF</button>
-        <button class="btn btn-blue" id="btnCsv" disabled>BAIXAR CSV</button>
-        <button class="btn btn-blue" id="btnXlsx" disabled>BAIXAR EXCEL</button>
-      </div>
+        <table id="tbl" style="display:none">
+          <thead>
+            <tr>
+              <th>criado em</th>
+              <th>título</th>
+              <th>referência</th>
+              <th>tipo</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
 
-      <div class="small muted" style="margin-top:10px">
-        Banco de Dados é <span class="k">somente leitura</span>: não edita, não salva e não exclui.
+        <div class="row" style="justify-content:flex-end;margin-top:12px;gap:10px">
+          <button class="btn btnDl" id="btnPdf" disabled>BAIXAR PDF</button>
+          <button class="btn btnDl" id="btnCsv" disabled>BAIXAR CSV</button>
+          <button class="btn btnDl" id="btnXls" disabled>BAIXAR EXCEL</button>
+        </div>
+
+        <div class="footer">Banco de Dados é <b>somente leitura</b>: não edita, não salva e não exclui.</div>
       </div>
     </div>
   </div>
 
 <script>
-(() => {
-  // === CONFIG (usar as mesmas do seu projeto) ===
-  // Se já existir no window (definido em outro painel), reaproveita.
-    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_ANON = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-  // Observação: se seu site já define TESOURA_SUPABASE_URL e TESOURA_SUPABASE_ANON_KEY em outro arquivo,
-  // não precisa mexer aqui. Se não define, cole a ANON KEY correta acima.
+/** CONFIG SUPABASE (usa a mesma do seu projeto) **/
+const SUPABASE_URL = window.SUPABASE_URL || "https://xuplzpispuvktggjassx.supabase.co";
+const SUPABASE_ANON = window.SUPABASE_ANON || window.SUPABASE_KEY || "";
+const TABELA_ARQUIVOS = "arquivos_app";
 
-  const elPainel = document.getElementById("selPainel");
-  const elPeriodo = document.getElementById("selPeriodo");
-  const elStatus = document.getElementById("status");
-  const elBox = document.getElementById("boxResultado");
+// Painéis fixos (sempre aparecem)
+const PAINEIS = [
+  {id:"jogadores", label:"jogadores", periodos:["unico"]},
+  {id:"presenca", label:"presença", periodos:["semanal"]},
+  {id:"escalacao", label:"escalação", periodos:["semanal"]},
+  {id:"controle_geral", label:"controle geral", periodos:["unico"]},
+  {id:"mensalidade", label:"mensalidade", periodos:["mensal"]},
+  {id:"caixa", label:"caixa", periodos:["semanal","mensal","anual"]},
+  {id:"gols", label:"gols", periodos:["semanal","anual"]},
+];
 
-  
-  // === LISTA FIXA DE PAINÉIS (sempre mostrar todos) ===
-  const PAINEIS_FIXOS = [
-    { value:"jogadores",   label:"JOGADORES" },
-    { value:"presenca",    label:"PRESENÇA" },
-    { value:"escalacao",   label:"ESCALAÇÃO" },
-    { value:"controle_geral", label:"CONTROLE GERAL" },
-    { value:"mensalidade", label:"MENSALIDADE" },
-    { value:"caixa",       label:"CAIXA" },
-    { value:"gols",        label:"GOLS" }
-  ];
+const selPainel = document.getElementById("selPainel");
+const selPeriodo = document.getElementById("selPeriodo");
+const refArea = document.getElementById("refArea");
+const statusEl = document.getElementById("status");
+const tbl = document.getElementById("tbl");
+const tbody = document.getElementById("tbody");
+const btnPdf = document.getElementById("btnPdf");
+const btnCsv = document.getElementById("btnCsv");
+const btnXls = document.getElementById("btnXls");
 
-  // Períodos permitidos por painel
-  const PERIODOS_POR_PAINEL = {
-    jogadores:      ["unico"],
-    presenca:       ["semanal"],
-    escalacao:      ["semanal"],
-    controle_geral: ["unico"],
-    mensalidade:    ["mensal"],
-    caixa:          ["semanal","mensal","anual"],
-    gols:           ["semanal","anual"]
-  };
+let selecionado = null; // linha de arquivos_app selecionada (para download)
+let listaAtual = [];    // resultados
 
-  // Área de referência (sem digitação: selects + calendários)
-  const elRefArea = document.getElementById("refArea");
+function setStatus(msg){ statusEl.textContent = msg; }
 
-  function pad2(n){ return String(n).padStart(2,"0"); }
+function pad2(n){ return String(n).padStart(2,"0"); }
+function yyyy(d){ return d.getFullYear(); }
 
-  function buildYearOptions(minYear=2024, maxYear=(new Date()).getFullYear()+1){
-    const y0 = Math.min(minYear, maxYear);
-    const y1 = Math.max(minYear, maxYear);
-    const out=[];
-    for(let y=y1;y>=y0;y--) out.push(`<option value="${y}">${y}</option>`);
-    return out.join("");
-  }
+function buildPainel(){
+  selPainel.innerHTML = PAINEIS.map(p=>`<option value="${p.id}">${p.label}</option>`).join("");
+  onPainelChange();
+}
 
-  function buildMonthOptions(){
-    const months = [
-      ["01","Janeiro"],["02","Fevereiro"],["03","Março"],["04","Abril"],
-      ["05","Maio"],["06","Junho"],["07","Julho"],["08","Agosto"],
-      ["09","Setembro"],["10","Outubro"],["11","Novembro"],["12","Dezembro"]
-    ];
-    return months.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
-  }
+function onPainelChange(){
+  const painelId = selPainel.value;
+  const p = PAINEIS.find(x=>x.id===painelId);
+  selPeriodo.innerHTML = p.periodos.map(per=>`<option value="${per}">${per}</option>`).join("");
+  onPeriodoChange();
+}
 
-  function showRefControls(painel, periodo){
-    if(!elRefArea) return;
-    // padrão: sem referência
-    elRefArea.innerHTML = "";
+function buildRefMensal(){
+  const now = new Date();
+  const ano = now.getFullYear();
+  const meses = Array.from({length:12},(_,i)=>i+1);
+  const anos = Array.from({length:8},(_,i)=>ano-3+i);
 
-    if(periodo === "unico") return;
+  refArea.innerHTML = `
+    <label>REFERÊNCIA</label>
+    <div class="row" style="gap:8px">
+      <select id="refMes" style="min-width:120px;flex:0">
+        ${meses.map(m=>`<option value="${m}">${pad2(m)}</option>`).join("")}
+      </select>
+      <select id="refAno" style="min-width:120px;flex:0">
+        ${anos.map(a=>`<option value="${a}">${a}</option>`).join("")}
+      </select>
+    </div>
+  `;
+  document.getElementById("refMes").value = (now.getMonth()+1);
+  document.getElementById("refAno").value = ano;
+}
 
-    // mensal: mês+ano
-    if(periodo === "mensal"){
-      const now=new Date();
-      const mm=pad2(now.getMonth()+1);
-      const yy=now.getFullYear();
-      elRefArea.innerHTML = `
-        <div>
-          <label>REFERÊNCIA</label><br/>
-          <div class="row" style="gap:10px">
-            <div style="flex:1">
-              <label class="muted">MÊS</label><br/>
-              <select id="refMes">${buildMonthOptions()}</select>
-            </div>
-            <div style="flex:1">
-              <label class="muted">ANO</label><br/>
-              <select id="refAno">${buildYearOptions(2024, yy+1)}</select>
-            </div>
-          </div>
-        </div>
-      `;
-      const sMes=document.getElementById("refMes");
-      const sAno=document.getElementById("refAno");
-      if(sMes) sMes.value = mm;
-      if(sAno) sAno.value = String(yy);
-      return;
-    }
+function buildRefAnual(){
+  const now = new Date();
+  const ano = now.getFullYear();
+  const anos = Array.from({length:10},(_,i)=>ano-5+i);
+  refArea.innerHTML = `
+    <label>REFERÊNCIA</label>
+    <select id="refAno">
+      ${anos.map(a=>`<option value="${a}">${a}</option>`).join("")}
+    </select>
+  `;
+  document.getElementById("refAno").value = ano;
+}
 
-    // anual: ano
-    if(periodo === "anual"){
-      const yy=(new Date()).getFullYear();
-      elRefArea.innerHTML = `
-        <div>
-          <label>REFERÊNCIA</label><br/>
-          <label class="muted">ANO</label><br/>
-          <select id="refAno">${buildYearOptions(2024, yy+1)}</select>
-        </div>
-      `;
-      const sAno=document.getElementById("refAno");
-      if(sAno) sAno.value = String(yy);
-      return;
-    }
+function buildRefSemanalDomingo(){
+  // calendário (sem digitação)
+  refArea.innerHTML = `
+    <label>REFERÊNCIA (DOMINGO)</label>
+    <input id="refDomingo" type="date"/>
+  `;
+  // default: hoje
+  const d = new Date();
+  document.getElementById("refDomingo").value = d.toISOString().slice(0,10);
+}
 
-    // semanal:
-    // - presença/escalacao/gols: escolher DOMINGO (calendário)
-    // - caixa: intervalo livre (início/fim) por calendário
-    if(periodo === "semanal"){
-      if(painel === "caixa"){
-        elRefArea.innerHTML = `
-          <div>
-            <label>REFERÊNCIA</label><br/>
-            <div class="row" style="gap:10px">
-              <div style="flex:1">
-                <label class="muted">DATA INÍCIO</label><br/>
-                <input id="refIni" type="date" />
-              </div>
-              <div style="flex:1">
-                <label class="muted">DATA FIM</label><br/>
-                <input id="refFim" type="date" />
-              </div>
-            </div>
-          </div>
-        `;
-        // default: últimos 7 dias
-        const d=new Date();
-        const fim=new Date(d);
-        const ini=new Date(d); ini.setDate(ini.getDate()-6);
-        const toISO=(x)=>`${x.getFullYear()}-${pad2(x.getMonth()+1)}-${pad2(x.getDate())}`;
-        const i=document.getElementById("refIni");
-        const f=document.getElementById("refFim");
-        if(i) i.value = toISO(ini);
-        if(f) f.value = toISO(fim);
-      } else {
-        elRefArea.innerHTML = `
-          <div>
-            <label>REFERÊNCIA</label><br/>
-            <label class="muted">DOMINGO (data do jogo)</label><br/>
-            <input id="refDom" type="date" />
-          </div>
-        `;
-        // default: próximo domingo
-        const d=new Date();
-        const day=d.getDay(); // 0 dom
-        const addDays=(7 - day) % 7;
-        const dom=new Date(d); dom.setDate(dom.getDate()+addDays);
-        const toISO=(x)=>`${x.getFullYear()}-${pad2(x.getMonth()+1)}-${pad2(x.getDate())}`;
-        const r=document.getElementById("refDom");
-        if(r) r.value = toISO(dom);
-      }
-    }
-  }
-
-  function getRefFilter(painel, periodo){
-    // Retorna filtros para query em arquivos_app.
-    // Se coluna não existir, vamos tratar no carregarArquivo com fallback.
-    const out = {};
-    if(periodo === "mensal"){
-      const mes = document.getElementById("refMes")?.value;
-      const ano = document.getElementById("refAno")?.value;
-      if(mes) out.mes_ref = mes;
-      if(ano) out.ano_ref = Number(ano);
-    } else if(periodo === "anual"){
-      const ano = document.getElementById("refAno")?.value;
-      if(ano) out.ano_ref = Number(ano);
-    } else if(periodo === "semanal"){
-      if(painel === "caixa"){
-        const ini = document.getElementById("refIni")?.value;
-        const fim = document.getElementById("refFim")?.value;
-        if(ini) out.data_inicio = ini;
-        if(fim) out.data_fim = fim;
-      } else {
-        const dom = document.getElementById("refDom")?.value;
-        if(dom) out.data_ref = dom;
-      }
-    }
-    return out;
-  }
-const btnCarregar = document.getElementById("btnCarregar");
-  const btnLimpar = document.getElementById("btnLimpar");
-  const btnPdf = document.getElementById("btnPdf");
-  const btnCsv = document.getElementById("btnCsv");
-  const btnXlsx = document.getElementById("btnXlsx");
-
-  // Evita conflito: NÃO use "supabase" como nome global
-  const tesouraSupabase = (window.tesouraSupabaseClient)
-    ? window.tesouraSupabaseClient
-    : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-  // Opcional: salva para reaproveitar em outros painéis sem redeclarar
-  window.tesouraSupabaseClient = tesouraSupabase;
-
-  let loadedRow = null;     // linha carregada de arquivos_app
-  let loadedData = null;    // conteudo (json)
-
-  function setStatus(msg, kind="") {
-    const cls = kind === "err" ? "err" : (kind === "ok" ? "ok" : "");
-    elStatus.innerHTML = `<span class="muted">Status:</span> <b class="${cls}">${escapeHtml(msg)}</b>`;
-  }
-
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, s => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-    }[s]));
-  }
-
-  function enableDownloads(on) {
-    btnPdf.disabled = !on;
-    btnCsv.disabled = !on;
-    btnXlsx.disabled = !on;
-  }
-
-  function resetLoaded() {
-    loadedRow = null;
-    loadedData = null;
-    enableDownloads(false);
-    elBox.innerHTML = `<span class="muted">RESULTADO: carregue um arquivo.</span>`;
-  }
-
-  async function loadPainelOptions() {
-    setStatus("carregando lista de painéis…");
-    // Sempre mostrar todos os painéis (fixo)
-    elPainel.innerHTML = `<option value="">Selecione…</option>` + 
-      PAINEIS_FIXOS.map(p => `<option value="${escapeHtml(p.value)}">${escapeHtml(p.label)}</option>`).join("");
-
-    // limpa período e referência
-    elPeriodo.disabled = true;
-    elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
-    if (elRefArea) elRefArea.innerHTML = "";
-    setStatus("pronto. selecione o painel.", "ok");
-  }
-
-    // ✅ SEMPRE MOSTRAR PAINÉIS OFICIAIS (mesmo sem arquivo salvo)
-    const FIXOS = ["jogadores","presenca","escalacao","controle_geral","mensalidade","caixa","gols"];
-    const doBanco = [...new Set((data || []).map(x => x.painel).filter(Boolean))];
-    const unique = [...new Set([...FIXOS, ...doBanco])];
-
-    if (!unique.length) {
-      setStatus("Nenhum painel disponível.", "err");
-      elPainel.innerHTML = `<option value="">(vazio)</option>`;
-      return;
-    }
-
-    elPainel.innerHTML = `<option value="">Selecione…</option>` + unique.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
-    setStatus("pronto. selecione um painel.");
-  }
-
-  async function loadPeriodoOptions(painel) {
-    resetLoaded();
-    if (!painel) {
-      elPeriodo.disabled = true;
-      elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
-      if (elRefArea) elRefArea.innerHTML = "";
-      return;
-    }
-
-    const allowed = (PERIODOS_POR_PAINEL[painel] || []);
-    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + allowed.map(p => {
-      const lbl = (p === "unico") ? "ÚNICO" : (p === "semanal") ? "SEMANAL" : (p === "mensal") ? "MENSAL" : "ANUAL";
-      return `<option value="${p}">${lbl}</option>`;
-    }).join("");
-    elPeriodo.disabled = false;
-
-    // default: primeiro período
-    if (allowed.length === 1) {
-      elPeriodo.value = allowed[0];
-      showRefControls(painel, allowed[0]);
-      setStatus("pronto. clique CARREGAR.", "ok");
-    } else {
-      if (elRefArea) elRefArea.innerHTML = "";
-      setStatus("pronto. selecione o período.", "ok");
-    }
-  }
-
-    const unique = [...new Set((data || []).map(x => x.periodo).filter(Boolean))];
-
-    elPeriodo.innerHTML = `<option value="">Selecione…</option>` + unique.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
-    elPeriodo.disabled = false;
-    setStatus("pronto. selecione o período e clique CARREGAR.");
-  }
-
-  function buildFileNameBase() {
-    const p = elPainel.value || "arquivo";
-    const per = elPeriodo.value || "periodo";
-    const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
-    return `tesoura_${p}_${per}_${stamp}`.toLowerCase();
-  }
-
-  function normalizeToRows(obj) {
-    // Converte vários formatos para "linhas" (array de objetos)
-    if (!obj) return [];
-    if (Array.isArray(obj)) return obj;
-    if (typeof obj === "object") {
-      // caso venha { rows: [...] } ou { data: [...] }
-      if (Array.isArray(obj.rows)) return obj.rows;
-      if (Array.isArray(obj.data)) return obj.data;
-      // caso seja um único registro
-      return [obj];
-    }
-    return [];
-  }
-
-  function renderLoaded(row, content) {
-    const rows = normalizeToRows(content);
-    const qtd = rows.length;
-
-    elBox.innerHTML = `
-      <div><b>${escapeHtml(row.titulo || "(sem título)")}</b></div>
-      <div class="small muted" style="margin-top:4px">Painel: <span class="k">${escapeHtml(row.painel)}</span> | Período: <span class="k">${escapeHtml(row.periodo)}</span></div>
-      <div class="small muted">Criado em: <span class="k">${escapeHtml(String(row.criado_em || ""))}</span></div>
-      <div class="small muted">Referência: 
-        <span class="k">${escapeHtml(row.data_ref || "")}</span> 
-        <span class="k">${escapeHtml(row.mes_ref || "")}</span> 
-        <span class="k">${escapeHtml(String(row.ano_ref || ""))}</span>
-        <span class="k">${escapeHtml(row.data_inicio || "")}</span>
-        <span class="k">${escapeHtml(row.data_fim || "")}</span>
+function buildRefCaixaIntervalo(){
+  refArea.innerHTML = `
+    <label>REFERÊNCIA (CAIXA SEMANAL)</label>
+    <div class="row" style="gap:8px">
+      <div style="flex:1;min-width:160px">
+        <label class="small">DATA INÍCIO</label>
+        <input id="refIni" type="date"/>
       </div>
-      <hr style="border:0;border-top:1px solid #123a62;margin:12px 0"/>
-      <div class="small muted">Registros no arquivo: <b>${qtd}</b></div>
-      <div class="small muted" style="margin-top:6px">Use os botões para baixar PDF / CSV / Excel.</div>
+      <div style="flex:1;min-width:160px">
+        <label class="small">DATA FIM</label>
+        <input id="refFim" type="date"/>
+      </div>
+    </div>
+  `;
+  const d = new Date();
+  const iso = d.toISOString().slice(0,10);
+  document.getElementById("refIni").value = iso;
+  document.getElementById("refFim").value = iso;
+}
+
+function clearRef(){
+  refArea.innerHTML = `<label>REFERÊNCIA</label><div class="small">Sem referência (arquivo único).</div>`;
+}
+
+function onPeriodoChange(){
+  const painel = selPainel.value;
+  const periodo = selPeriodo.value;
+
+  // referência por regra
+  if(periodo==="unico"){
+    clearRef();
+    return;
+  }
+  if(periodo==="mensal"){
+    buildRefMensal();
+    return;
+  }
+  if(periodo==="anual"){
+    buildRefAnual();
+    return;
+  }
+  // semanal
+  if(painel==="caixa"){
+    buildRefCaixaIntervalo(); // intervalo livre
+  }else{
+    buildRefSemanalDomingo(); // domingo
+  }
+}
+
+async function supabaseSelect(url){
+  const headers = {
+    "apikey": SUPABASE_ANON,
+    "Authorization": "Bearer " + SUPABASE_ANON,
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
+  const r = await fetch(url, {headers});
+  if(!r.ok){
+    const t = await r.text();
+    throw new Error(t || ("HTTP "+r.status));
+  }
+  return r.json();
+}
+
+function buildQuery(){
+  const painel = selPainel.value;
+  const periodo = selPeriodo.value;
+
+  // Campos esperados: painel, periodo, criado_em, titulo, data_ref, mes_ref, ano_ref, data_inicio, data_fim
+  // Vamos filtrar apenas por campos disponíveis.
+  let filter = `painel=eq.${encodeURIComponent(painel)}&periodo=eq.${encodeURIComponent(periodo)}`;
+
+  if(periodo==="mensal"){
+    const m = document.getElementById("refMes").value;
+    const a = document.getElementById("refAno").value;
+    filter += `&mes_ref=eq.${encodeURIComponent(m)}&ano_ref=eq.${encodeURIComponent(a)}`;
+  }
+  if(periodo==="anual"){
+    const a = document.getElementById("refAno").value;
+    filter += `&ano_ref=eq.${encodeURIComponent(a)}`;
+  }
+  if(periodo==="semanal"){
+    if(painel==="caixa"){
+      const ini = document.getElementById("refIni").value;
+      const fim = document.getElementById("refFim").value;
+      // caixa semanal usa data_inicio + data_fim (data_ref pode ser vazio)
+      filter += `&data_inicio=eq.${encodeURIComponent(ini)}&data_fim=eq.${encodeURIComponent(fim)}`;
+    }else{
+      const d = document.getElementById("refDomingo").value;
+      filter += `&data_ref=eq.${encodeURIComponent(d)}`;
+    }
+  }
+
+  // Ordena pelos mais novos
+  const select = `select=id,painel,periodo,criado_em,created_at,titulo,data_ref,mes_ref,ano_ref,data_inicio,data_fim`;
+  const order = `order=criado_em.desc,created_at.desc`;
+  return `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?${select}&${filter}&${order}`;
+}
+
+function renderTabela(rows){
+  listaAtual = rows || [];
+  selecionado = null;
+  tbody.innerHTML = "";
+  btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
+
+  if(!listaAtual.length){
+    tbl.style.display = "none";
+    setStatus("Nenhum arquivo salvo encontrado para este filtro.");
+    return;
+  }
+
+  tbl.style.display = "";
+  listaAtual.forEach((r,idx)=>{
+    const criado = r.criado_em || r.created_at || "-";
+    const titulo = r.titulo || "(sem título)";
+    let ref = "-";
+    if(r.periodo==="mensal") ref = `${pad2(r.mes_ref||"")}/${r.ano_ref||""}`;
+    else if(r.periodo==="anual") ref = `${r.ano_ref||""}`;
+    else if(r.periodo==="semanal"){
+      if(r.painel==="caixa") ref = `${r.data_inicio||""} → ${r.data_fim||""}`;
+      else ref = `${r.data_ref||""}`;
+    }
+
+    const tr = document.createElement("tr");
+    tr.style.cursor="pointer";
+    tr.innerHTML = `
+      <td>${criado}</td>
+      <td>${titulo}</td>
+      <td>${ref}</td>
+      <td>${r.periodo}</td>
     `;
-  }
-
-  async function carregarArquivo() {
-    resetLoaded();
-    const painel = elPainel.value;
-    const periodo = elPeriodo.value;
-
-    if (!painel) { setStatus("Selecione o painel.", "err"); return; }
-    if (!periodo) { setStatus("Selecione o período.", "err"); return; }
-
-    // valida referência quando necessário
-    const filtros = getRefFilter(painel, periodo);
-    if (periodo === "mensal" && (!filtros.mes_ref || !filtros.ano_ref)) { setStatus("Selecione mês e ano.", "err"); return; }
-    if (periodo === "anual" && (!filtros.ano_ref)) { setStatus("Selecione o ano.", "err"); return; }
-    if (periodo === "semanal" && painel !== "caixa" && (!filtros.data_ref)) { setStatus("Selecione o domingo.", "err"); return; }
-    if (periodo === "semanal" && painel === "caixa" && (!filtros.data_inicio || !filtros.data_fim)) { setStatus("Selecione início e fim.", "err"); return; }
-
-    setStatus("carregando arquivo…");
-
-    // Tentativa 1: schema novo (data_inicio/data_fim)
-    const selectColsNew = "id,painel,periodo,data_ref,mes_ref,ano_ref,data_inicio,data_fim,titulo,conteudo,criado_em";
-    const selectColsOld = "id,painel,periodo,data_ref,mes_ref,ano_ref,titulo,conteudo,criado_em";
-
-    async function runQuery(selectCols) {
-      let q = tesouraSupabase
-        .from("arquivos_app")
-        .select(selectCols)
-        .eq("painel", painel)
-        .eq("periodo", periodo);
-
-      // aplica filtros
-      if (filtros.data_ref) q = q.eq("data_ref", filtros.data_ref);
-      if (filtros.mes_ref)  q = q.eq("mes_ref", filtros.mes_ref);
-      if (filtros.ano_ref)  q = q.eq("ano_ref", filtros.ano_ref);
-      if (filtros.data_inicio) q = q.eq("data_inicio", filtros.data_inicio);
-      if (filtros.data_fim)    q = q.eq("data_fim", filtros.data_fim);
-
-      return await q.order("criado_em", { ascending: false }).limit(1);
-    }
-
-    let res = await runQuery(selectColsNew);
-
-    // Se der erro de coluna inexistente, cai para o schema antigo
-    if (res.error && /does not exist|unknown column|column/i.test(String(res.error.message || ""))) {
-      // remove filtros de data_inicio/data_fim no modo antigo
-      delete filtros.data_inicio;
-      delete filtros.data_fim;
-      res = await runQuery(selectColsOld);
-    }
-
-    const { data, error } = res;
-
-    if (error) {
-      setStatus("Erro ao carregar arquivo do Banco de Dados.", "err");
-      console.error("[BD] carregar:", error);
-      return;
-    }
-
-    const row = (data || [])[0];
-    if (!row) {
-      setStatus("Não existe arquivo salvo para esse filtro.", "err");
-      return;
-    }
-
-    loadedRow = row;
-    loadedData = row.conteudo;
-
-    renderLoaded(row, loadedData);
-    enableDownloads(true);
-    setStatus("arquivo carregado com sucesso.", "ok");
-  }
-
-  // ==== DOWNLOADS ====
-
-  function downloadBlob(filename, mime, content) {
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 500);
-  }
-
-  function baixarCSV() {
-    if (!loadedData) return;
-    const rows = normalizeToRows(loadedData);
-    if (!rows.length) { setStatus("Conteúdo vazio para CSV.", "err"); return; }
-
-    const cols = Object.keys(rows[0]);
-    const esc = (v) => {
-      const s = (v === null || v === undefined) ? "" : String(v);
-      const needs = /[",\n;]/.test(s);
-      const ss = s.replace(/"/g,'""');
-      return needs ? `"${ss}"` : ss;
-    };
-
-    const lines = [];
-    lines.push(cols.map(esc).join(";"));
-    rows.forEach(r => lines.push(cols.map(c => esc(r[c])).join(";")));
-
-    downloadBlob(buildFileNameBase() + ".csv", "text/csv;charset=utf-8", lines.join("\n"));
-    setStatus("CSV gerado.", "ok");
-  }
-
-  function baixarXLSX() {
-    if (!loadedData) return;
-    const rows = normalizeToRows(loadedData);
-    if (!rows.length) { setStatus("Conteúdo vazio para Excel.", "err"); return; }
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "DADOS");
-    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-
-    downloadBlob(buildFileNameBase() + ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", out);
-    setStatus("Excel gerado.", "ok");
-  }
-
-  async function baixarPDF() {
-    if (!loadedData) return;
-    const rows = normalizeToRows(loadedData);
-    if (!rows.length) { setStatus("Conteúdo vazio para PDF.", "err"); return; }
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit:"pt", format:"a4" });
-
-    const title = `TESOURA - ${loadedRow?.painel || ""} (${loadedRow?.periodo || ""})`;
-    doc.setFontSize(12);
-    doc.text(title, 40, 40);
-
-    const cols = Object.keys(rows[0]);
-    doc.setFontSize(9);
-
-    let y = 60;
-    const lineH = 14;
-    const maxLines = 35; // simples, sem tabela complexa (leve e estável)
-    const maxRows = Math.min(rows.length, maxLines);
-
-    doc.text(cols.join(" | "), 40, y); y += lineH;
-    doc.text("-".repeat(120).slice(0, 120), 40, y); y += lineH;
-
-    for (let i=0;i<maxRows;i++){
-      const r = rows[i];
-      const line = cols.map(c => String(r[c] ?? "")).join(" | ");
-      const chunks = doc.splitTextToSize(line, 520);
-      chunks.forEach(ch => {
-        if (y > 760) { doc.addPage(); y = 40; }
-        doc.text(ch, 40, y); y += lineH;
-      });
-    }
-
-    if (rows.length > maxRows) {
-      doc.text(`(Mostrando ${maxRows} de ${rows.length} linhas)`, 40, Math.min(y+10, 780));
-    }
-
-    doc.save(buildFileNameBase() + ".pdf");
-    setStatus("PDF gerado.", "ok");
-  }
-
-  // ==== EVENTS ====
-  elPainel.addEventListener("change", async () => {
-    const painel = elPainel.value;
-    if (!painel) {
-      elPeriodo.disabled = true;
-      elPeriodo.innerHTML = `<option value="">Selecione o painel</option>`;
-      resetLoaded();
-      setStatus("selecione um painel.");
-      return;
-    }
-    await loadPeriodoOptions(painel);
+    tr.addEventListener("click", ()=>{
+      [...tbody.querySelectorAll("tr")].forEach(x=>x.style.outline="none");
+      tr.style.outline = "2px solid rgba(255,138,0,.65)";
+      selecionado = r;
+      btnPdf.disabled = btnCsv.disabled = btnXls.disabled = false;
+      setStatus("Arquivo selecionado. Escolha o tipo e baixe.");
+    });
+    tbody.appendChild(tr);
   });
 
-  btnCarregar.addEventListener("click", carregarArquivo);
-  btnLimpar.addEventListener("click", () => { resetLoaded(); setStatus("limpo."); });
+  setStatus(`Histórico carregado: ${listaAtual.length} arquivo(s). Selecione um arquivo.`);
+}
 
-  btnCsv.addEventListener("click", baixarCSV);
-  btnXlsx.addEventListener("click", baixarXLSX);
-  btnPdf.addEventListener("click", baixarPDF);
+// Downloads: aqui só “simula” - você pode plugar seu gerador real depois.
+// Por enquanto, baixa JSON do conteudo como arquivo.
+function downloadAs(filename, mime, content){
+  const blob = new Blob([content], {type:mime});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 6000);
+}
 
-  // ==== START ====
-  // Validação mínima da chave (evita “morto” sem aviso)
-  if (!SUPABASE_ANON || SUPABASE_ANON.includes("COLE_AQUI")) {
-    setStatus("Falta ANON KEY do Supabase (ver topo do arquivo).", "err");
-    console.warn("[BD] ANON KEY não configurada.");
-  } else {
-    loadPainelOptions();
+async function buscar(){
+  try{
+    setStatus("Buscando histórico...");
+    btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
+    const url = buildQuery();
+    const rows = await supabaseSelect(url);
+    renderTabela(rows);
+  }catch(e){
+    console.error(e);
+    setStatus("Erro ao buscar histórico no Supabase. Verifique chave/permite leitura da tabela arquivos_app.");
+    tbl.style.display="none";
   }
-})();
+}
+
+function limpar(){
+  tbody.innerHTML = "";
+  tbl.style.display="none";
+  btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
+  selecionado = null;
+  setStatus("Selecione PAINEL e PERÍODO e clique BUSCAR.");
+}
+
+async function pegarConteudoSelecionado(){
+  if(!selecionado) return null;
+  // Busca o registro completo (incluindo conteudo) pelo id
+  const url = `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?select=*&id=eq.${encodeURIComponent(selecionado.id)}&limit=1`;
+  const rows = await supabaseSelect(url);
+  return rows && rows[0] ? rows[0] : null;
+}
+
+async function baixar(tipo){
+  try{
+    if(!selecionado) return;
+    setStatus("Preparando download...");
+    const row = await pegarConteudoSelecionado();
+    const conteudo = row && row.conteudo ? row.conteudo : {};
+    const base = `${row.painel}_${row.periodo}_${(row.criado_em||row.created_at||"").replaceAll(":","-")}`;
+
+    if(tipo==="csv"){
+      // CSV simples: exporta JSON como texto (você pode trocar depois por CSV real)
+      downloadAs(base+".csv", "text/csv;charset=utf-8", JSON.stringify(conteudo,null,2));
+    }else if(tipo==="xls"){
+      // Excel simples: exporta JSON (trocar depois pelo gerador real)
+      downloadAs(base+".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", JSON.stringify(conteudo,null,2));
+    }else{
+      // PDF simples: exporta JSON (trocar depois por PDF real)
+      downloadAs(base+".pdf", "application/pdf", JSON.stringify(conteudo,null,2));
+    }
+    setStatus("Download iniciado.");
+  }catch(e){
+    console.error(e);
+    setStatus("Erro ao baixar. Verifique se a coluna conteudo existe e se há permissão de leitura.");
+  }
+}
+
+document.getElementById("btnBuscar").addEventListener("click", buscar);
+document.getElementById("btnLimpar").addEventListener("click", limpar);
+selPainel.addEventListener("change", onPainelChange);
+selPeriodo.addEventListener("change", onPeriodoChange);
+btnPdf.addEventListener("click", ()=>baixar("pdf"));
+btnCsv.addEventListener("click", ()=>baixar("csv"));
+btnXls.addEventListener("click", ()=>baixar("xls"));
+
+buildPainel();
 </script>
 </body>
 </html>
