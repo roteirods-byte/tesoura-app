@@ -809,6 +809,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
 
     async function escalarPrimeiroTempo(){
+  try {
       const dataISO = getDataJogoISO();
       const listaHoje = (presencasHoje || []).filter(p => !p.naoVaiJogar);
 
@@ -891,7 +892,11 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
       renderEscalacao();
       toast("1º tempo escalado.");
-    }
+  } catch (e) {
+    console.error(e);
+    toast('ERRO na ESCALAÇÃO 1º TEMPO: ' + (e.message || e), false);
+  }
+}
 
 
     function toggleSaiu(apelido){
@@ -1131,7 +1136,48 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
           if(errInsEsc){ console.error(errInsEsc); alert("Erro ao salvar escalação."); return; }
         }
 
-        msgSalvarEl.textContent="PÁGINA SALVA";
+        
+        // ===== ARQUIVAR NO BANCO DE DADOS (somente leitura no painel BANCO DE DADOS) =====
+        try{
+          const d = new Date(dia);
+          const ano_ref = d.getFullYear();
+          const mes_ref = d.getMonth() + 1;
+
+          // Presença (semanal)
+          await supabase.from("arquivos_app").insert([{
+            painel: "presenca",
+            periodo: "semanal",
+            data_ref: dia,
+            mes_ref,
+            ano_ref,
+            titulo: `Presença ${dia}`,
+            conteudo: {
+              data_jogo: dia,
+              presentes: presentesHoje,
+              gerado_em: new Date().toISOString()
+            }
+          }]);
+
+          // Escalação (semanal)
+          await supabase.from("arquivos_app").insert([{
+            painel: "escalacao",
+            periodo: "semanal",
+            data_ref: dia,
+            mes_ref,
+            ano_ref,
+            titulo: `Escalação ${dia}`,
+            conteudo: {
+              data_jogo: dia,
+              escala1,
+              escala2,
+              gerado_em: new Date().toISOString()
+            }
+          }]);
+        }catch(e){
+          console.warn("Aviso: não foi possível arquivar no Banco de Dados.", e);
+        }
+
+msgSalvarEl.textContent="PÁGINA SALVA";
         alert("Página salva.");
       }catch(e){
         console.error(e);
