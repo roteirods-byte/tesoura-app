@@ -1,16 +1,16 @@
-<!-- SUBSTITUA TODO O CONTEÚDO DO ARQUIVO tesoura_banco_dados_teste.html POR ESTE -->
 <!doctype html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
+
   <style>
     :root{
       --bg:#071a2b; --panel:#0b2640; --panel2:#082033;
       --txt:#e8f0ff; --muted:#a9bfdc; --accent:#ff8a00;
-      --btn:#1da2ff; --btn2:#00c26a; --danger:#ff3b3b;
-      --line:rgba(255,255,255,.12);
+      --btn:#1da2ff; --btn2:#00c26a; --line:rgba(255,255,255,.12);
+      --danger:#ff3b3b;
     }
     body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif;}
     .wrap{max-width:1100px;margin:18px auto;padding:0 12px;}
@@ -25,7 +25,8 @@
     .btnLimpar{background:#ffb000}
     .btnDl{background:var(--btn);color:#00121f}
     .btnDl[disabled]{opacity:.35;cursor:not-allowed}
-    .status{margin:8px 0 0;color:var(--accent);font-size:12px}
+    .status{margin:8px 0 0;color:var(--accent);font-size:12px;white-space:pre-wrap}
+    .err{color:var(--danger);font-weight:700}
     .box{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:12px}
     .small{font-size:12px;color:var(--muted)}
     table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
@@ -33,9 +34,15 @@
     th{color:var(--accent);font-size:12px}
     tr:hover{background:rgba(255,255,255,.04)}
     .footer{margin-top:10px;font-size:12px;color:var(--muted)}
-    .note{margin-top:10px;font-size:12px;color:var(--muted)}
   </style>
+
+  <!-- 1) Biblioteca Supabase (obrigatória) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2) Config do seu app (onde está window.TESOURA_CONFIG) -->
+  <script src="app/js/config.js"></script>
 </head>
+
 <body>
   <div class="wrap">
     <h1>TESOURA - BANCO DE DADOS (GUARDIÃO)</h1>
@@ -63,7 +70,7 @@
         </div>
       </div>
 
-      <div class="status" id="status">Selecione PAINEL e PERÍODO e clique BUSCAR.</div>
+      <div class="status" id="status">Carregando configuração…</div>
 
       <div class="box">
         <div class="small">
@@ -95,40 +102,102 @@
   </div>
 
 <script>
-/** CONFIG SUPABASE (usa a mesma do seu projeto) **/
-const cfg = window.TESOURA_CONFIG || {};
-const SUPABASE_URL  = (cfg.SUPABASE_URL || window.SUPABASE_URL || "https://xuplzpispuvktggjassx.supabase.co").trim();
-const SUPABASE_ANON = (cfg.SUPABASE_KEY  || window.SUPABASE_ANON || window.SUPABASE_KEY || "").trim();
+/* =========================
+   CONFIG + HELPERS
+========================= */
+
 const TABELA_ARQUIVOS = "arquivos_app";
 
-// Painéis fixos (sempre aparecem)
-const PAINEIS = [
-  {id:"jogadores", label:"jogadores", periodos:["unico"]},
-  {id:"presenca", label:"presença", periodos:["semanal"]},
-  {id:"escalacao", label:"escalação", periodos:["semanal"]},
-  {id:"controle_geral", label:"controle geral", periodos:["unico"]},
-  {id:"mensalidade", label:"mensalidade", periodos:["mensal"]},
-  {id:"caixa", label:"caixa", periodos:["semanal","mensal","anual"]},
-  {id:"gols", label:"gols", periodos:["semanal","anual"]},
-];
-
-const selPainel = document.getElementById("selPainel");
-const selPeriodo = document.getElementById("selPeriodo");
-const refArea = document.getElementById("refArea");
-const statusEl = document.getElementById("status");
-const tbl = document.getElementById("tbl");
-const tbody = document.getElementById("tbody");
-const btnPdf = document.getElementById("btnPdf");
-const btnCsv = document.getElementById("btnCsv");
-const btnXls = document.getElementById("btnXls");
-
-let selecionado = null; // linha de arquivos_app selecionada (para download)
-let listaAtual = [];    // resultados
-
-function setStatus(msg){ statusEl.textContent = msg; }
+function setStatus(msg, isErr=false){
+  const el = document.getElementById("status");
+  el.innerHTML = isErr ? `<span class="err">${msg}</span>` : msg;
+}
 
 function pad2(n){ return String(n).padStart(2,"0"); }
-function yyyy(d){ return d.getFullYear(); }
+
+function getCfgSafe(){
+  // tenta pegar config do próprio frame e do parent (se estiver em iframe)
+  let cfg = window.TESOURA_CONFIG || {};
+  if((!cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) && window.parent && window.parent !== window){
+    try{
+      const pCfg = window.parent.TESOURA_CONFIG || {};
+      cfg = {
+        SUPABASE_URL: cfg.SUPABASE_URL || pCfg.SUPABASE_URL,
+        SUPABASE_KEY: cfg.SUPABASE_KEY || pCfg.SUPABASE_KEY,
+      };
+    }catch(e){}
+  }
+  return cfg || {};
+}
+
+function getProjectRefFromUrl(url){
+  try{
+    const u = (url||"").trim();
+    // https://<ref>.supabase.co
+    return u.split("https://")[1]?.split(".")[0] || "";
+  }catch(e){ return ""; }
+}
+
+function getAccessTokenFromLocalStorage(supabaseUrl){
+  // lê token padrão do supabase-js no localStorage (login Diretoria)
+  try{
+    const ref = getProjectRefFromUrl(supabaseUrl);
+    if(!ref) return "";
+    const key = "sb-" + ref + "-auth-token";
+    const raw = localStorage.getItem(key);
+    if(!raw) return "";
+    const obj = JSON.parse(raw);
+    return obj?.access_token || obj?.currentSession?.access_token || "";
+  }catch(e){
+    return "";
+  }
+}
+
+async function supabaseSelect(url, supabaseUrl, anonKey){
+  const token = getAccessTokenFromLocalStorage(supabaseUrl);
+  const headers = {
+    "apikey": anonKey,
+    "Authorization": "Bearer " + (token || anonKey),
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
+
+  const r = await fetch(url, {headers});
+  const text = await r.text();
+
+  if(!r.ok){
+    // mostra erro real: 401/403/404 e mensagem do Supabase
+    throw new Error(`HTTP ${r.status}\n${text}`);
+  }
+
+  return text ? JSON.parse(text) : [];
+}
+
+/* =========================
+   REGRAS DE PAINEL/PERÍODO
+========================= */
+
+const PAINEIS = [
+  {id:"jogadores",      label:"jogadores",      periodos:["unico"]},
+  {id:"presenca",       label:"presença",       periodos:["semanal"]},
+  {id:"escalacao",      label:"escalação",      periodos:["semanal"]},
+  {id:"controle_geral", label:"controle geral", periodos:["unico"]},
+  {id:"mensalidade",    label:"mensalidade",    periodos:["mensal"]},
+  {id:"caixa",          label:"caixa",          periodos:["semanal","mensal","anual"]},
+  {id:"gols",           label:"gols",           periodos:["semanal","anual"]},
+];
+
+const selPainel  = document.getElementById("selPainel");
+const selPeriodo = document.getElementById("selPeriodo");
+const refArea    = document.getElementById("refArea");
+const tbl        = document.getElementById("tbl");
+const tbody      = document.getElementById("tbody");
+const btnPdf     = document.getElementById("btnPdf");
+const btnCsv     = document.getElementById("btnCsv");
+const btnXls     = document.getElementById("btnXls");
+
+let selecionado = null;
+let listaAtual = [];
 
 function buildPainel(){
   selPainel.innerHTML = PAINEIS.map(p=>`<option value="${p.id}">${p.label}</option>`).join("");
@@ -136,17 +205,20 @@ function buildPainel(){
 }
 
 function onPainelChange(){
-  const painelId = selPainel.value;
-  const p = PAINEIS.find(x=>x.id===painelId);
+  const p = PAINEIS.find(x=>x.id===selPainel.value);
   selPeriodo.innerHTML = p.periodos.map(per=>`<option value="${per}">${per}</option>`).join("");
   onPeriodoChange();
+}
+
+function clearRef(){
+  refArea.innerHTML = `<label>REFERÊNCIA</label><div class="small">Sem referência (arquivo único).</div>`;
 }
 
 function buildRefMensal(){
   const now = new Date();
   const ano = now.getFullYear();
   const meses = Array.from({length:12},(_,i)=>i+1);
-  const anos = Array.from({length:8},(_,i)=>ano-3+i);
+  const anos = Array.from({length:10},(_,i)=>ano-5+i);
 
   refArea.innerHTML = `
     <label>REFERÊNCIA</label>
@@ -166,7 +238,8 @@ function buildRefMensal(){
 function buildRefAnual(){
   const now = new Date();
   const ano = now.getFullYear();
-  const anos = Array.from({length:10},(_,i)=>ano-5+i);
+  const anos = Array.from({length:12},(_,i)=>ano-6+i);
+
   refArea.innerHTML = `
     <label>REFERÊNCIA</label>
     <select id="refAno">
@@ -177,12 +250,10 @@ function buildRefAnual(){
 }
 
 function buildRefSemanalDomingo(){
-  // calendário (sem digitação)
   refArea.innerHTML = `
     <label>REFERÊNCIA (DOMINGO)</label>
     <input id="refDomingo" type="date"/>
   `;
-  // default: hoje
   const d = new Date();
   document.getElementById("refDomingo").value = d.toISOString().slice(0,10);
 }
@@ -207,82 +278,27 @@ function buildRefCaixaIntervalo(){
   document.getElementById("refFim").value = iso;
 }
 
-function clearRef(){
-  refArea.innerHTML = `<label>REFERÊNCIA</label><div class="small">Sem referência (arquivo único).</div>`;
-}
-
 function onPeriodoChange(){
   const painel = selPainel.value;
   const periodo = selPeriodo.value;
 
-  // referência por regra
-  if(periodo==="unico"){
-    clearRef();
-    return;
-  }
-  if(periodo==="mensal"){
-    buildRefMensal();
-    return;
-  }
-  if(periodo==="anual"){
-    buildRefAnual();
-    return;
-  }
+  if(periodo==="unico") return clearRef();
+  if(periodo==="mensal") return buildRefMensal();
+  if(periodo==="anual") return buildRefAnual();
+
   // semanal
-  if(painel==="caixa"){
-    buildRefCaixaIntervalo(); // intervalo livre
-  }else{
-    buildRefSemanalDomingo(); // domingo
-  }
-}
-  
-function getCfg(){
-  return window.TESOURA_CONFIG || {};
+  if(painel==="caixa") return buildRefCaixaIntervalo();
+  return buildRefSemanalDomingo();
 }
 
-function getAccessToken(){
-  // tenta ler token padrão do Supabase no localStorage
-  // (serve quando você está logado como Diretoria)
-  try{
-    const url = (getCfg().SUPABASE_URL || "").trim();
-    const ref = url.split("https://")[1]?.split(".")[0]; // ex: xuplzpispuvktggjassx
-    if(!ref) return "";
-    const key = "sb-" + ref + "-auth-token";
-    const raw = localStorage.getItem(key);
-    if(!raw) return "";
-    const obj = JSON.parse(raw);
-    return obj?.access_token || obj?.currentSession?.access_token || "";
-  }catch(e){
-    return "";
-  }
-}
+/* =========================
+   QUERY + RENDER
+========================= */
 
-async function supabaseSelect(url){
-  const cfg = getCfg();
-  const anon = (cfg.SUPABASE_KEY || "").trim(); // sua ANON KEY
-  const token = getAccessToken();              // token da sessão (Diretoria)
-
-  const headers = {
-    "apikey": anon,
-    "Authorization": "Bearer " + (token || anon),
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-  };
-
-  const r = await fetch(url, {headers});
-  if(!r.ok){
-    const t = await r.text();
-    throw new Error(t || ("HTTP "+r.status));
-  }
-  return r.json();
-}
-
-function buildQuery(){
+function buildQuery(supabaseUrl){
   const painel = selPainel.value;
   const periodo = selPeriodo.value;
 
-  // Campos esperados: painel, periodo, criado_em, titulo, data_ref, mes_ref, ano_ref, data_inicio, data_fim
-  // Vamos filtrar apenas por campos disponíveis.
   let filter = `painel=eq.${encodeURIComponent(painel)}&periodo=eq.${encodeURIComponent(periodo)}`;
 
   if(periodo==="mensal"){
@@ -290,15 +306,16 @@ function buildQuery(){
     const a = document.getElementById("refAno").value;
     filter += `&mes_ref=eq.${encodeURIComponent(m)}&ano_ref=eq.${encodeURIComponent(a)}`;
   }
+
   if(periodo==="anual"){
     const a = document.getElementById("refAno").value;
     filter += `&ano_ref=eq.${encodeURIComponent(a)}`;
   }
+
   if(periodo==="semanal"){
     if(painel==="caixa"){
       const ini = document.getElementById("refIni").value;
       const fim = document.getElementById("refFim").value;
-      // caixa semanal usa data_inicio + data_fim (data_ref pode ser vazio)
       filter += `&data_inicio=eq.${encodeURIComponent(ini)}&data_fim=eq.${encodeURIComponent(fim)}`;
     }else{
       const d = document.getElementById("refDomingo").value;
@@ -306,10 +323,9 @@ function buildQuery(){
     }
   }
 
-  // Ordena pelos mais novos
   const select = `select=id,painel,periodo,criado_em,created_at,titulo,data_ref,mes_ref,ano_ref,data_inicio,data_fim`;
   const order = `order=criado_em.desc,created_at.desc`;
-  return `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?${select}&${filter}&${order}`;
+  return `${supabaseUrl}/rest/v1/${TABELA_ARQUIVOS}?${select}&${filter}&${order}`;
 }
 
 function renderTabela(rows){
@@ -325,10 +341,11 @@ function renderTabela(rows){
   }
 
   tbl.style.display = "";
-  listaAtual.forEach((r,idx)=>{
+  listaAtual.forEach((r)=>{
     const criado = r.criado_em || r.created_at || "-";
     const titulo = r.titulo || "(sem título)";
     let ref = "-";
+
     if(r.periodo==="mensal") ref = `${pad2(r.mes_ref||"")}/${r.ano_ref||""}`;
     else if(r.periodo==="anual") ref = `${r.ano_ref||""}`;
     else if(r.periodo==="semanal"){
@@ -337,28 +354,64 @@ function renderTabela(rows){
     }
 
     const tr = document.createElement("tr");
-    tr.style.cursor="pointer";
+    tr.style.cursor = "pointer";
     tr.innerHTML = `
       <td>${criado}</td>
       <td>${titulo}</td>
       <td>${ref}</td>
       <td>${r.periodo}</td>
     `;
+
     tr.addEventListener("click", ()=>{
       [...tbody.querySelectorAll("tr")].forEach(x=>x.style.outline="none");
       tr.style.outline = "2px solid rgba(255,138,0,.65)";
       selecionado = r;
       btnPdf.disabled = btnCsv.disabled = btnXls.disabled = false;
-      setStatus("Arquivo selecionado. Escolha o tipo e baixe.");
+      setStatus("Arquivo selecionado. Agora baixe em PDF/CSV/EXCEL.");
     });
+
     tbody.appendChild(tr);
   });
 
   setStatus(`Histórico carregado: ${listaAtual.length} arquivo(s). Selecione um arquivo.`);
 }
 
-// Downloads: aqui só “simula” - você pode plugar seu gerador real depois.
-// Por enquanto, baixa JSON do conteudo como arquivo.
+/* =========================
+   AÇÕES
+========================= */
+
+async function buscar(){
+  try{
+    const cfg = getCfgSafe();
+    const SUPABASE_URL  = (cfg.SUPABASE_URL || "").trim();
+    const SUPABASE_ANON = (cfg.SUPABASE_KEY || "").trim();
+
+    if(!SUPABASE_URL || !SUPABASE_ANON){
+      return setStatus("CONFIG SUPABASE ausente.\nVerifique: app/js/config.js (TESOURA_CONFIG).", true);
+    }
+
+    setStatus("Buscando histórico...");
+    tbl.style.display = "none";
+
+    const url = buildQuery(SUPABASE_URL);
+    const rows = await supabaseSelect(url, SUPABASE_URL, SUPABASE_ANON);
+    renderTabela(rows);
+
+  }catch(e){
+    console.error(e);
+    setStatus("Erro ao buscar histórico no Supabase:\n" + String(e.message || e), true);
+  }
+}
+
+function limpar(){
+  tbody.innerHTML = "";
+  tbl.style.display = "none";
+  btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
+  selecionado = null;
+  setStatus("Selecione PAINEL e PERÍODO e clique BUSCAR.");
+}
+
+// Downloads (por enquanto: baixa JSON do conteúdo do arquivo salvo)
 function downloadAs(filename, mime, content){
   const blob = new Blob([content], {type:mime});
   const a = document.createElement("a");
@@ -368,60 +421,45 @@ function downloadAs(filename, mime, content){
   setTimeout(()=>URL.revokeObjectURL(a.href), 6000);
 }
 
-async function buscar(){
-  try{
-    setStatus("Buscando histórico...");
-    btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
-    const url = buildQuery();
-    const rows = await supabaseSelect(url);
-    renderTabela(rows);
-  }catch(e){
-    console.error(e);
-    setStatus("Erro ao buscar histórico no Supabase. Verifique chave/permite leitura da tabela arquivos_app.");
-    tbl.style.display="none";
-  }
-}
-
-function limpar(){
-  tbody.innerHTML = "";
-  tbl.style.display="none";
-  btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
-  selecionado = null;
-  setStatus("Selecione PAINEL e PERÍODO e clique BUSCAR.");
-}
-
 async function pegarConteudoSelecionado(){
+  const cfg = getCfgSafe();
+  const SUPABASE_URL  = (cfg.SUPABASE_URL || "").trim();
+  const SUPABASE_ANON = (cfg.SUPABASE_KEY || "").trim();
   if(!selecionado) return null;
-  // Busca o registro completo (incluindo conteudo) pelo id
+
   const url = `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?select=*&id=eq.${encodeURIComponent(selecionado.id)}&limit=1`;
-  const rows = await supabaseSelect(url);
+  const rows = await supabaseSelect(url, SUPABASE_URL, SUPABASE_ANON);
   return rows && rows[0] ? rows[0] : null;
 }
 
 async function baixar(tipo){
   try{
     if(!selecionado) return;
+
     setStatus("Preparando download...");
     const row = await pegarConteudoSelecionado();
     const conteudo = row && row.conteudo ? row.conteudo : {};
-    const base = `${row.painel}_${row.periodo}_${(row.criado_em||row.created_at||"").replaceAll(":","-")}`;
+
+    const stamp = (row.criado_em || row.created_at || "").replaceAll(":","-");
+    const base = `${row.painel}_${row.periodo}_${stamp}`;
 
     if(tipo==="csv"){
-      // CSV simples: exporta JSON como texto (você pode trocar depois por CSV real)
       downloadAs(base+".csv", "text/csv;charset=utf-8", JSON.stringify(conteudo,null,2));
     }else if(tipo==="xls"){
-      // Excel simples: exporta JSON (trocar depois pelo gerador real)
       downloadAs(base+".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", JSON.stringify(conteudo,null,2));
     }else{
-      // PDF simples: exporta JSON (trocar depois por PDF real)
       downloadAs(base+".pdf", "application/pdf", JSON.stringify(conteudo,null,2));
     }
     setStatus("Download iniciado.");
   }catch(e){
     console.error(e);
-    setStatus("Erro ao baixar. Verifique se a coluna conteudo existe e se há permissão de leitura.");
+    setStatus("Erro ao baixar:\n" + String(e.message || e), true);
   }
 }
+
+/* =========================
+   INIT
+========================= */
 
 document.getElementById("btnBuscar").addEventListener("click", buscar);
 document.getElementById("btnLimpar").addEventListener("click", limpar);
@@ -432,6 +470,17 @@ btnCsv.addEventListener("click", ()=>baixar("csv"));
 btnXls.addEventListener("click", ()=>baixar("xls"));
 
 buildPainel();
+
+(function initStatus(){
+  const cfg = getCfgSafe();
+  const u = (cfg.SUPABASE_URL || "").trim();
+  const k = (cfg.SUPABASE_KEY || "").trim();
+  if(u && k){
+    setStatus("Config OK. Selecione PAINEL e PERÍODO e clique BUSCAR.");
+  }else{
+    setStatus("CONFIG não encontrada.\nVerifique se existe: app/js/config.js (window.TESOURA_CONFIG).", true);
+  }
+})();
 </script>
 </body>
 </html>
