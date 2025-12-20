@@ -96,8 +96,9 @@
 
 <script>
 /** CONFIG SUPABASE (usa a mesma do seu projeto) **/
-const SUPABASE_URL = window.SUPABASE_URL || "https://xuplzpispuvktggjassx.supabase.co";
-const SUPABASE_ANON = window.SUPABASE_ANON || window.SUPABASE_KEY || "";
+const cfg = window.TESOURA_CONFIG || {};
+const SUPABASE_URL  = (cfg.SUPABASE_URL || window.SUPABASE_URL || "https://xuplzpispuvktggjassx.supabase.co").trim();
+const SUPABASE_ANON = (cfg.SUPABASE_KEY  || window.SUPABASE_ANON || window.SUPABASE_KEY || "").trim();
 const TABELA_ARQUIVOS = "arquivos_app";
 
 // Painéis fixos (sempre aparecem)
