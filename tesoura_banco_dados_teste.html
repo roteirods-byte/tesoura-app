@@ -234,14 +234,40 @@ function onPeriodoChange(){
     buildRefSemanalDomingo(); // domingo
   }
 }
+  
+function getCfg(){
+  return window.TESOURA_CONFIG || {};
+}
+
+function getAccessToken(){
+  // tenta ler token padrão do Supabase no localStorage
+  // (serve quando você está logado como Diretoria)
+  try{
+    const url = (getCfg().SUPABASE_URL || "").trim();
+    const ref = url.split("https://")[1]?.split(".")[0]; // ex: xuplzpispuvktggjassx
+    if(!ref) return "";
+    const key = "sb-" + ref + "-auth-token";
+    const raw = localStorage.getItem(key);
+    if(!raw) return "";
+    const obj = JSON.parse(raw);
+    return obj?.access_token || obj?.currentSession?.access_token || "";
+  }catch(e){
+    return "";
+  }
+}
 
 async function supabaseSelect(url){
+  const cfg = getCfg();
+  const anon = (cfg.SUPABASE_KEY || "").trim(); // sua ANON KEY
+  const token = getAccessToken();              // token da sessão (Diretoria)
+
   const headers = {
-    "apikey": SUPABASE_ANON,
-    "Authorization": "Bearer " + SUPABASE_ANON,
+    "apikey": anon,
+    "Authorization": "Bearer " + (token || anon),
     "Content-Type": "application/json",
     "Accept": "application/json",
   };
+
   const r = await fetch(url, {headers});
   if(!r.ok){
     const t = await r.text();
