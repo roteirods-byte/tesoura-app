@@ -359,14 +359,11 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-   
     // ===== SUPABASE =====
-    <script>
-  const SUPABASE_URL = "SUA_URL";
-  const SUPABASE_ANON_KEY = "SUA_KEY";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-    
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    window.__TESOURA_SUPABASE_CLIENT__ = window.__TESOURA_SUPABASE_CLIENT__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = window.__TESOURA_SUPABASE_CLIENT__;
     // ===== ESTADO =====
     let dataJogoIso = null;
     let todosJogadores = [];  // {id, apelido, pontos, inadimplente}
@@ -489,7 +486,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
         escala2 = { amarelo: [], azul: [] };
 
         // jogadores
-        const { data: jogs, error: errJ } = await supabaseClient
+        const { data: jogs, error: errJ } = await supabase
           .from("jogadores")
           .select("id, apelido, pontos, ativo")
           .eq("ativo", true)
@@ -510,7 +507,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
         const ano = hoje.getFullYear();
         const mes = hoje.getMonth()+1;
 
-        const { data: mens, error: errMens } = await supabaseClient
+        const { data: mens, error: errMens } = await supabase
           .from("mensalidades")
           .select("apelido, ano, mes, pago, status, data_pagamento")
           .lte("ano", ano);
@@ -813,7 +810,7 @@ function manterBaseDosTimes(selecionados, amarelo1, azul1, maxPorTime = 10){
       // Conta quantas vezes status = 'F' no ano
       const ini = `${ano}-01-01`;
       const fim = `${ano}-12-31`;
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("presencas")
         .select("id, data_jogo, apelido, status")
         .eq("apelido", apelido)
@@ -828,7 +825,7 @@ function manterBaseDosTimes(selecionados, amarelo1, azul1, maxPorTime = 10){
 
     async function getStatusDomingoAnterior(apelido, dataISO){
       const prev = domingoAnterior(dataISO);
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("presencas")
         .select("status")
         .eq("apelido", apelido)
