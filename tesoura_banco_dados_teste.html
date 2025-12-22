@@ -546,8 +546,8 @@ function downloadBlob(filename, mime, content){
 
 function toCsvValue(v){
   const s = (v == null) ? "" : String(v);
-  const needs = /[",\n;]/.test(s);
-  const esc = s.replace(/"/g, '""');
+  const needs = (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes(';'));
+  const esc = s.split('"').join('""');
   return needs ? `"${esc}"` : esc;
 }
 
