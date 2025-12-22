@@ -25,6 +25,8 @@
     .btnLimpar{background:#ffb000}
     .btnDl{background:var(--btn);color:#00121f}
     .btnDl[disabled]{opacity:.35;cursor:not-allowed}
+    .btnDel{background:var(--danger);color:#ffffff}
+    .btnDel[disabled]{opacity:.35;cursor:not-allowed}
     .status{margin:8px 0 0;color:var(--accent);font-size:12px;white-space:pre-wrap}
     .err{color:var(--danger);font-weight:700}
     .box{margin-top:12px;border:1px dashed var(--line);border-radius:12px;padding:12px}
@@ -41,6 +43,11 @@
 
   <!-- 2) Config do seu app (onde está window.TESOURA_CONFIG) -->
   <script src="app/js/config.js"></script>
+  <!-- 3) Export (CSV/Excel/PDF) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
+
 </head>
 
 <body>
@@ -85,6 +92,7 @@
               <th>título</th>
               <th>referência</th>
               <th>tipo</th>
+              <th class="colDel" style="display:none">excluir</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -96,7 +104,7 @@
           <button class="btn btnDl" id="btnXls" disabled>BAIXAR EXCEL</button>
         </div>
 
-        <div class="footer">Banco de Dados é <b>somente leitura</b>: não edita, não salva e não exclui.</div>
+        <div class="footer">Banco de Dados é <b>somente leitura</b>. Diretoria pode <b>excluir</b> arquivos de teste (quando disponível).</div>
       </div>
     </div>
   </div>
@@ -332,6 +340,10 @@ function renderTabela(rows){
   listaAtual = rows || [];
   selecionado = null;
   tbody.innerHTML = "";
+  const painelAtual = document.getElementById('selPainel').value;
+  const showDel = (painelAtual === 'jogadores');
+  document.querySelectorAll('.colDel').forEach(el => el.style.display = showDel ? '' : 'none');
+  const token = getAccessTokenFromLocalStorage(supabaseUrl);
   btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
 
   if(!listaAtual.length){
@@ -355,11 +367,18 @@ function renderTabela(rows){
 
     const tr = document.createElement("tr");
     tr.style.cursor = "pointer";
+    const delHtml = showDel ? `
+      <td class="colDel" style="text-align:center">
+        <button class="btn btnDel btn-del" ${token ? '' : 'disabled'}>EXCLUIR</button>
+      </td>
+    ` : `<td class="colDel" style="display:none"></td>`;
+
     tr.innerHTML = `
       <td>${criado}</td>
       <td>${titulo}</td>
       <td>${ref}</td>
       <td>${r.periodo}</td>
+      ${delHtml}
     `;
 
     tr.addEventListener("click", ()=>{
@@ -405,6 +424,10 @@ async function buscar(){
 
 function limpar(){
   tbody.innerHTML = "";
+  const painelAtual = document.getElementById('selPainel').value;
+  const showDel = (painelAtual === 'jogadores');
+  document.querySelectorAll('.colDel').forEach(el => el.style.display = showDel ? '' : 'none');
+  const token = getAccessTokenFromLocalStorage(supabaseUrl);
   tbl.style.display = "none";
   btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
   selecionado = null;
@@ -432,28 +455,183 @@ async function pegarConteudoSelecionado(){
   return rows && rows[0] ? rows[0] : null;
 }
 
+async function deleteArquivoById(id){
+  try{
+    const token = getAccessTokenFromLocalStorage(supabaseUrl);
+    if(!token){
+      alert("Somente Diretoria pode excluir arquivos.");
+      return;
+    }
+    if(!confirm("Excluir este arquivo do Banco de Dados?")) return;
+
+    const url = `${supabaseUrl}/rest/v1/${TABELA_ARQUIVOS}?id=eq.${encodeURIComponent(id)}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        apikey: supabaseKey,
+        Authorization: "Bearer " + token,
+        Prefer: "return=minimal"
+      }
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error(t || ("Erro " + res.status));
+    }
+
+    // remove da lista atual e re-renderiza
+    listaAtual = (listaAtual || []).filter(r => r.id !== id);
+    if(selecionado && selecionado.id === id) selecionado = null;
+    renderTabela(listaAtual);
+    setStatus("Arquivo excluído com sucesso.");
+  }catch(err){
+    console.error(err);
+    setStatus("Erro ao excluir: " + (err?.message || err), true);
+  }
+}
+
+function normalizeConteudo(conteudo){
+  let c = conteudo;
+
+  // supabase pode devolver JSON como string dependendo do tipo
+  if(typeof c === "string"){
+    try{ c = JSON.parse(c); }catch(e){
+      return { columns: ["conteudo"], rows: [[conteudo]] };
+    }
+  }
+
+  if(Array.isArray(c)){
+    if(c.length === 0) return { columns: [], rows: [] };
+
+    const first = c[0];
+    if(first && typeof first === "object" && !Array.isArray(first)){
+      const colsSet = new Set();
+      c.forEach(o => Object.keys(o || {}).forEach(k => colsSet.add(k)));
+      const columns = Array.from(colsSet);
+      const rows = c.map(o => columns.map(k => (o && o[k] != null) ? o[k] : ""));
+      return { columns, rows };
+    }
+
+    // lista simples
+    return { columns: ["valor"], rows: c.map(v => [v]) };
+  }
+
+  if(c && typeof c === "object"){
+    // se for objeto "simples" (valores primitivos), uma linha só
+    const keys = Object.keys(c);
+    const primitivo = keys.every(k => (c[k] === null) || (["string","number","boolean"].includes(typeof c[k])));
+    if(primitivo){
+      return { columns: keys, rows: [keys.map(k => c[k] ?? "")] };
+    }
+
+    // senão, vira tabela chave/valor
+    return {
+      columns: ["chave","valor"],
+      rows: Object.entries(c).map(([k,v]) => [k, (typeof v === "string") ? v : JSON.stringify(v)])
+    };
+  }
+
+  return { columns: ["valor"], rows: [[c]] };
+}
+
+function downloadBlob(filename, mime, content){
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+function toCsvValue(v){
+  const s = (v == null) ? "" : String(v);
+  const needs = /[",
+;]/.test(s);
+  const esc = s.replace(/"/g, '""');
+  return needs ? `"${esc}"` : esc;
+}
+
+function downloadCSV(filename, columns, rows){
+  const header = columns.map(toCsvValue).join(",");
+  const lines = rows.map(r => r.map(toCsvValue).join(","));
+  downloadBlob(filename, "text/csv;charset=utf-8", [header, ...lines].join("
+"));
+}
+
+function downloadXLSX(filename, columns, rows){
+  if(!window.XLSX){
+    alert("Biblioteca XLSX não carregou. Tente recarregar a página.");
+    return;
+  }
+  const aoa = [columns, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "dados");
+  XLSX.writeFile(wb, filename);
+}
+
+function downloadPDF(filename, title, columns, rows){
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    alert("Biblioteca PDF não carregou. Tente recarregar a página.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+
+  doc.setFontSize(12);
+  doc.text(title || "Arquivo", 40, 30);
+
+  // limita colunas muito grandes para não quebrar
+  const MAX_COLS = 18;
+  const cols = columns.slice(0, MAX_COLS);
+  const body = rows.map(r => r.slice(0, MAX_COLS));
+
+  doc.autoTable({
+    head: [cols],
+    body,
+    startY: 50,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [255, 127, 39] }
+  });
+
+  doc.save(filename);
+}
+
 async function baixar(tipo){
   try{
-    if(!selecionado) return;
-
-    setStatus("Preparando download...");
-    const row = await pegarConteudoSelecionado();
-    const conteudo = row && row.conteudo ? row.conteudo : {};
-
-    const stamp = (row.criado_em || row.created_at || "").replaceAll(":","-");
-    const base = `${row.painel}_${row.periodo}_${stamp}`;
-
-    if(tipo==="csv"){
-      downloadAs(base+".csv", "text/csv;charset=utf-8", JSON.stringify(conteudo,null,2));
-    }else if(tipo==="xls"){
-      downloadAs(base+".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", JSON.stringify(conteudo,null,2));
-    }else{
-      downloadAs(base+".pdf", "application/pdf", JSON.stringify(conteudo,null,2));
+    if(!selecionado){
+      setStatus("Selecione um arquivo na lista.", true);
+      return;
     }
+
+    const token = getAccessTokenFromLocalStorage(supabaseUrl);
+
+    const url = `${supabaseUrl}/rest/v1/${TABELA_ARQUIVOS}?select=id,painel,periodo,criado_em,created_at,titulo,conteudo&id=eq.${encodeURIComponent(selecionado.id)}`;
+    const rows = await supabaseSelect(url, supabaseKey, token);
+
+    const item = rows && rows[0];
+    if(!item){
+      setStatus("Arquivo não encontrado.", true);
+      return;
+    }
+
+    const stamp = (item.criado_em || item.created_at || "").replaceAll(":", "-");
+    const nomeBase = `${item.painel || "arquivo"}_${item.periodo || "tipo"}_${stamp || "download"}`;
+    const norm = normalizeConteudo(item.conteudo);
+
+    if(tipo === "csv"){
+      downloadCSV(nomeBase + ".csv", norm.columns, norm.rows);
+    }else if(tipo === "excel"){
+      downloadXLSX(nomeBase + ".xlsx", norm.columns, norm.rows);
+    }else{
+      downloadPDF(nomeBase + ".pdf", item.titulo || "Arquivo", norm.columns, norm.rows);
+    }
+
     setStatus("Download iniciado.");
-  }catch(e){
-    console.error(e);
-    setStatus("Erro ao baixar:\n" + String(e.message || e), true);
+  }catch(err){
+    console.error(err);
+    setStatus("Erro no download: " + (err?.message || err), true);
   }
 }
 
