@@ -146,7 +146,7 @@ function getProjectRefFromUrl(url){
   }catch(e){ return ""; }
 }
 
-function getAccessTokenFromLocalStorage(supabaseUrl){
+function getAccessTokenFromLocalStorage(SUPABASE_URL){
   // lê token padrão do supabase-js no localStorage (login Diretoria)
   try{
     const ref = getProjectRefFromUrl(supabaseUrl);
@@ -162,7 +162,6 @@ function getAccessTokenFromLocalStorage(supabaseUrl){
 }
 
 async function supabaseSelect(url, supabaseUrl, anonKey){
-  const token = getAccessTokenFromLocalStorage(supabaseUrl);
   const headers = {
     "apikey": anonKey,
     "Authorization": "Bearer " + (token || anonKey),
@@ -333,7 +332,7 @@ function buildQuery(supabaseUrl){
 
   const select = `select=id,painel,periodo,criado_em,created_at,titulo,data_ref,mes_ref,ano_ref,data_inicio,data_fim`;
   const order = `order=criado_em.desc,created_at.desc`;
-  return `${supabaseUrl}/rest/v1/${TABELA_ARQUIVOS}?${select}&${filter}&${order}`;
+  return `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?${select}&${filter}&${order}`;
 }
 
 function renderTabela(rows){
@@ -343,7 +342,6 @@ function renderTabela(rows){
   const painelAtual = document.getElementById('selPainel').value;
   const showDel = (painelAtual === 'jogadores');
   document.querySelectorAll('.colDel').forEach(el => el.style.display = showDel ? '' : 'none');
-  const token = getAccessTokenFromLocalStorage(supabaseUrl);
   btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
 
   if(!listaAtual.length){
@@ -427,7 +425,6 @@ function limpar(){
   const painelAtual = document.getElementById('selPainel').value;
   const showDel = (painelAtual === 'jogadores');
   document.querySelectorAll('.colDel').forEach(el => el.style.display = showDel ? '' : 'none');
-  const token = getAccessTokenFromLocalStorage(supabaseUrl);
   tbl.style.display = "none";
   btnPdf.disabled = btnCsv.disabled = btnXls.disabled = true;
   selecionado = null;
@@ -455,39 +452,23 @@ async function pegarConteudoSelecionado(){
   return rows && rows[0] ? rows[0] : null;
 }
 
-async function deleteArquivoById(id){
-  try{
-    const token = getAccessTokenFromLocalStorage(supabaseUrl);
-    if(!token){
-      alert("Somente Diretoria pode excluir arquivos.");
-      return;
-    }
-    if(!confirm("Excluir este arquivo do Banco de Dados?")) return;
-
-    const url = `${supabaseUrl}/rest/v1/${TABELA_ARQUIVOS}?id=eq.${encodeURIComponent(id)}`;
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: {
-        apikey: supabaseKey,
-        Authorization: "Bearer " + token,
-        Prefer: "return=minimal"
+    async function deleteArquivoById(id) {
+      const SUPABASE_URL = (cfg.SUPABASE_URL || cfg.supabaseUrl || "").trim();
+      const SUPABASE_ANON = (cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY || cfg.supabaseKey || cfg.anonKey || "").trim();
+      if (!SUPABASE_URL || !SUPABASE_ANON) throw new Error("Configuração Supabase ausente.");
+      const url = `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?id=eq.${encodeURIComponent(id)}`;
+      const headers = {
+        "apikey": SUPABASE_ANON,
+        "Authorization": `Bearer ${SUPABASE_ANON}`,
+        "Content-Type": "application/json"
+      };
+      const res = await fetch(url, { method: "DELETE", headers });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `Falha ao excluir (HTTP ${res.status})`);
       }
-    });
-    if(!res.ok){
-      const t = await res.text();
-      throw new Error(t || ("Erro " + res.status));
+      return true;
     }
-
-    // remove da lista atual e re-renderiza
-    listaAtual = (listaAtual || []).filter(r => r.id !== id);
-    if(selecionado && selecionado.id === id) selecionado = null;
-    renderTabela(listaAtual);
-    setStatus("Arquivo excluído com sucesso.");
-  }catch(err){
-    console.error(err);
-    setStatus("Erro ao excluir: " + (err?.message || err), true);
-  }
-}
 
 function normalizeConteudo(conteudo){
   let c = conteudo;
@@ -603,10 +584,12 @@ async function baixar(tipo){
       return;
     }
 
-    const token = getAccessTokenFromLocalStorage(supabaseUrl);
+    const SUPABASE_URL = (cfg.SUPABASE_URL || cfg.supabaseUrl || "").trim();
+    const SUPABASE_ANON = (cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY || cfg.supabaseKey || cfg.anonKey || "").trim();
+    if (!SUPABASE_URL || !SUPABASE_ANON) throw new Error("Configuração Supabase ausente.");
 
-    const url = `${supabaseUrl}/rest/v1/${TABELA_ARQUIVOS}?select=id,painel,periodo,criado_em,created_at,titulo,conteudo&id=eq.${encodeURIComponent(selecionado.id)}`;
-    const rows = await supabaseSelect(url, supabaseKey, token);
+    const url = `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?select=criado_em,painel,periodo,referencia,titulo,conteudo&id=eq.${encodeURIComponent(selecionado.id)}`;
+    const rows = await supabaseSelect(url, SUPABASE_URL, SUPABASE_ANON);
 
     const item = rows && rows[0];
     if(!item){
