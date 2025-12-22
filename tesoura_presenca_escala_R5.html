@@ -359,17 +359,13 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  // ===== SUPABASE =====
-  const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
-  window.__TESOURA_SUPABASE_CLIENT__ =
-    window.__TESOURA_SUPABASE_CLIENT__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  const supabaseClient = window.__TESOURA_SUPABASE_CLIENT__;
-</script>
-    
+    // ===== SUPABASE =====
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    // cria o client e usa o nome "supabase" no resto do arquivo
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = supabase;
+
     // ===== ESTADO =====
     let dataJogoIso = null;
     let todosJogadores = [];  // {id, apelido, pontos, inadimplente}
