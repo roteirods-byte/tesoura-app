@@ -360,12 +360,14 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     
-    // ===== SUPABASE =====
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "SUA_URL";
-  const SUPABASE_KEY = "SUA_KEY";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // ===== SUPABASE =====
+  const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+  window.__TESOURA_SUPABASE_CLIENT__ =
+    window.__TESOURA_SUPABASE_CLIENT__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabaseClient = window.__TESOURA_SUPABASE_CLIENT__;
 </script>
     
     // ===== ESTADO =====
