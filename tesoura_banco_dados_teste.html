@@ -546,8 +546,7 @@ function downloadBlob(filename, mime, content){
 
 function toCsvValue(v){
   const s = (v == null) ? "" : String(v);
-  const needs = /[",
-;]/.test(s);
+  const needs = /[",\n;]/.test(s);
   const esc = s.replace(/"/g, '""');
   return needs ? `"${esc}"` : esc;
 }
@@ -555,8 +554,7 @@ function toCsvValue(v){
 function downloadCSV(filename, columns, rows){
   const header = columns.map(toCsvValue).join(",");
   const lines = rows.map(r => r.map(toCsvValue).join(","));
-  downloadBlob(filename, "text/csv;charset=utf-8", [header, ...lines].join("
-"));
+  downloadBlob(filename, "text/csv;charset=utf-8", [header, ...lines].join("\n"));
 }
 
 function downloadXLSX(filename, columns, rows){
