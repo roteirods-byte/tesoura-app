@@ -146,7 +146,7 @@ function getProjectRefFromUrl(url){
   }catch(e){ return ""; }
 }
 
-function getAccessTokenFromLocalStorage(SUPABASE_URL){
+function getAccessTokenFromLocalStorage(supabaseUrl){
   // lê token padrão do supabase-js no localStorage (login Diretoria)
   try{
     const ref = getProjectRefFromUrl(supabaseUrl);
@@ -160,7 +160,6 @@ function getAccessTokenFromLocalStorage(SUPABASE_URL){
     return "";
   }
 }
-
 async function supabaseSelect(url, supabaseUrl, anonKey){
   const headers = {
     "apikey": anonKey,
@@ -205,6 +204,7 @@ const btnXls     = document.getElementById("btnXls");
 
 let selecionado = null;
 let listaAtual = [];
+let token = ""; // preenchido se Diretoria estiver logada
 
 function buildPainel(){
   selPainel.innerHTML = PAINEIS.map(p=>`<option value="${p.id}">${p.label}</option>`).join("");
@@ -332,7 +332,7 @@ function buildQuery(supabaseUrl){
 
   const select = `select=id,painel,periodo,criado_em,created_at,titulo,data_ref,mes_ref,ano_ref,data_inicio,data_fim`;
   const order = `order=criado_em.desc,created_at.desc`;
-  return `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?${select}&${filter}&${order}`;
+  return `${supabaseUrl}/rest/v1/${TABELA_ARQUIVOS}?${select}&${filter}&${order}`;
 }
 
 function renderTabela(rows){
@@ -387,6 +387,32 @@ function renderTabela(rows){
       setStatus("Arquivo selecionado. Agora baixe em PDF/CSV/EXCEL.");
     });
 
+    if(showDel){
+      const btn = tr.querySelector(".btn-del");
+      if(btn){
+        btn.addEventListener("click", async (ev)=>{
+          ev.stopPropagation();
+          if(!token){
+            setStatus("Para excluir, entre como Diretoria (logado).", true);
+            return;
+          }
+          if(!confirm("Excluir este arquivo?")) return;
+
+          try{
+            btn.disabled = true;
+            await deleteArquivoById(r.id);
+            setStatus("Arquivo excluído. Recarregando lista...");
+            await buscar();
+          }catch(err){
+            console.error(err);
+            setStatus("Erro ao excluir:\n" + (err?.message || err), true);
+          }finally{
+            btn.disabled = false;
+          }
+        });
+      }
+    }
+
     tbody.appendChild(tr);
   });
 
@@ -406,6 +432,8 @@ async function buscar(){
     if(!SUPABASE_URL || !SUPABASE_ANON){
       return setStatus("CONFIG SUPABASE ausente.\nVerifique: app/js/config.js (TESOURA_CONFIG).", true);
     }
+
+    token = getAccessTokenFromLocalStorage(SUPABASE_URL);
 
     setStatus("Buscando histórico...");
     tbl.style.display = "none";
@@ -452,23 +480,35 @@ async function pegarConteudoSelecionado(){
   return rows && rows[0] ? rows[0] : null;
 }
 
-    async function deleteArquivoById(id) {
-      const SUPABASE_URL = (cfg.SUPABASE_URL || cfg.supabaseUrl || "").trim();
-      const SUPABASE_ANON = (cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY || cfg.supabaseKey || cfg.anonKey || "").trim();
-      if (!SUPABASE_URL || !SUPABASE_ANON) throw new Error("Configuração Supabase ausente.");
-      const url = `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?id=eq.${encodeURIComponent(id)}`;
-      const headers = {
-        "apikey": SUPABASE_ANON,
-        "Authorization": `Bearer ${SUPABASE_ANON}`,
-        "Content-Type": "application/json"
-      };
-      const res = await fetch(url, { method: "DELETE", headers });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || `Falha ao excluir (HTTP ${res.status})`);
-      }
-      return true;
-    }
+    async function deleteArquivoById(id){
+  const cfg = getCfgSafe();
+  const SUPABASE_URL  = (cfg.SUPABASE_URL || "").trim();
+  const SUPABASE_ANON = (cfg.SUPABASE_KEY || "").trim();
+
+  if(!SUPABASE_URL || !SUPABASE_ANON){
+    throw new Error("Configuração Supabase ausente.");
+  }
+  if(!token){
+    throw new Error("Sem permissão. Entre como Diretoria (logado).");
+  }
+
+  const url = `${SUPABASE_URL}/rest/v1/${TABELA_ARQUIVOS}?id=eq.${encodeURIComponent(id)}`;
+  const headers = {
+    "apikey": SUPABASE_ANON,
+    "Authorization": "Bearer " + token,
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
+
+  const res = await fetch(url, { method:"DELETE", headers });
+  const txt = await res.text();
+
+  if(!res.ok){
+    throw new Error(`HTTP ${res.status}\n${txt}`);
+  }
+  return true;
+}
+
 
 function normalizeConteudo(conteudo){
   let c = conteudo;
@@ -579,6 +619,7 @@ function downloadPDF(filename, title, columns, rows){
 
 async function baixar(tipo){
   try{
+    const cfg = getCfgSafe();
     if(!selecionado){
       setStatus("Selecione um arquivo na lista.", true);
       return;
@@ -626,7 +667,7 @@ selPainel.addEventListener("change", onPainelChange);
 selPeriodo.addEventListener("change", onPeriodoChange);
 btnPdf.addEventListener("click", ()=>baixar("pdf"));
 btnCsv.addEventListener("click", ()=>baixar("csv"));
-btnXls.addEventListener("click", ()=>baixar("xls"));
+btnXls.addEventListener("click", ()=>baixar("excel"));
 
 buildPainel();
 
