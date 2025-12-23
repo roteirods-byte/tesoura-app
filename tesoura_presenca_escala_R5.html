@@ -367,6 +367,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
     var supabase = window.__TESOURA_SUPABASE__;
     // ===== ESTADO =====
     let dataJogoIso = null;
+    let dataJogoISO = null; // alias (compatibilidade)
     let todosJogadores = [];  // {id, apelido, pontos, inadimplente}
     let mapaJogadores = {};   // apelido -> jogador
 
@@ -410,6 +411,14 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       return d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false });
     }
     function comparaHoraStr(a,b){ return (a||"").localeCompare(b||""); }
+function getDataJogoISO(){
+      // ISO: yyyy-mm-dd (compatível com versões antigas)
+      if (dataJogoISO) return dataJogoISO;
+      if (dataJogoIso) { dataJogoISO = dataJogoIso; return dataJogoIso; }
+      dataJogoIso = hojeIso();
+      dataJogoISO = dataJogoIso;
+      return dataJogoIso;
+    }
 
     function atualizarInfoPresentes(){
       infoPresentesEl.textContent = `Presentes hoje: ${presentesHoje.length}`;
@@ -476,6 +485,8 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
     async function carregarBase(){
       try{
         dataJogoIso = hojeIso();
+        dataJogoISO = dataJogoIso;
+        window.dataJogoISO = dataJogoISO;
         infoDataJogoEl.textContent = `DIA DO JOGO: ${dataJogoIso.split("-").reverse().join("/")}`;
         msgSalvarEl.textContent = "";
 
@@ -834,26 +845,24 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       const listaHoje = (presentesHoje || []).filter(p => !p.naoVaiJogar);
 
       // quem chegou até o corte (06:15)
-      const listaCorte = listaHoje
+      let listaBase = listaHoje
         .filter(p => horaMenorOuIgual(p.horaChegada, HORARIO_CORTE_1T))
         .sort((a,b)=>comparaHoraStr(a.horaChegada,b.horaChegada));
 
-      if (!listaCorte.length){
-        // nada para escalar no 1º tempo
-        escala1 = { amarelo: [], azul: [] };
-        atualizarObs();
-        renderPresentes();
-        renderEscalacoes();
-        toast("Sem jogadores no corte (06:15) para escalar o 1º tempo.");
-        return;
+      // IMPORTANTE: horário NÃO impede a escalação.
+      // Se ninguém tiver hora <= 06:15 (ex.: testes ou marcações tarde),
+      // o app escala usando TODOS os presentes (mesmas regras de corte >20).
+      if (!listaBase.length){
+        listaBase = [...listaHoje].sort((a,b)=>comparaHoraStr(a.horaChegada,b.horaChegada));
+        toast("Sem jogadores antes do corte (06:15). Usando todos os presentes.");
       }
 
       // se até 20 no corte: escala todos. se >20: cortar para 20 por regra.
-      const apelidosCorte = listaCorte.map(p=>p.apelido);
-      let selecionados = [...apelidosCorte];
+      const apelidosBase = listaBase.map(p=>p.apelido);
+      let selecionados = [...apelidosBase];
 
-      if (apelidosCorte.length > 20){
-        const metricas = await enrichMetricas(apelidosCorte, dataISO);
+      if (apelidosBase.length > 20){
+        const metricas = await enrichMetricas(apelidosBase, dataISO);
 
         selecionados.sort((a,b)=>{
           const ma = metricas[a] || {};
@@ -875,8 +884,8 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
             return (ma.faltasAno||0) - (mb.faltasAno||0);
           }
           // 4) desempate: ordem de chegada (quem chegou antes fica)
-          const pa = listaCorte.find(x=>x.apelido===a);
-          const pb = listaCorte.find(x=>x.apelido===b);
+          const pa = listaBase.find(x=>x.apelido===a);
+          const pb = listaBase.find(x=>x.apelido===b);
           return comparaHoraStr(pa?.horaChegada||"", pb?.horaChegada||"");
         });
 
