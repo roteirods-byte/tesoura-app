@@ -456,6 +456,13 @@ function getDataJogoISO() {
       return `${y}-${m}-${d}`;
     }
 
+    function isoToBr(iso){
+      if(!iso || typeof iso !== "string") return "";
+      const parts = iso.split("-");
+      if(parts.length !== 3) return iso;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
     // mensMap: { "YYYY-MM": {apelido: {pago, status, data_pagamento}} }
     let mensPorApelido = {}; // apelido -> array de {ano,mes,pago,status,data_pagamento}
 
@@ -1171,6 +1178,69 @@ function calcularTotalPontos(lista){
         if(escRows.length){
           const { error: errInsEsc } = await supabase.from("escalacao").insert(escRows);
           if(errInsEsc){ console.error(errInsEsc); alert("Erro ao salvar escalação."); return; }
+        }
+
+
+        // 3) ARQUIVAR NO BANCO DE DADOS (arquivos_app)
+        try{
+          const dtRef = new Date(dia+"T00:00:00");
+          const mes_ref = dtRef.getMonth()+1;
+          const ano_ref = dtRef.getFullYear();
+
+          // Presença (arquivo semanal)
+          const presPayload = todosJogadores.map(j=> {
+            const p = presentesHoje.find(x=>x.apelido===j.apelido);
+            return {
+              id: j.id,
+              apelido: j.apelido,
+              posicao: (j.posicao||"").toUpperCase(),
+              pontos: j.pontos ?? "",
+              presente: !!p,
+              hora_chegada: p ? (p.horaChegada||"") : "",
+              nao_vai_jogar: p ? !!p.naoVaiJogar : false,
+              pago: isPagoHoje(j.apelido)
+            };
+          });
+
+          // limpa registro anterior do mesmo domingo (evita acumular testes)
+          await supabase.from("arquivos_app").delete()
+            .eq("painel","presenca").eq("periodo","semanal").eq("data_ref", dia);
+
+          const { error: errArqPres } = await supabase.from("arquivos_app").insert([{
+            painel: "presenca",
+            periodo: "semanal",
+            data_ref: dia,
+            mes_ref,
+            ano_ref,
+            titulo: `Presença (${isoToBr(dia)})`,
+            conteudo: presPayload
+          }]);
+          if(errArqPres) throw errArqPres;
+
+          // Escalação (arquivo semanal)
+          const escPayload = [];
+          escala1.amarelo.forEach(e=>escPayload.push({tempo:1, time:"AMARELO", apelido:e.apelido}));
+          escala1.azul.forEach(e=>escPayload.push({tempo:1, time:"AZUL", apelido:e.apelido}));
+          escala2.amarelo.forEach(e=>escPayload.push({tempo:2, time:"AMARELO", apelido:e.apelido}));
+          escala2.azul.forEach(e=>escPayload.push({tempo:2, time:"AZUL", apelido:e.apelido}));
+
+          await supabase.from("arquivos_app").delete()
+            .eq("painel","escalacao").eq("periodo","semanal").eq("data_ref", dia);
+
+          const { error: errArqEsc } = await supabase.from("arquivos_app").insert([{
+            painel: "escalacao",
+            periodo: "semanal",
+            data_ref: dia,
+            mes_ref,
+            ano_ref,
+            titulo: `Escalação (${isoToBr(dia)})`,
+            conteudo: escPayload
+          }]);
+          if(errArqEsc) throw errArqEsc;
+
+        }catch(eArq){
+          console.error(eArq);
+          alert("⚠️ Salvou PRESENÇA/ESCALAÇÃO, mas NÃO arquivou no BANCO DE DADOS. (Veja o Console)");
         }
 
         msgSalvarEl.textContent="PÁGINA SALVA";
