@@ -1,238 +1,324 @@
 <!doctype html>
-<html lang="pt-BBR">
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <title>TESOURA - CONTROLE GERAL</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
-    body{font-family:Arial,sans-serif;margin:0;padding:0;background:#0f172a;color:#f9fafb}
-    header{background:#020617;padding:12px 16px;text-align:center;font-weight:900;letter-spacing:1px;text-transform:uppercase}
-    .container{max-width:1200px;margin:0 auto;padding:16px}
-    h2{margin:8px 0;color:#f97316;text-transform:uppercase}
-    .painel{background:#020617;border-radius:6px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,.4);margin-bottom:16px;font-size:14px}
-    label{font-size:12px;font-weight:900;text-transform:uppercase}
-    select{padding:6px 8px;border-radius:6px;border:1px solid #4b5563;background:#0b1120;color:#f9fafb;font-size:12px;margin-right:6px}
-    button{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:900;text-transform:uppercase;font-size:12px;background:#38bdf8;color:#0f172a}
-    #status{font-size:12px;margin-top:6px}
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: #fff;
+    }
+    header {
+      padding: 14px 18px;
+      border-bottom: 2px solid #f97316;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #07101f;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      color: #f97316;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 18px auto;
+      padding: 0 12px;
+    }
+    .painel {
+      background: #020617;
+      border: 1px solid #0f172a;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    }
+    .painel h2 {
+      margin: 0 0 10px;
+      color: #f97316;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    select, button {
+      border-radius: 10px;
+      border: 1px solid #0f172a;
+      padding: 10px 12px;
+      font-weight: 700;
+    }
+    select {
+      background: #0b1220;
+      color: #fff;
+      min-width: 160px;
+    }
+    button {
+      cursor: pointer;
+    }
+    .btn {
+      background: #38bdf8;
+      color: #04202b;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
 
-    .legend{font-size:12px;margin-top:8px;line-height:1.35}
-    .legend b{color:#f97316}
-    .tagPverde{color:#22c55e;font-weight:900}
-    .tagPvermelho{color:#ef4444;font-weight:900}
+    table {
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f97316;
+      color: #0f172a;
+      z-index: 2;
+      border: 1px solid #0f172a;
+      padding: 6px 8px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    tbody td {
+      border: 1px solid #0f172a;
+      padding: 5px 6px;
+      text-align: center;
+      white-space: nowrap;
+      background: #020617;
+    }
+    tbody tr:nth-child(even) td {
+      background: #061024;
+    }
+    .col-atleta {
+      text-align: left;
+      padding-left: 10px;
+      min-width: 210px;
+      font-weight: 700;
+      color: #e5e7eb;
+    }
+    .sig {
+      font-weight: 900;
+    }
+    .sig.F { color: #ef4444; }
+    .sig.C { color: #fbbf24; }
+    .sig.T1, .sig.T2, .sig.T12 { color: #22c55e; }
 
-    /* TABELA */
-    .tableWrap{overflow-x:auto;border-radius:6px}
-    table{width:max-content;min-width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:12px}
-    th,td{border:1px solid #4b5563;padding:6px 8px;text-align:center;text-transform:uppercase;white-space:nowrap}
-    th{background:#f97316;color:#0f172a;position:sticky;top:0;z-index:2}
-    tr:nth-child(even){background:#0b1120}
-    tr:nth-child(odd){background:#020617}
-
-    /* Colunas fixas (ATLETA + TOTAL FALTAS) */
-    .sticky1{position:sticky;left:0;z-index:4;background:#020617}
-    .sticky2{position:sticky;left:170px;z-index:4;background:#020617}
-    th.sticky1, th.sticky2{background:#f97316;color:#0f172a;z-index:6}
-    td.sticky1, td.sticky2{background:#020617}
-
-    /* Larguras (um pouco mais largas) */
-    .colAtleta{min-width:170px;text-align:left;padding-left:10px}
-    .colFaltas{min-width:110px}
-    .colDia{min-width:58px}
+    /* ===== MELHORIAS DE USO (sem mudar layout) ===== */
+    table { width: max-content; min-width: 100%; }
+    th, td { padding: 4px 6px; }
+    /* colunas fixas: ATLETA e TOTAL FALTAS */
+    .col-atleta { min-width: 210px; text-align: left; padding-left: 10px; }
+    .col-faltas { min-width: 120px; }
+    .sticky-atleta { position: sticky; left: 0; z-index: 3; background: #020617; }
+    .sticky-faltas { position: sticky; left: 210px; z-index: 3; background: #020617; }
+    thead .sticky-atleta, thead .sticky-faltas { z-index: 5; background: #f97316; color: #0f172a; }
   </style>
 </head>
-
 <body>
-  <header>TESOURA - CONTROLE GERAL</header>
 
-  <div class="container">
-    <div class="painel">
-      <h2>Filtro</h2>
-      <label>ANO:</label>
-      <select id="ano"></select>
-      <button id="btn-carregar">CARREGAR LISTA</button>
+<header>
+  <h1>TESOURA - CONTROLE GERAL</h1>
+  <div style="font-size:12px;color:#9ca3af;">(somente visualização)</div>
+</header>
 
-      <div class="legend">
-        <b>OBS:</b>
-        C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
-        <span class="tagPverde">P (verde) pagou</span> | <span class="tagPvermelho">P (vermelho) não pagou</span>.
+<div class="wrap">
+  <div class="painel">
+    <h2>FILTRO</h2>
+    <div class="row">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="font-weight:800;">ANO:</label>
+        <select id="selAno"></select>
       </div>
 
-      <div id="status"></div>
+      <button class="btn" id="btnCarregar">CARREGAR LISTA</button>
     </div>
 
-    <div class="painel">
-      <h2>Jogadores x Domingos</h2>
-      <div class="tableWrap" id="wrap">
-        <table>
-          <thead id="thead-controle"></thead>
-          <tbody id="tbody-controle"></tbody>
-        </table>
-      </div>
-    </div>
+    <p style="margin:10px 0 0;font-size:12px;color:#cbd5e1;">
+      OBS: C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | P (verde) pagou | P (vermelho) não pagou.
+    </p>
+    <div class="status" id="status">Selecione o ANO e clique CARREGAR LISTA.</div>
   </div>
+
+  <div class="painel" id="wrapTabela" style="overflow-x:auto;">
+    <h2>JOGADORES X DOMINGOS</h2>
+    <table id="tblControle">
+      <thead id="theadControle"></thead>
+      <tbody id="tbodyControle"></tbody>
+    </table>
+  </div>
+</div>
 
   <script src="app/js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ===== SUPABASE (mesma conexão dos outros painéis) =====
-    const cfg = window.TESOURA_CONFIG || {};
-    const FALLBACK_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const FALLBACK_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    // ===== CONEXÃO SUPABASE (padronizada, sem conflitar com outras abas) =====
+    const CFG = window.TESOURA_CONFIG || {};
+    const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
+    const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
 
-    const SUPABASE_URL = (cfg.SUPABASE_URL || FALLBACK_URL);
-    const SUPABASE_KEY = (cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY || FALLBACK_KEY);
+    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SB_URL, SB_KEY);
+    const sb = window.__TESOURA_SUPABASE__;
 
-    window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const supabase = window.__TESOURA_SUPABASE__;
-
-    const anoSel = document.getElementById("ano");
-    const btnCarregar = document.getElementById("btn-carregar");
-    const theadControle = document.getElementById("thead-controle");
-    const tbodyControle = document.getElementById("tbody-controle");
+    // ===== ELEMENTOS =====
+    const selAno = document.getElementById("selAno");
+    const btnCarregar = document.getElementById("btnCarregar");
     const statusEl = document.getElementById("status");
-    const wrap = document.getElementById("wrap");
+    const theadControle = document.getElementById("theadControle");
+    const tbodyControle = document.getElementById("tbodyControle");
 
-    const nomesMes = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
-
-    function initAno(){
-      const hoje = new Date();
-      const anoAtual = hoje.getFullYear();
-      for(let a = anoAtual - 1; a <= anoAtual + 1; a++){
-        const opt = document.createElement("option");
-        opt.value = a;
-        opt.textContent = a;
-        if(a === anoAtual) opt.selected = true;
-        anoSel.appendChild(opt);
-      }
+    // ===== ANOS DISPONÍVEIS =====
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    for (let a = anoAtual - 1; a <= anoAtual + 1; a++) {
+      const opt = document.createElement("option");
+      opt.value = a;
+      opt.textContent = a;
+      if (a === anoAtual) opt.selected = true;
+      selAno.appendChild(opt);
     }
 
-    function pad2(n){ return String(n).padStart(2, "0"); }
+    const nomesMes = {
+      1: "JANEIRO", 2: "FEVEREIRO", 3: "MARÇO", 4: "ABRIL",
+      5: "MAIO", 6: "JUNHO", 7: "JULHO", 8: "AGOSTO",
+      9: "SETEMBRO", 10: "OUTUBRO", 11: "NOVEMBRO", 12: "DEZEMBRO"
+    };
 
-    function getDomingosMes(ano, mes1a12){
+    // ===== FUNÇÕES =====
+    function getDomingosAno(ano) {
+      const meses = {};
+      for (let m = 1; m <= 12; m++) meses[m] = [];
+
+      const dt = new Date(ano, 0, 1);
+      while (dt.getFullYear() === ano) {
+        if (dt.getDay() === 0) {
+          const mes = dt.getMonth() + 1;
+          const anoStr = dt.getFullYear();
+          const mesStr = String(dt.getMonth() + 1).padStart(2, "0");
+          const diaStr = String(dt.getDate()).padStart(2, "0");
+          meses[mes].push({
+            iso: `${anoStr}-${mesStr}-${diaStr}`,
+            rotulo: `${diaStr}/${mesStr}`
+          });
+        }
+        dt.setDate(dt.getDate() + 1);
+      }
+      return meses;
+    }
+
+    function getDomingosMes(ano, mes) {
       const domingos = [];
-      const dt = new Date(ano, mes1a12 - 1, 1);
-      while(dt.getMonth() === mes1a12 - 1){
-        if(dt.getDay() === 0){
-          const a = dt.getFullYear();
-          const m = pad2(dt.getMonth() + 1);
-          const d = pad2(dt.getDate());
-          domingos.push({ iso: `${a}-${m}-${d}`, rotulo: `${d}/${m}` });
+      const dt = new Date(ano, mes - 1, 1);
+      while (dt.getMonth() === mes - 1) {
+        if (dt.getDay() === 0) {
+          const anoStr = dt.getFullYear();
+          const mesStr = String(dt.getMonth() + 1).padStart(2, "0");
+          const diaStr = String(dt.getDate()).padStart(2, "0");
+          domingos.push({
+            iso: `${anoStr}-${mesStr}-${diaStr}`,
+            rotulo: `${diaStr}/${mesStr}`
+          });
         }
         dt.setDate(dt.getDate() + 1);
       }
       return domingos;
     }
 
-    function shiftMonth(year, month1a12, delta){
-      let y = year;
-      let m = month1a12 + delta;
-      while(m <= 0){ m += 12; y -= 1; }
-      while(m > 12){ m -= 12; y += 1; }
-      return { y, m };
-    }
-
-    // Meses a renderizar:
-    // - Sempre renderiza Jan..Dez do ano selecionado
-    // - Se ano selecionado for o ano atual e o mês atual for Jan/Fev, inclui Nov/Dez do ano anterior (para ficar visível o "últimos 3 meses")
-    function buildMonthBlocks(selectedYear){
+    // Meses que entram na tabela (mantém o ano inteiro e, quando necessário, inclui NOV/DEZ do ano anterior
+    // para garantir "últimos 3 meses" (ex.: Jan/2026 → Nov/2025, Dez/2025, Jan/2026).
+    function buildMesesOrdem(anoSelecionado) {
       const hoje = new Date();
-      const currentYear = hoje.getFullYear();
-      const currentMonth = hoje.getMonth() + 1;
+      const anoAtual = hoje.getFullYear();
+      const mesAtual = hoje.getMonth() + 1;
 
-      const blocks = [];
+      const meses = [];
 
-      // adiciona meses anteriores para o "últimos 3 meses" quando cruza o ano
-      if(selectedYear === currentYear && currentMonth <= 2){
-        const m1 = shiftMonth(currentYear, currentMonth, -2); // pode virar ano anterior
-        const m2 = shiftMonth(currentYear, currentMonth, -1);
-        // se m1/m2 caem no ano anterior, inclui
-        [m1, m2].forEach(mm => {
-          if(mm.y < selectedYear){
-            blocks.push({
-              year: mm.y,
-              month: mm.m,
-              domingos: getDomingosMes(mm.y, mm.m)
-            });
-          }
-        });
+      // inclui NOV/DEZ do ano anterior somente se estiver no ano atual e mês for Jan ou Fev
+      if (anoSelecionado === anoAtual && mesAtual <= 2) {
+        meses.push({ ano: anoAtual - 1, mes: 11 });
+        meses.push({ ano: anoAtual - 1, mes: 12 });
       }
 
-      // Jan..Dez do ano selecionado
-      for(let m=1;m<=12;m++){
-        blocks.push({ year: selectedYear, month: m, domingos: getDomingosMes(selectedYear, m) });
-      }
-      return blocks;
+      for (let m = 1; m <= 12; m++) meses.push({ ano: anoSelecionado, mes: m });
+      return meses;
     }
 
-    function getFocusStartIso(selectedYear){
+    // Faz o painel abrir já com os "últimos 3 meses" visíveis (sem remover os outros meses)
+    function scrollUltimos3Meses(anoSelecionado) {
+      const wrap = document.getElementById("wrapTabela");
+      if (!wrap) return;
+
       const hoje = new Date();
-      const currentYear = hoje.getFullYear();
-      const currentMonth = hoje.getMonth() + 1;
+      let alvoAno = anoSelecionado;
+      let alvoMes = 10; // padrão: OUT (para anos antigos)
 
-      // foco = primeiros domingos do mês de (hoje - 2 meses)
-      if(selectedYear === currentYear){
-        const start = shiftMonth(currentYear, currentMonth, -2);
-        const domingos = getDomingosMes(start.y, start.m);
-        return domingos.length ? domingos[0].iso : null;
+      if (anoSelecionado === hoje.getFullYear()) {
+        alvoMes = (hoje.getMonth() + 1) - 2; // mês atual -2
+        if (alvoMes <= 0) {
+          alvoAno = anoSelecionado - 1;
+          alvoMes = 12 + alvoMes; // 12-1 = 11 (Nov), 12-2 = 10 (Out)
+        }
       }
 
-      // se não é o ano atual, foca em OUT/NOV/DEZ do ano escolhido
-      const domingos = getDomingosMes(selectedYear, 10);
-      return domingos.length ? domingos[0].iso : null;
+      const doms = getDomingosMes(alvoAno, alvoMes);
+      if (!doms.length) return;
+
+      const th = wrap.querySelector(`th[data-iso="${doms[0].iso}"]`);
+      if (!th) return;
+
+      // 260 = largura aproximada das colunas fixas + margem
+      wrap.scrollLeft = Math.max(0, th.offsetLeft - 260);
     }
 
-    async function carregarLista(){
-      const ano = parseInt(anoSel.value, 10);
-      statusEl.textContent = "CARREGANDO...";
-      theadControle.innerHTML = "";
-      tbodyControle.innerHTML = "";
+    async function carregarLista() {
+      try {
+        statusEl.textContent = "CARREGANDO...";
+        theadControle.innerHTML = "";
+        tbodyControle.innerHTML = "";
 
-      const blocks = buildMonthBlocks(ano);
+        const ano = Number(selAno.value);
 
-      // Monta lista de datas (domingos) para busca
-      const allDatesIso = [];
-      blocks.forEach(b => b.domingos.forEach(d => allDatesIso.push(d.iso)));
+      const mesesOrdem = buildMesesOrdem(ano);
+      const domingosMes = mesesOrdem.map(mm => getDomingosMes(mm.ano, mm.mes));
 
-      if(allDatesIso.length === 0){
-        statusEl.textContent = "SEM DOMINGOS PARA ESTE FILTRO.";
-        return;
-      }
-
-      const minIso = allDatesIso[0];
-      const maxIso = allDatesIso[allDatesIso.length - 1];
-
-      // ===== CABEÇALHO (2 LINHAS) =====
+      // ===== CABEÇALHO EM 2 LINHAS =====
       const trMeses = document.createElement("tr");
-
-      const thAtleta = document.createElement("th");
-      thAtleta.textContent = "ATLETA";
-      thAtleta.rowSpan = 2;
-      thAtleta.className = "sticky1 colAtleta";
-      trMeses.appendChild(thAtleta);
-
-      const thFaltas = document.createElement("th");
-      thFaltas.textContent = "TOTAL FALTAS";
-      thFaltas.rowSpan = 2;
-      thFaltas.className = "sticky2 colFaltas";
-      trMeses.appendChild(thFaltas);
-
-      // blocos de mês
-      blocks.forEach(b => {
-        if(!b.domingos.length) return;
-        const thMes = document.createElement("th");
-        thMes.colSpan = b.domingos.length;
-        thMes.textContent = `${nomesMes[b.month-1]}/${b.year}`;
-        trMeses.appendChild(thMes);
-      });
-
       const trDias = document.createElement("tr");
-      blocks.forEach(b => {
-        b.domingos.forEach(d => {
+
+      const thAtletaSpan = document.createElement("th");
+      thAtletaSpan.textContent = "ATLETA";
+      thAtletaSpan.rowSpan = 2;
+      thAtletaSpan.className = "col-atleta sticky-atleta";
+      trMeses.appendChild(thAtletaSpan);
+
+      const thFaltasSpan = document.createElement("th");
+      thFaltasSpan.textContent = "TOTAL FALTAS";
+      thFaltasSpan.rowSpan = 2;
+      thFaltasSpan.className = "col-faltas sticky-faltas";
+      trMeses.appendChild(thFaltasSpan);
+
+      mesesOrdem.forEach((mm, idx) => {
+        const listaDom = domingosMes[idx] || [];
+        const thMes = document.createElement("th");
+        thMes.colSpan = Math.max(1, listaDom.length);
+        const nomeMes = nomesMes[mm.mes] || `MÊS ${mm.mes}`;
+        thMes.textContent = `MÊS ${mm.mes} - ${nomeMes} - ${mm.ano}`;
+        trMeses.appendChild(thMes);
+
+        // dias (domingos)
+        listaDom.forEach(d => {
           const thDia = document.createElement("th");
           thDia.textContent = d.rotulo;
-          thDia.id = "th-" + d.iso;
-          thDia.className = "colDia";
+          thDia.dataset.iso = d.iso;
           trDias.appendChild(thDia);
         });
       });
@@ -240,28 +326,30 @@
       theadControle.appendChild(trMeses);
       theadControle.appendChild(trDias);
 
-      // ===== BUSCA DADOS =====
-      // Jogadores ativos
-      const { data: jogadores, error: errJog } = await supabase
+      // ===== BUSCA DADOS NO SUPABASE =====
+      const { data: jogadores, error: errJog } = await sb
         .from("jogadores")
         .select("apelido")
-        .eq("ativo", true)
         .order("apelido", { ascending: true });
 
-      if(errJog){
+      if (errJog) {
         console.error(errJog);
         statusEl.textContent = "ERRO AO BUSCAR JOGADORES.";
         return;
       }
 
-      // Presenças (intervalo)
-      const { data: pres, error: errPres } = await supabase
+      // Presenças no intervalo visível (inclui NOV/DEZ do ano anterior quando necessário)
+      const firstMM = mesesOrdem[0];
+      const iniIso = `${firstMM.ano}-${String(firstMM.mes).padStart(2, "0")}-01`;
+      const fimIso = `${ano}-12-31`;
+
+      const { data: pres, error: errPres } = await sb
         .from("presencas")
         .select("data_jogo, apelido, presenca, faltoso")
-        .gte("data_jogo", minIso)
-        .lte("data_jogo", maxIso);
+        .gte("data_jogo", iniIso)
+        .lte("data_jogo", fimIso);
 
-      if(errPres){
+      if (errPres) {
         console.error(errPres);
         statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS.";
         return;
@@ -269,17 +357,18 @@
 
       const mapaPres = {};
       (pres || []).forEach(p => {
-        mapaPres[`${p.apelido}::${p.data_jogo}`] = p;
+        const key = `${p.apelido}::${p.data_jogo}`;
+        mapaPres[key] = p;
       });
 
-      // Escalação (1º e 2º tempos)
-      const { data: esc, error: errEsc } = await supabase
+      // Escalação no intervalo (para saber 1º/2º tempo)
+      const { data: esc, error: errEsc } = await sb
         .from("escalacao")
         .select("data_jogo, apelido, tempo")
-        .gte("data_jogo", minIso)
-        .lte("data_jogo", maxIso);
+        .gte("data_jogo", iniIso)
+        .lte("data_jogo", fimIso);
 
-      if(errEsc){
+      if (errEsc) {
         console.error(errEsc);
         statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO.";
         return;
@@ -288,58 +377,50 @@
       const mapaEsc = {};
       (esc || []).forEach(e => {
         const key = `${e.apelido}::${e.data_jogo}`;
-        if(!mapaEsc[key]) mapaEsc[key] = new Set();
-        if(e.tempo) mapaEsc[key].add(String(e.tempo));
+        if (!mapaEsc[key]) mapaEsc[key] = new Set();
+        if (e.tempo !== null && e.tempo !== undefined && e.tempo !== "") {
+          mapaEsc[key].add(e.tempo);
+        }
       });
 
-      // ===== LINHAS =====
+      // ===== MONTA LINHAS =====
       (jogadores || []).forEach(j => {
-        const apelido = (j.apelido || "").toUpperCase();
+        const apelido = j.apelido;
         const tr = document.createElement("tr");
 
-        // atleta (fixo)
         const tdAtleta = document.createElement("td");
-        tdAtleta.textContent = apelido;
-        tdAtleta.className = "sticky1 colAtleta";
+        tdAtleta.textContent = (apelido || "").toUpperCase();
+        tdAtleta.className = "col-atleta sticky-atleta";
         tr.appendChild(tdAtleta);
 
-        // total faltas (fixo)
-        let faltasCount = 0;
-
-        // vamos montar as células depois, mas já contamos faltas nas datas visíveis
-        allDatesIso.forEach(iso => {
-          const key = `${apelido}::${iso}`;
-          const p = mapaPres[key];
-          if(p && (p.faltoso === true || p.presenca === false)) faltasCount += 1;
-        });
-
         const tdFaltas = document.createElement("td");
-        tdFaltas.textContent = String(faltasCount);
-        tdFaltas.className = "sticky2 colFaltas";
+        tdFaltas.textContent = "0";
+        tdFaltas.className = "col-faltas sticky-faltas";
         tr.appendChild(tdFaltas);
 
-        // células por domingo
-        blocks.forEach(b => {
-          b.domingos.forEach(d => {
+        let totalFaltas = 0;
+
+        mesesOrdem.forEach((mm, idx) => {
+          const listaDom = domingosMes[idx] || [];
+          listaDom.forEach(d => {
             const td = document.createElement("td");
-            td.className = "colDia";
             const key = `${apelido}::${d.iso}`;
             const presDia = mapaPres[key];
             let valor = "";
 
-            if(presDia){
-              if(presDia.presenca){
+            if (presDia) {
+              if (presDia.presenca) {
                 const setTempos = mapaEsc[key] || new Set();
-                const qtd = setTempos.size;
-                if(qtd >= 2){
-                  valor = "1-2";
-                }else if(qtd === 1){
-                  valor = "1";
-                }else{
-                  valor = "C";
-                }
-              }else if(presDia.faltoso){
+                const t1 = setTempos.has(1) || setTempos.has("1");
+                const t2 = setTempos.has(2) || setTempos.has("2");
+
+                if (t1 && t2) valor = "1-2";
+                else if (t2) valor = "2";
+                else if (t1) valor = "1";
+                else valor = "C";
+              } else if (presDia.faltoso) {
                 valor = "F";
+                totalFaltas += 1;
               }
             }
 
@@ -348,26 +429,19 @@
           });
         });
 
+        tdFaltas.textContent = String(totalFaltas);
         tbodyControle.appendChild(tr);
       });
 
       statusEl.textContent = "LISTA CARREGADA.";
-
-      // ===== FOCO: últimos 3 meses (visível automaticamente) =====
-      try{
-        const focusIso = getFocusStartIso(ano);
-        if(focusIso){
-          const th = document.getElementById("th-" + focusIso);
-          if(th && wrap){
-            wrap.scrollLeft = Math.max(0, th.offsetLeft - 260);
-          }
-        }
-      }catch(e){}
+      scrollUltimos3Meses(ano);
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = "ERRO (ver Console).";
+      }
     }
 
-    initAno();
     btnCarregar.addEventListener("click", carregarLista);
-    carregarLista();
   </script>
 </body>
 </html>
