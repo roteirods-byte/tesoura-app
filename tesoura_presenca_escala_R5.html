@@ -757,6 +757,20 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
     const cacheFaltas = {}; // chave: apelido|ano
 
+    function toast(msg){
+      try{
+        const el = document.getElementById('toast-msg');
+        if(el){
+          el.textContent = msg;
+          el.style.opacity = '1';
+          setTimeout(()=>{ el.style.opacity='0'; }, 2200);
+          return;
+        }
+      }catch(e){}
+      console.log(msg);
+    }
+
+
     async function getFaltasAno(apelido, ano){
       const k = `${apelido}|${ano}`;
       if (cacheFaltas[k] != null) return cacheFaltas[k];
@@ -810,7 +824,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
     async function escalarPrimeiroTempo(){
       const dataISO = getDataJogoISO();
-      const listaHoje = (presencasHoje || []).filter(p => !p.naoVaiJogar);
+      const listaHoje = (presentesHoje || []).filter(p => !p.naoVaiJogar);
 
       // Apenas quem chegou até o corte (06:15)
       const listaCorte = listaHoje
@@ -878,7 +892,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       // quem estava presente até corte e não entrou = "C"
       const entrouSet = new Set([...escala1t.amarelo, ...escala1t.azul]);
 
-      for (const p of presencasHoje){
+      for (const p of presentesHoje){
         if (p.naoVaiJogar) continue;
         const ap = p.apelido;
         if (entrouSet.has(ap)){
@@ -889,7 +903,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
         }
       }
 
-      renderEscalacao();
+      renderEscalacoes();
       toast("1º tempo escalado.");
     }
 
@@ -905,7 +919,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
     async function escalarSegundoTempo(){
       const dataISO = getDataJogoISO();
 
-      const presentes = (presencasHoje || []).filter(p => !p.naoVaiJogar);
+      const presentes = (presentesHoje || []).filter(p => !p.naoVaiJogar);
       const jogou1tSet = new Set([...(escala1t?.amarelo||[]), ...(escala1t?.azul||[])]);
       const naoJogou1t = presentes.filter(p => !jogou1tSet.has(p.apelido));
       const jogou1t = presentes.filter(p => jogou1tSet.has(p.apelido));
@@ -978,7 +992,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
       // - quem jogou 2º tempo e já tinha "1" vira "1-2"
       // - quem jogou 2º tempo e não tinha "1" vira "2"
       const jogou2tSet = new Set([...(escala2t?.amarelo||[]), ...(escala2t?.azul||[])]);
-      for (const p of presencasHoje){
+      for (const p of presentesHoje){
         if (p.naoVaiJogar) continue;
         if (jogou2tSet.has(p.apelido)){
           if (p.status === "1") p.status = "1-2";
@@ -986,7 +1000,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
         }
       }
 
-      renderEscalacao();
+      renderEscalacoes();
       toast("2º tempo escalado.");
     }
 
@@ -1171,5 +1185,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
   </div>
 </div>
 
+
+  <div id="toast-msg" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;border:1px solid #334155;color:#ffffff;padding:10px 12px;border-radius:10px;font-weight:800;opacity:0;transition:opacity .2s;z-index:999999;pointer-events:none;max-width:90vw;text-align:center"></div>
 </body>
 </html>
