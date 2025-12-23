@@ -5,6 +5,7 @@
   <title>TESOURA - PRESENÇA / ESCALAÇÃO</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+
     body{margin:0;padding:0;font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;font-size:12px}
     header{background:#020617;padding:12px 16px;text-align:center;font-weight:bold;letter-spacing:1px;text-transform:uppercase}
     .container{max-width:1400px;margin:0 auto;padding:16px}
@@ -32,6 +33,11 @@
     .btn-sair{background:#f97316;color:#0f172a;min-width:70px;height:34px;border-radius:6px;font-size:11px}
     .btn-nao-joga{background:#64748b;color:#e5e7eb;min-width:140px}
     .btn-excluir{background:#ef4444;color:#f9fafb;min-width:90px}
+    /* Ajustes de escalação: manter 1º e 2º tempo com mesmo tamanho e evitar colunas estouradas */
+    .grid-escalacao table{table-layout:fixed;}
+    .grid-escalacao th,.grid-escalacao td{overflow:hidden;text-overflow:ellipsis;}
+    .btn-saiu{min-width:56px !important;height:24px !important;font-size:10px !important;padding:0 8px !important;line-height:1 !important;}
+
     table{width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:11px}
     th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:uppercase;white-space:nowrap;font-size:11px}
     th{background:#111827;color:#f97316;position:sticky;top:0;z-index:1}
@@ -214,7 +220,8 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 @media (max-width: 980px){.bloco-regras{grid-template-columns:1fr}}
 .painel-1t, .painel-2t{min-width:0}
 
-</style>
+
+  </style>
 </head>
 <body>
   <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
@@ -309,24 +316,15 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
                 <th style="width:70px">ID</th>
                 <th style="width:60px">POS</th>
                 <th class="t-amarelo">AMARELO</th>
-                <th style="width:90px">SAIU</th>
+                <th style="width:60px">SAIU</th>
                 <th class="t-azul">AZUL</th>
-                <th style="width:90px">SAIU</th>
+                <th style="width:60px">SAIU</th>
               </tr>
             </thead>
             <tbody id="tbody-1t"></tbody>
           </table>
           <div class="totais" id="totais-1t">TOTAL PONTOS: 0 x 0</div>
-         <div style="margin-top:8px;font-size:12px;line-height:1.35;color:#cbd5e1;">
-  <b>Regras 1º tempo (corte 06:15):</b><br/>
-  • Se até 06:15 tiver <b>até 20 presentes</b> (ex.: 15, 19, 20): <b>sem eliminação</b> (todos jogam).<br/>
-  • Se até 06:15 tiver <b>mais de 20 presentes</b> (ex.: 25): o app corta até ficar 20, na ordem:
-  <b>faltou no domingo anterior</b> → <b>inadimplente</b> → <b>maior nº de faltas</b>.
 </div>
-     <div class="legend-inline">
-            C (compareceu e não jogou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) | P (verde) pagou | P (vermelho) não pagou | F (faltou)
-          </div>
-        </div>
 
         <div class="col-escalacao">
           <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -360,8 +358,7 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-
-    // ===== SUPABASE =====
+// ===== SUPABASE =====
     const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -992,12 +989,43 @@ function toggleSaiu(apelido){
         pool = pool.slice(0, desejado);
       }
 
-      const bal = balancearEmDoisTimes(pool);
+            // Manter jogadores que jogaram o 1º tempo no MESMO time quando forem escalados no 2º tempo
+      const time1ByAp = {};
+      (escala1.amarelo||[]).forEach(e=>{ if(e && e.apelido) time1ByAp[e.apelido] = "amarelo"; });
+      (escala1.azul||[]).forEach(e=>{ if(e && e.apelido) time1ByAp[e.apelido] = "azul"; });
+
+      const fixAm = [];
+      const fixAz = [];
+      const restantes = [];
+
+      for (const ap of (pool||[])){
+        const t = time1ByAp[ap];
+        if (t === "amarelo") fixAm.push(ap);
+        else if (t === "azul") fixAz.push(ap);
+        else restantes.push(ap);
+      }
+
+      const A = [...fixAm];
+      const B = [...fixAz];
+
+      let somaA = A.reduce((s,ap)=>s + pts(ap), 0);
+      let somaB = B.reduce((s,ap)=>s + pts(ap), 0);
+
+      // Preencher vagas com quem não jogou 1º tempo, balanceando pontos
+      const restantesOrdenados = [...restantes].sort((a,b)=>pts(b)-pts(a));
+      for (const ap of restantesOrdenados){
+        const pa = pts(ap);
+        if (A.length >= 10){ B.push(ap); somaB += pa; continue; }
+        if (B.length >= 10){ A.push(ap); somaA += pa; continue; }
+        if (somaA <= somaB){ A.push(ap); somaA += pa; }
+        else { B.push(ap); somaB += pa; }
+      }
+
       const toObj = (ap)=>({ id: (mapaJogadores[ap]?.id ?? ""), apelido: ap });
 
       escala2 = {
-        amarelo: (bal.amarelo||[]).map(toObj),
-        azul: (bal.azul||[]).map(toObj)
+        amarelo: A.map(toObj),
+        azul: B.map(toObj)
       };
 
       atualizarObs();
@@ -1037,7 +1065,7 @@ function calcularTotalPontos(lista){
         if(a){
           const bt=document.createElement("button");
           bt.textContent="SAIU";
-          bt.className="btn-sair";
+          bt.className="btn-sair btn-saiu";
           bt.onclick=()=>toggleSaiu(a.apelido);
           tdSaiAm.appendChild(bt);
         }
@@ -1056,7 +1084,7 @@ function calcularTotalPontos(lista){
         if(b){
           const bt2=document.createElement("button");
           bt2.textContent="SAIU";
-          bt2.className="btn-sair";
+          bt2.className="btn-sair btn-saiu";
           bt2.onclick=()=>toggleSaiu(b.apelido);
           tdSaiAz.appendChild(bt2);
         }
@@ -1161,7 +1189,6 @@ function calcularTotalPontos(lista){
     btnSalvarJogo.addEventListener("click", salvarJogo);
 
     carregarBase();
-  
 </script>
 
 <div class="bloco-regras">
