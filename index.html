@@ -37,28 +37,95 @@
     .btn-cancel{background:#334155;color:#ffffff}
     .btn-enter{background:#22c55e;color:#052e16}
     .auth-msg{margin-top:10px;font-size:12px;color:#ffffff;opacity:.9;min-height:16px}
+
+    /* Tela inicial */
+    #telaInicial{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.80)}
+    #telaInicial .box{width:min(520px,100%);background:#081427;border:1px solid #334155;border-radius:14px;padding:18px;text-align:center}
+    #telaInicial .t1{color:#ff7f27;font-weight:900;font-size:22px}
+    #telaInicial .t2{color:#e5e7eb;margin-top:8px;font-weight:700}
+    #telaInicial .t3{color:#e5e7eb;margin-top:18px;font-weight:800}
+    #telaInicial .row{display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+    #telaInicial .btnJ{min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#22c55e;color:#052e16}
+    #telaInicial .btnD{min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#3b82f6;color:#06162f}
+    #telaInicial .msg{margin-top:12px;color:#e5e7eb;font-size:12px;min-height:16px}
+    noscript{display:block;padding:12px;background:#b91c1c;color:#fff;font-weight:900;text-align:center}
   </style>
+
+  <script>
+    // Funções GLOBAIS simples, para os botões funcionarem mesmo se algum script abaixo falhar.
+    function qs(id){ return document.getElementById(id); }
+    function cacheBust(url){
+      const sep = url.includes("?") ? "&" : "?";
+      return url + sep + "cb=" + Date.now();
+    }
+    function hideTelaInicial(){
+      const t = qs("telaInicial");
+      if(t) t.style.display = "none";
+    }
+    function setBadge(txt){
+      const b = qs("modeBadge");
+      if(b) b.textContent = txt;
+    }
+    function ensureFirstIframe(){
+      const f = qs("f-jogadores");
+      if(!f) return;
+      if(!f.getAttribute("data-loaded")){
+        const base = f.getAttribute("data-src") || "tesoura_jogadores_teste.html";
+        f.setAttribute("src", cacheBust(base));
+        f.setAttribute("data-loaded","1");
+      }
+    }
+    // Entrar Jogadores (visual): pede PIN e entra
+    function TESOURA_ENTRAR_JOGADORES(){
+      try{
+        const cfg = window.TESOURA_CONFIG || {};
+        const pin = (prompt("Senha dos JOGADORES (visualização):") || "").trim();
+        if(!pin){ qs("msgTelaInicial").textContent = "Digite a senha."; return; }
+        if(String(cfg.APP_PIN || "").trim() && pin !== String(cfg.APP_PIN).trim()){
+          qs("msgTelaInicial").textContent = "Senha incorreta.";
+          return;
+        }
+        localStorage.setItem("TESOURA_ROLE","jogador");
+        hideTelaInicial();
+        setBadge("Modo: Jogadores (visual)");
+        ensureFirstIframe();
+        // trava cliques dentro do iframe (visual)
+        setTimeout(()=>window.TESOURA_TRAVAR_IFRAMES && window.TESOURA_TRAVAR_IFRAMES(), 200);
+      }catch(e){
+        alert("Erro ao entrar (Jogadores).");
+      }
+    }
+    // Entrar Diretoria: abre login
+    function TESOURA_ENTRAR_DIRETORIA(){
+      try{
+        localStorage.setItem("TESOURA_ROLE","diretoria");
+        hideTelaInicial();
+        setBadge("Modo: Diretoria");
+        ensureFirstIframe();
+        setTimeout(()=>window.TESOURA_OPEN_LOGIN && window.TESOURA_OPEN_LOGIN(), 200);
+      }catch(e){
+        alert("Erro ao entrar (Diretoria).");
+      }
+    }
+  </script>
 </head>
 
 <body>
+  <noscript>Ative o JavaScript no navegador para usar o TESOURA.</noscript>
+
   <!-- TELA INICIAL (obrigatória) -->
-  <div id="telaInicial" style="position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.80);">
-    <div style="width:min(520px,100%);background:#081427;border:1px solid #334155;border-radius:14px;padding:18px;text-align:center;">
-      <div style="color:#ff7f27;font-weight:900;font-size:22px;">GRUPO TESOURA I</div>
-      <div style="color:#e5e7eb;margin-top:8px;font-weight:700;">ESPORTE, FAMÍLIA E AMIZADE</div>
-      <div style="color:#e5e7eb;margin-top:18px;font-weight:800;">APLICATIVO DO GRUPO</div>
+  <div id="telaInicial">
+    <div class="box">
+      <div class="t1">GRUPO TESOURA I</div>
+      <div class="t2">ESPORTE, FAMÍLIA E AMIZADE</div>
+      <div class="t3">APLICATIVO DO GRUPO</div>
 
-      <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap;">
-        <button id="btnEntrarJogadores" style="min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#22c55e;color:#052e16;">
-          ENTRAR JOGADORES
-        </button>
-
-        <button id="btnEntrarDiretoria" style="min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#3b82f6;color:#06162f;">
-          ENTRAR DIRETORIA
-        </button>
+      <div class="row">
+        <button class="btnJ" id="btnEntrarJogadores" onclick="TESOURA_ENTRAR_JOGADORES()">ENTRAR JOGADORES</button>
+        <button class="btnD" id="btnEntrarDiretoria" onclick="TESOURA_ENTRAR_DIRETORIA()">ENTRAR DIRETORIA</button>
       </div>
 
-      <div id="msgTelaInicial" style="margin-top:12px;color:#e5e7eb;font-size:12px;min-height:16px;"></div>
+      <div class="msg" id="msgTelaInicial"></div>
     </div>
   </div>
 
@@ -134,20 +201,23 @@
   <script src="app/js/config.js"></script>
 
   <script>
+    // === Segurança contra cache "louco" do service worker (se existir) ===
+    (function(){
+      try{
+        if("serviceWorker" in navigator){
+          navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));
+        }
+      }catch(e){}
+    })();
+
     // ===== CONFIG / ESTADO =====
     const cfg = window.TESOURA_CONFIG || {};
-    const ROLE_KEY = "TESOURA_ROLE"; // localStorage (compartilha com iframes)
+    const ROLE_KEY = "TESOURA_ROLE";
     const ROLE_JOGADOR = "jogador";
     const ROLE_DIRETORIA = "diretoria";
 
-    const telaInicial = document.getElementById("telaInicial");
-    const msgTelaInicial = document.getElementById("msgTelaInicial");
-    const btnEntrarJogadores = document.getElementById("btnEntrarJogadores");
-    const btnEntrarDiretoria = document.getElementById("btnEntrarDiretoria");
-
     const btnLogin = document.getElementById("btnLogin");
     const btnLogout = document.getElementById("btnLogout");
-    const modeBadge = document.getElementById("modeBadge");
     const appTitle = document.getElementById("appTitle");
 
     const backdrop = document.getElementById("authBackdrop");
@@ -166,29 +236,9 @@
     function getRole(){
       try { return (localStorage.getItem(ROLE_KEY) || "").trim(); } catch(e){ return ""; }
     }
-    function setRole(r){
-      try { localStorage.setItem(ROLE_KEY, r); } catch(e){}
-    }
-    function clearRole(){
-      try { localStorage.removeItem(ROLE_KEY); } catch(e){}
-    }
-
     function showTelaInicial(v){
-      telaInicial.style.display = v ? "flex" : "none";
-    }
-
-    function setTopButtonsForRole(role){
-      // Jogador: esconde login/logout
-      if(role === ROLE_JOGADOR){
-        btnLogin.style.display = "none";
-        btnLogout.style.display = "none";
-        modeBadge.textContent = "Modo: Jogadores (visual)";
-        return;
-      }
-      // Diretoria: mostra botões (dependendo do login)
-      btnLogin.style.display = "inline-block";
-      // btnLogout controlado por session
-      modeBadge.textContent = "Modo: Diretoria";
+      const t = document.getElementById("telaInicial");
+      if(t) t.style.display = v ? "flex" : "none";
     }
 
     function openLogin(){
@@ -199,6 +249,7 @@
     function closeLogin(){
       backdrop.style.display = "none";
     }
+    window.TESOURA_OPEN_LOGIN = openLogin;
 
     async function refreshDiretoriaSession(){
       if(!sb){
@@ -210,7 +261,7 @@
       const logged = !!data?.session;
       btnLogout.style.display = logged ? "inline-block" : "none";
       btnLogin.style.display = logged ? "none" : "inline-block";
-      modeBadge.textContent = logged ? "Modo: Diretoria" : "Modo: Diretoria (não logado)";
+      setBadge(logged ? "Modo: Diretoria" : "Modo: Diretoria (não logado)");
     }
 
     // ===== BLOQUEIO VISUAL (JOGADOR) DENTRO DO IFRAME =====
@@ -246,9 +297,7 @@
           `;
           (doc.head || doc.documentElement).appendChild(style);
         }
-      }catch(e){
-        // ignora
-      }
+      }catch(e){}
     }
 
     function lockIfNeeded(iframe){
@@ -256,10 +305,9 @@
       if(role === ROLE_JOGADOR) travarIframeJogador(iframe);
     }
 
-    function cacheBust(url){
-      const sep = url.includes("?") ? "&" : "?";
-      return url + sep + "cb=" + Date.now();
-    }
+    window.TESOURA_TRAVAR_IFRAMES = function(){
+      document.querySelectorAll("iframe").forEach(lockIfNeeded);
+    };
 
     function ensureIframeLoaded(iframe){
       if(!iframe) return;
@@ -269,10 +317,8 @@
       if(!iframe.getAttribute("data-loaded")){
         iframe.setAttribute("src", cacheBust(base));
         iframe.setAttribute("data-loaded", "1");
-
         iframe.addEventListener("load", ()=>lockIfNeeded(iframe));
       }else{
-        // já carregado: só trava se for jogador
         lockIfNeeded(iframe);
       }
     }
@@ -284,10 +330,11 @@
       abas.forEach(a=>a.classList.remove("active"));
       botoes.forEach(b=>b.classList.remove("active"));
 
-      document.getElementById(id).classList.add("active");
+      const el = document.getElementById(id);
+      if(el) el.classList.add("active");
 
       const map = {"aba-jogadores":0,"aba-presenca":1,"aba-controle":2,"aba-mensalidade":3,"aba-caixa":4,"aba-gols":5,"aba-banco":6};
-      botoes[map[id]].classList.add("active");
+      if(botoes[map[id]]) botoes[map[id]].classList.add("active");
 
       const iframe = document.querySelector("#"+id+" iframe");
       ensureIframeLoaded(iframe);
@@ -297,7 +344,6 @@
     // ===== EVENTOS LOGIN =====
     btnLogin.addEventListener("click", ()=> {
       if(getRole() !== ROLE_DIRETORIA){
-        msgTelaInicial.textContent = "Entre como DIRETORIA na tela inicial.";
         showTelaInicial(true);
         return;
       }
@@ -308,7 +354,46 @@
     backdrop.addEventListener("click", (e)=>{ if(e.target === backdrop) closeLogin(); });
 
     authEnter.addEventListener("click", async ()=>{
-      if(!sb){ authMsg.textContent = "Erro: Supabase não carregou."; return; }
+      if(!sb){ authMsg.textContent = "Supabase não configurado."; return; }
       const email = (authEmail.value||"").trim();
       const password = (authPass.value||"").trim();
-      if(!e
+      if(!email || !password){ authMsg.textContent = "Preencha Email e Senha."; return; }
+      authMsg.textContent = "Entrando...";
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error){
+        authMsg.textContent = "Não entrou. Confira Email e Senha.";
+        return;
+      }
+      closeLogin();
+      await refreshDiretoriaSession();
+    });
+
+    btnLogout.addEventListener("click", async ()=>{
+      if(!sb) return;
+      await sb.auth.signOut();
+      await refreshDiretoriaSession();
+    });
+
+    // ===== BOOT =====
+    window.addEventListener("load", async ()=>{
+      const role = getRole();
+      if(role === ROLE_JOGADOR){
+        setBadge("Modo: Jogadores (visual)");
+        showTelaInicial(false);
+        ensureIframeLoaded(document.getElementById("f-jogadores"));
+        setTimeout(()=>window.TESOURA_TRAVAR_IFRAMES(), 400);
+      } else if(role === ROLE_DIRETORIA){
+        setBadge("Modo: Diretoria");
+        showTelaInicial(false);
+        ensureIframeLoaded(document.getElementById("f-jogadores"));
+        await refreshDiretoriaSession();
+      } else {
+        showTelaInicial(true);
+        setBadge("Modo: —");
+        ensureIframeLoaded(document.getElementById("f-jogadores"));
+      }
+    });
+  </script>
+
+</body>
+</html>
