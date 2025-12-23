@@ -1,99 +1,49 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BBR">
 <head>
   <meta charset="utf-8" />
   <title>TESOURA - CONTROLE GERAL</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #0f172a;
-      color: #f9fafb;
-    }
-    header {
-      background: #020617;
-      padding: 12px 16px;
-      text-align: center;
-      font-weight: bold;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-    h2 {
-      margin: 8px 0;
-      color: #f97316;
-      text-transform: uppercase;
-    }
-    .painel {
-      background: #020617;
-      border-radius: 6px;
-      padding: 12px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
-    label {
-      font-size: 12px;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-    select {
-      padding: 4px 6px;
-      border-radius: 4px;
-      border: 1px solid #4b5563;
-      background: #0b1120;
-      color: #f9fafb;
-      font-size: 12px;
-      margin-right: 4px;
-    }
-    button {
-      padding: 6px 10px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      text-transform: uppercase;
-      font-size: 12px;
-      background: #38bdf8;
-      color: #0f172a;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-      background: #020617;
-      font-size: 11px;
-    }
-    th, td {
-      border: 1px solid #4b5563;
-      padding: 3px 4px;
-      text-align: center;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-    th {
-      background: #f97316;
-      color: #0f172a;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-    tr:nth-child(even) { background: #0b1120; }
-    tr:nth-child(odd)  { background: #020617; }
-    #status {
-      font-size: 12px;
-      margin-top: 4px;
-    }
+    body{font-family:Arial,sans-serif;margin:0;padding:0;background:#0f172a;color:#f9fafb}
+    header{background:#020617;padding:12px 16px;text-align:center;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+    .container{max-width:1200px;margin:0 auto;padding:16px}
+    h2{margin:8px 0;color:#f97316;text-transform:uppercase}
+    .painel{background:#020617;border-radius:6px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,.4);margin-bottom:16px;font-size:14px}
+    label{font-size:12px;font-weight:900;text-transform:uppercase}
+    select{padding:6px 8px;border-radius:6px;border:1px solid #4b5563;background:#0b1120;color:#f9fafb;font-size:12px;margin-right:6px}
+    button{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:900;text-transform:uppercase;font-size:12px;background:#38bdf8;color:#0f172a}
+    #status{font-size:12px;margin-top:6px}
+
+    .legend{font-size:12px;margin-top:8px;line-height:1.35}
+    .legend b{color:#f97316}
+    .tagPverde{color:#22c55e;font-weight:900}
+    .tagPvermelho{color:#ef4444;font-weight:900}
+
+    /* TABELA */
+    .tableWrap{overflow-x:auto;border-radius:6px}
+    table{width:max-content;min-width:100%;border-collapse:collapse;margin-top:8px;background:#020617;font-size:12px}
+    th,td{border:1px solid #4b5563;padding:6px 8px;text-align:center;text-transform:uppercase;white-space:nowrap}
+    th{background:#f97316;color:#0f172a;position:sticky;top:0;z-index:2}
+    tr:nth-child(even){background:#0b1120}
+    tr:nth-child(odd){background:#020617}
+
+    /* Colunas fixas (ATLETA + TOTAL FALTAS) */
+    .sticky1{position:sticky;left:0;z-index:4;background:#020617}
+    .sticky2{position:sticky;left:170px;z-index:4;background:#020617}
+    th.sticky1, th.sticky2{background:#f97316;color:#0f172a;z-index:6}
+    td.sticky1, td.sticky2{background:#020617}
+
+    /* Larguras (um pouco mais largas) */
+    .colAtleta{min-width:170px;text-align:left;padding-left:10px}
+    .colFaltas{min-width:110px}
+    .colDia{min-width:58px}
   </style>
 </head>
+
 <body>
-  <header>TESOURA - CONTROLE GERAL (ANO COMPLETO)</header>
+  <header>TESOURA - CONTROLE GERAL</header>
 
   <div class="container">
     <div class="painel">
@@ -101,139 +51,217 @@
       <label>ANO:</label>
       <select id="ano"></select>
       <button id="btn-carregar">CARREGAR LISTA</button>
-      <p style="font-size:12px;margin-top:4px;">
-        C = COMPARECEU, F = FALTOU, 1 = JOGOU 1 TEMPO, 2 = JOGOU 2 TEMPOS.
-      </p>
-      <p id="status"></p>
+
+      <div class="legend">
+        <b>OBS:</b>
+        C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
+        <span class="tagPverde">P (verde) pagou</span> | <span class="tagPvermelho">P (vermelho) não pagou</span>.
+      </div>
+
+      <div id="status"></div>
     </div>
 
-    <div class="painel" style="overflow-x:auto;">
-      <h2>Jogadores x Domingos (Ano inteiro)</h2>
-      <table>
-        <thead id="thead-controle"></thead>
-        <tbody id="tbody-controle"></tbody>
-      </table>
+    <div class="painel">
+      <h2>Jogadores x Domingos</h2>
+      <div class="tableWrap" id="wrap">
+        <table>
+          <thead id="thead-controle"></thead>
+          <tbody id="tbody-controle"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
+  <script src="app/js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // MESMA CONEXÃO QUE OS OUTROS PAINÉIS
-    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+    // ===== SUPABASE (mesma conexão dos outros painéis) =====
+    const cfg = window.TESOURA_CONFIG || {};
+    const FALLBACK_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const FALLBACK_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+
+    const SUPABASE_URL = (cfg.SUPABASE_URL || FALLBACK_URL);
+    const SUPABASE_KEY = (cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY || FALLBACK_KEY);
+
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    var supabase = window.__TESOURA_SUPABASE__;
+    const supabase = window.__TESOURA_SUPABASE__;
+
     const anoSel = document.getElementById("ano");
     const btnCarregar = document.getElementById("btn-carregar");
     const theadControle = document.getElementById("thead-controle");
     const tbodyControle = document.getElementById("tbody-controle");
     const statusEl = document.getElementById("status");
+    const wrap = document.getElementById("wrap");
 
-    const nomesMes = [
-      "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL",
-      "MAIO", "JUNHO", "JULHO", "AGOSTO",
-      "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"
-    ];
+    const nomesMes = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
 
-    function initAno() {
+    function initAno(){
       const hoje = new Date();
       const anoAtual = hoje.getFullYear();
-      for (let a = anoAtual - 1; a <= anoAtual + 1; a++) {
+      for(let a = anoAtual - 1; a <= anoAtual + 1; a++){
         const opt = document.createElement("option");
         opt.value = a;
         opt.textContent = a;
-        if (a === anoAtual) opt.selected = true;
+        if(a === anoAtual) opt.selected = true;
         anoSel.appendChild(opt);
       }
     }
 
-    // retorna objeto {mes: [ {iso, rotulo}, ... ]}
-    function getDomingosAno(ano) {
-      const porMes = {};
-      for (let m = 1; m <= 12; m++) {
-        const domingos = [];
-        const dt = new Date(ano, m - 1, 1);
-        while (dt.getMonth() === m - 1) {
-          if (dt.getDay() === 0) {
-            const anoStr = dt.getFullYear();
-            const mesStr = String(dt.getMonth() + 1).padStart(2, "0");
-            const diaStr = String(dt.getDate()).padStart(2, "0");
-            domingos.push({
-              iso: `${anoStr}-${mesStr}-${diaStr}`,
-              rotulo: `${diaStr}/${mesStr}`
-            });
-          }
-          dt.setDate(dt.getDate() + 1);
+    function pad2(n){ return String(n).padStart(2, "0"); }
+
+    function getDomingosMes(ano, mes1a12){
+      const domingos = [];
+      const dt = new Date(ano, mes1a12 - 1, 1);
+      while(dt.getMonth() === mes1a12 - 1){
+        if(dt.getDay() === 0){
+          const a = dt.getFullYear();
+          const m = pad2(dt.getMonth() + 1);
+          const d = pad2(dt.getDate());
+          domingos.push({ iso: `${a}-${m}-${d}`, rotulo: `${d}/${m}` });
         }
-        porMes[m] = domingos;
+        dt.setDate(dt.getDate() + 1);
       }
-      return porMes;
+      return domingos;
     }
 
-    async function carregarLista() {
+    function shiftMonth(year, month1a12, delta){
+      let y = year;
+      let m = month1a12 + delta;
+      while(m <= 0){ m += 12; y -= 1; }
+      while(m > 12){ m -= 12; y += 1; }
+      return { y, m };
+    }
+
+    // Meses a renderizar:
+    // - Sempre renderiza Jan..Dez do ano selecionado
+    // - Se ano selecionado for o ano atual e o mês atual for Jan/Fev, inclui Nov/Dez do ano anterior (para ficar visível o "últimos 3 meses")
+    function buildMonthBlocks(selectedYear){
+      const hoje = new Date();
+      const currentYear = hoje.getFullYear();
+      const currentMonth = hoje.getMonth() + 1;
+
+      const blocks = [];
+
+      // adiciona meses anteriores para o "últimos 3 meses" quando cruza o ano
+      if(selectedYear === currentYear && currentMonth <= 2){
+        const m1 = shiftMonth(currentYear, currentMonth, -2); // pode virar ano anterior
+        const m2 = shiftMonth(currentYear, currentMonth, -1);
+        // se m1/m2 caem no ano anterior, inclui
+        [m1, m2].forEach(mm => {
+          if(mm.y < selectedYear){
+            blocks.push({
+              year: mm.y,
+              month: mm.m,
+              domingos: getDomingosMes(mm.y, mm.m)
+            });
+          }
+        });
+      }
+
+      // Jan..Dez do ano selecionado
+      for(let m=1;m<=12;m++){
+        blocks.push({ year: selectedYear, month: m, domingos: getDomingosMes(selectedYear, m) });
+      }
+      return blocks;
+    }
+
+    function getFocusStartIso(selectedYear){
+      const hoje = new Date();
+      const currentYear = hoje.getFullYear();
+      const currentMonth = hoje.getMonth() + 1;
+
+      // foco = primeiros domingos do mês de (hoje - 2 meses)
+      if(selectedYear === currentYear){
+        const start = shiftMonth(currentYear, currentMonth, -2);
+        const domingos = getDomingosMes(start.y, start.m);
+        return domingos.length ? domingos[0].iso : null;
+      }
+
+      // se não é o ano atual, foca em OUT/NOV/DEZ do ano escolhido
+      const domingos = getDomingosMes(selectedYear, 10);
+      return domingos.length ? domingos[0].iso : null;
+    }
+
+    async function carregarLista(){
       const ano = parseInt(anoSel.value, 10);
-      statusEl.textContent = "CARREGANDO DADOS...";
+      statusEl.textContent = "CARREGANDO...";
       theadControle.innerHTML = "";
       tbodyControle.innerHTML = "";
 
-      const domingosAno = getDomingosAno(ano);
+      const blocks = buildMonthBlocks(ano);
 
-      // ===== CABEÇALHO EM 2 LINHAS (IGUAL À PLANILHA) =====
-      const trMeses = document.createElement("tr");
-      const thAtletaSpan = document.createElement("th");
-      thAtletaSpan.textContent = "ATLETA";
-      thAtletaSpan.rowSpan = 2;
-      trMeses.appendChild(thAtletaSpan);
+      // Monta lista de datas (domingos) para busca
+      const allDatesIso = [];
+      blocks.forEach(b => b.domingos.forEach(d => allDatesIso.push(d.iso)));
 
-      // primeiro cabeçalho: blocos de mês
-      for (let m = 1; m <= 12; m++) {
-        const listaDom = domingosAno[m];
-        if (listaDom.length === 0) continue; // mês sem domingo (não acontece na prática)
-        const thMes = document.createElement("th");
-        thMes.colSpan = listaDom.length;
-        thMes.textContent = `MÊS ${m} - ${nomesMes[m-1]} - ${ano}`;
-        trMeses.appendChild(thMes);
+      if(allDatesIso.length === 0){
+        statusEl.textContent = "SEM DOMINGOS PARA ESTE FILTRO.";
+        return;
       }
+
+      const minIso = allDatesIso[0];
+      const maxIso = allDatesIso[allDatesIso.length - 1];
+
+      // ===== CABEÇALHO (2 LINHAS) =====
+      const trMeses = document.createElement("tr");
+
+      const thAtleta = document.createElement("th");
+      thAtleta.textContent = "ATLETA";
+      thAtleta.rowSpan = 2;
+      thAtleta.className = "sticky1 colAtleta";
+      trMeses.appendChild(thAtleta);
+
+      const thFaltas = document.createElement("th");
+      thFaltas.textContent = "TOTAL FALTAS";
+      thFaltas.rowSpan = 2;
+      thFaltas.className = "sticky2 colFaltas";
+      trMeses.appendChild(thFaltas);
+
+      // blocos de mês
+      blocks.forEach(b => {
+        if(!b.domingos.length) return;
+        const thMes = document.createElement("th");
+        thMes.colSpan = b.domingos.length;
+        thMes.textContent = `${nomesMes[b.month-1]}/${b.year}`;
+        trMeses.appendChild(thMes);
+      });
 
       const trDias = document.createElement("tr");
-      for (let m = 1; m <= 12; m++) {
-        const listaDom = domingosAno[m];
-        listaDom.forEach(d => {
+      blocks.forEach(b => {
+        b.domingos.forEach(d => {
           const thDia = document.createElement("th");
-          thDia.textContent = d.rotulo; // ex: 02/02
+          thDia.textContent = d.rotulo;
+          thDia.id = "th-" + d.iso;
+          thDia.className = "colDia";
           trDias.appendChild(thDia);
         });
-      }
+      });
 
       theadControle.appendChild(trMeses);
       theadControle.appendChild(trDias);
 
-      // ===== BUSCA DADOS NO SUPABASE =====
-
-      // Jogadores
+      // ===== BUSCA DADOS =====
+      // Jogadores ativos
       const { data: jogadores, error: errJog } = await supabase
         .from("jogadores")
         .select("apelido")
         .eq("ativo", true)
         .order("apelido", { ascending: true });
 
-      if (errJog) {
+      if(errJog){
         console.error(errJog);
         statusEl.textContent = "ERRO AO BUSCAR JOGADORES.";
         return;
       }
 
-      // Presenças do ano
-      const iniIso = `${ano}-01-01`;
-      const fimIso = `${ano}-12-31`;
-
+      // Presenças (intervalo)
       const { data: pres, error: errPres } = await supabase
         .from("presencas")
         .select("data_jogo, apelido, presenca, faltoso")
-        .gte("data_jogo", iniIso)
-        .lte("data_jogo", fimIso);
+        .gte("data_jogo", minIso)
+        .lte("data_jogo", maxIso);
 
-      if (errPres) {
+      if(errPres){
         console.error(errPres);
         statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS.";
         return;
@@ -241,18 +269,17 @@
 
       const mapaPres = {};
       (pres || []).forEach(p => {
-        const key = `${p.apelido}::${p.data_jogo}`;
-        mapaPres[key] = p;
+        mapaPres[`${p.apelido}::${p.data_jogo}`] = p;
       });
 
-      // Escalação do ano (para saber 1 tempo / 2 tempos)
+      // Escalação (1º e 2º tempos)
       const { data: esc, error: errEsc } = await supabase
         .from("escalacao")
         .select("data_jogo, apelido, tempo")
-        .gte("data_jogo", iniIso)
-        .lte("data_jogo", fimIso);
+        .gte("data_jogo", minIso)
+        .lte("data_jogo", maxIso);
 
-      if (errEsc) {
+      if(errEsc){
         console.error(errEsc);
         statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO.";
         return;
@@ -261,39 +288,57 @@
       const mapaEsc = {};
       (esc || []).forEach(e => {
         const key = `${e.apelido}::${e.data_jogo}`;
-        if (!mapaEsc[key]) mapaEsc[key] = new Set();
-        if (e.tempo) mapaEsc[key].add(e.tempo);
+        if(!mapaEsc[key]) mapaEsc[key] = new Set();
+        if(e.tempo) mapaEsc[key].add(String(e.tempo));
       });
 
-      // ===== MONTA LINHAS (ANO INTEIRO) =====
-      jogadores.forEach(j => {
-        const apelido = j.apelido;
+      // ===== LINHAS =====
+      (jogadores || []).forEach(j => {
+        const apelido = (j.apelido || "").toUpperCase();
         const tr = document.createElement("tr");
 
+        // atleta (fixo)
         const tdAtleta = document.createElement("td");
-        tdAtleta.textContent = (apelido || "").toUpperCase();
+        tdAtleta.textContent = apelido;
+        tdAtleta.className = "sticky1 colAtleta";
         tr.appendChild(tdAtleta);
 
-        for (let m = 1; m <= 12; m++) {
-          const listaDom = domingosAno[m];
-          listaDom.forEach(d => {
+        // total faltas (fixo)
+        let faltasCount = 0;
+
+        // vamos montar as células depois, mas já contamos faltas nas datas visíveis
+        allDatesIso.forEach(iso => {
+          const key = `${apelido}::${iso}`;
+          const p = mapaPres[key];
+          if(p && (p.faltoso === true || p.presenca === false)) faltasCount += 1;
+        });
+
+        const tdFaltas = document.createElement("td");
+        tdFaltas.textContent = String(faltasCount);
+        tdFaltas.className = "sticky2 colFaltas";
+        tr.appendChild(tdFaltas);
+
+        // células por domingo
+        blocks.forEach(b => {
+          b.domingos.forEach(d => {
             const td = document.createElement("td");
+            td.className = "colDia";
             const key = `${apelido}::${d.iso}`;
             const presDia = mapaPres[key];
             let valor = "";
 
-            if (presDia) {
-              if (presDia.presenca) {
+            if(presDia){
+              if(presDia.presenca){
                 const setTempos = mapaEsc[key] || new Set();
                 const qtd = setTempos.size;
-                if (qtd >= 2) {
-                  valor = "2"; // jogou 2 tempos
-                } else if (qtd === 1) {
-                  valor = "1"; // jogou 1 tempo
-                } else {
-                  valor = "C"; // compareceu mas não jogou (equivalente ao "C" da sua planilha)
+                if(qtd >= 2){
+                  valor = "1-2";
+                }else if(qtd === 1){
+                  valor = "1";
+                }else{
+                  valor = "C";
                 }
-              } else if (presDia.faltoso) {
+              }else if(presDia.faltoso){
                 valor = "F";
               }
             }
@@ -301,22 +346,28 @@
             td.textContent = valor;
             tr.appendChild(td);
           });
-        }
+        });
 
         tbodyControle.appendChild(tr);
       });
 
       statusEl.textContent = "LISTA CARREGADA.";
+
+      // ===== FOCO: últimos 3 meses (visível automaticamente) =====
+      try{
+        const focusIso = getFocusStartIso(ano);
+        if(focusIso){
+          const th = document.getElementById("th-" + focusIso);
+          if(th && wrap){
+            wrap.scrollLeft = Math.max(0, th.offsetLeft - 260);
+          }
+        }
+      }catch(e){}
     }
 
-    function init() {
-      initAno();
-      carregarLista();
-    }
-
+    initAno();
     btnCarregar.addEventListener("click", carregarLista);
-
-    init();
+    carregarLista();
   </script>
 </body>
 </html>
