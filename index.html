@@ -5,12 +5,10 @@
   <title>TESOURA - PAINÉIS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Evitar cache do index -->
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <!-- Supabase (Auth da Diretoria) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -29,7 +27,6 @@
     .tab-content.active{display:block}
     iframe{width:100%;height:100%;border:none;background:#0b1220}
 
-    /* Tela inicial */
     #telaInicial{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.80)}
     #telaInicial .box{width:min(520px,100%);background:#081427;border:1px solid #334155;border-radius:14px;padding:18px;text-align:center}
     #telaInicial .t1{color:#ff7f27;font-weight:900;font-size:22px}
@@ -65,7 +62,11 @@
       if(b) b.textContent = txt;
     }
 
-    // ===== DIRETORIA (SUPABASE AUTH) =====
+    // SUPABASE (mesmo do app)
+    const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+
+    // ===== DIRETORIA =====
     const TESOURA_UIDS_DIRETORIA = new Set([
       "c5dc17fc-1077-4825-851e-7b02f020e9dc", // 1baidec (UID_4)
       "6be13144-f737-41aa-8d42-3ee93d2a9cb7", // 2thiago (UID_5)
@@ -79,25 +80,125 @@
     ]);
 
     function TESOURA_SB(){
-      const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
-      const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
       window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       return window.__TESOURA_SUPABASE__;
     }
 
-    function TESOURA_SET_CAIXA_UI(canCaixa){
-      const btn = qs("tabCaixaBtn");
-      if(!btn) return;
-      if(canCaixa){
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "auto";
-        btn.title = "";
-      }else{
-        btn.style.opacity = "0.55";
-        btn.style.pointerEvents = "none";
-        btn.title = "Sem permissão para CAIXA";
+    function sendSupabaseConfigToIframe(iframe){
+      try{
+        if(!iframe || !iframe.contentWindow) return;
+        iframe.contentWindow.postMessage({
+          type: "TESOURA_SUPABASE_CONFIG",
+          url: SUPABASE_URL,
+          key: SUPABASE_KEY
+        }, "*");
+      }catch(e){}
+    }
+
+    function travarIframeJogador(iframe){
+      try{
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if(!doc || !doc.body) return;
+
+        let banner = doc.getElementById("TESOURA_JOGADOR_BANNER");
+        if(!banner){
+          banner = doc.createElement("div");
+          banner.id = "TESOURA_JOGADOR_BANNER";
+          banner.textContent = "MODO JOGADOR: SOMENTE VISUALIZAÇÃO";
+          banner.style.cssText =
+            "position:fixed;top:0;left:0;right:0;z-index:999999;" +
+            "background:#b91c1c;color:#fff;font-weight:900;" +
+            "padding:8px 10px;text-align:center;font-size:12px;";
+          doc.body.appendChild(banner);
+          doc.body.style.paddingTop = "40px";
+        }
+
+        let style = doc.getElementById("TESOURA_JOGADOR_LOCK");
+        if(!style){
+          style = doc.createElement("style");
+          style.id = "TESOURA_JOGADOR_LOCK";
+          style.textContent = `
+            button, input, select, textarea, a, [role="button"], [onclick]{
+              pointer-events:none !important;
+              opacity:0.55 !important;
+              cursor:not-allowed !important;
+            }
+          `;
+          (doc.head || doc.documentElement).appendChild(style);
+        }
+      }catch(e){}
+    }
+
+    function travarCaixaDiretoriaSemCaixa(iframe){
+      try{
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if(!doc) return;
+
+        // desativa campos e botão "ADICIONAR"
+        const ids = ["cxData","cxTipo","cxDesc","cxValor","cxObs","btnAdicionar"];
+        ids.forEach(id=>{
+          const el = doc.getElementById(id);
+          if(el){
+            el.disabled = true;
+            el.style.opacity = "0.60";
+            el.title = "Diretoria (sem Caixa): somente visualização";
+          }
+        });
+
+        // desativa botões de editar/excluir da tabela
+        doc.querySelectorAll("button.btn-azul, button.btn-vermelho").forEach(btn=>{
+          btn.disabled = true;
+          btn.style.opacity = "0.60";
+          btn.title = "Diretoria (sem Caixa): somente visualização";
+        });
+      }catch(e){}
+    }
+
+    function aplicarLocksNoIframe(iframe, abaId){
+      const role = window.TESOURA_ROLE;
+
+      if(role === "jogador"){
+        travarIframeJogador(iframe);
+        return;
+      }
+
+      if(role === "diretoria" && abaId === "aba-caixa"){
+        const can = localStorage.getItem("TESOURA_DIRETORIA_CAIXA") === "1";
+        if(!can) travarCaixaDiretoriaSemCaixa(iframe);
       }
     }
+
+    function ensureIframeLoaded(iframe, abaId){
+      if(!iframe) return;
+      const base = iframe.getAttribute("data-src");
+      if(!base) return;
+
+      iframe.src = "about:blank";
+      setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
+
+      iframe.addEventListener("load", ()=>{
+        sendSupabaseConfigToIframe(iframe);        // ✅ Banco de Dados passa a funcionar
+        aplicarLocksNoIframe(iframe, abaId);       // ✅ Jogador trava tudo / Diretoria sem Caixa trava só Caixa
+      }, { once:false });
+    }
+
+    function abrirAba(id){
+      const abas = document.querySelectorAll(".tab-content");
+      const botoes = document.querySelectorAll(".tab-btn");
+
+      abas.forEach(a=>a.classList.remove("active"));
+      botoes.forEach(b=>b.classList.remove("active"));
+
+      const el = document.getElementById(id);
+      if(el) el.classList.add("active");
+
+      const map = {"aba-jogadores":0,"aba-presenca":1,"aba-controle":2,"aba-mensalidade":3,"aba-caixa":4,"aba-gols":5,"aba-banco":6};
+      if(botoes[map[id]]) botoes[map[id]].classList.add("active");
+
+      const iframe = document.querySelector("#"+id+" iframe");
+      ensureIframeLoaded(iframe, id);
+    }
+    window.abrirAba = abrirAba;
 
     function TESOURA_DIR_CANCEL(){
       const box = qs("dirLogin");
@@ -122,12 +223,12 @@
       window.TESOURA_ROLE = "diretoria";
       showTelaInicial(false);
       setBadge(canCaixa ? "Modo: Diretoria" : "Modo: Diretoria (sem Caixa)");
-      TESOURA_SET_CAIXA_UI(canCaixa);
 
       const btnLogout = qs("btnLogout");
       if(btnLogout) btnLogout.style.display = "inline-block";
 
       abrirAba("aba-jogadores");
+
       setTimeout(()=>{
         document.querySelectorAll("iframe").forEach(ifr=>{
           const base = ifr.getAttribute("data-src");
@@ -182,7 +283,6 @@
       showTelaInicial(false);
       setBadge("Modo: Jogadores (visual)");
       abrirAba("aba-jogadores");
-      setTimeout(()=>TESOURA_TRAVAR_IFRAMES(), 200);
     }
 
     async function TESOURA_ENTRAR_DIRETORIA(){
@@ -198,89 +298,12 @@
       setTimeout(()=>qs("dirEmail")?.focus(), 50);
     }
 
-    function travarIframeJogador(iframe){
-      try{
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if(!doc || !doc.body) return;
-
-        let banner = doc.getElementById("TESOURA_JOGADOR_BANNER");
-        if(!banner){
-          banner = doc.createElement("div");
-          banner.id = "TESOURA_JOGADOR_BANNER";
-          banner.textContent = "MODO JOGADOR: SOMENTE VISUALIZAÇÃO";
-          banner.style.cssText =
-            "position:fixed;top:0;left:0;right:0;z-index:999999;" +
-            "background:#b91c1c;color:#fff;font-weight:900;" +
-            "padding:8px 10px;text-align:center;font-size:12px;";
-          doc.body.appendChild(banner);
-          doc.body.style.paddingTop = "40px";
-        }
-
-        let style = doc.getElementById("TESOURA_JOGADOR_LOCK");
-        if(!style){
-          style = doc.createElement("style");
-          style.id = "TESOURA_JOGADOR_LOCK";
-          style.textContent = `
-            button, input, select, textarea, a, [role="button"], [onclick]{
-              pointer-events:none !important;
-              opacity:0.55 !important;
-              cursor:not-allowed !important;
-            }
-          `;
-          (doc.head || doc.documentElement).appendChild(style);
-        }
-      }catch(e){}
-    }
-
-    function TESOURA_TRAVAR_IFRAMES(){
-      if(window.TESOURA_ROLE !== "jogador") return;
-      document.querySelectorAll("iframe").forEach(ifr=>travarIframeJogador(ifr));
-    }
-
-    function ensureIframeLoaded(iframe){
-      if(!iframe) return;
-      const base = iframe.getAttribute("data-src");
-      if(!base) return;
-
-      iframe.src = "about:blank";
-      setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
-
-      iframe.addEventListener("load", ()=>TESOURA_TRAVAR_IFRAMES(), { once:false });
-    }
-
-    function abrirAba(id){
-      if(id === "aba-caixa" && window.TESOURA_ROLE === "diretoria"){
-        const can = localStorage.getItem("TESOURA_DIRETORIA_CAIXA") === "1";
-        if(!can){
-          alert("CAIXA: acesso permitido somente para 1BAIDEC e 2THIAGO.");
-          return;
-        }
-      }
-      const abas = document.querySelectorAll(".tab-content");
-      const botoes = document.querySelectorAll(".tab-btn");
-
-      abas.forEach(a=>a.classList.remove("active"));
-      botoes.forEach(b=>b.classList.remove("active"));
-
-      const el = document.getElementById(id);
-      if(el) el.classList.add("active");
-
-      const map = {"aba-jogadores":0,"aba-presenca":1,"aba-controle":2,"aba-mensalidade":3,"aba-caixa":4,"aba-gols":5,"aba-banco":6};
-      if(botoes[map[id]]) botoes[map[id]].classList.add("active");
-
-      const iframe = document.querySelector("#"+id+" iframe");
-      ensureIframeLoaded(iframe);
-    }
-    window.abrirAba = abrirAba;
-
     window.addEventListener("load", async ()=>{
       await disableServiceWorker();
 
       window.TESOURA_ROLE = "";
       showTelaInicial(true);
       setBadge("Modo: —");
-
-      TESOURA_SET_CAIXA_UI(true);
 
       const btnLogout = qs("btnLogout");
       if(btnLogout){
@@ -304,7 +327,6 @@
 <body>
   <noscript>Ative o JavaScript no navegador para usar o TESOURA.</noscript>
 
-  <!-- TELA INICIAL -->
   <div id="telaInicial">
     <div class="box">
       <div class="t1">GRUPO TESOURA I</div>
@@ -316,7 +338,6 @@
         <button class="btnD" onclick="TESOURA_ENTRAR_DIRETORIA()">ENTRAR DIRETORIA</button>
       </div>
 
-      <!-- Login Diretoria (email/senha) -->
       <div class="dirBox" id="dirLogin">
         <div class="field">
           <label>EMAIL (DIRETORIA)</label>
@@ -383,7 +404,6 @@
     <iframe id="f-banco" data-src="tesoura_banco_dados_teste.html"></iframe>
   </div>
 
-  <!-- Config do app (PIN, URL/KEY do Supabase etc) -->
   <script src="app/js/config.js"></script>
 </body>
 </html>
