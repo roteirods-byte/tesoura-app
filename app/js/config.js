@@ -6,7 +6,7 @@ window.TESOURA_CONFIG = {
 
   // PIN ÚNICO para todos os celulares (troque aqui).
   // Sugestão: use 6 dígitos.
-  APP_PIN: "123456",
+  APP_PIN: "TESOURA2026",
 
   // Nome do app no topo:
   APP_TITLE: "TESOURA - CONTROLE DO FUTEBOL",
