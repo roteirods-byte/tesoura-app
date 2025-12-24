@@ -10,6 +10,9 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
+  <!-- Supabase (Auth da Diretoria) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
     .topbar{background:#111827;padding:10px 20px;color:#ff7f27;font-weight:900;font-size:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -35,16 +38,19 @@
     #telaInicial .row{display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap}
     #telaInicial .btnJ{min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#22c55e;color:#052e16}
     #telaInicial .btnD{min-width:200px;border:none;border-radius:10px;padding:12px 14px;font-weight:900;cursor:pointer;background:#3b82f6;color:#06162f}
+    #telaInicial .dirBox{display:none;margin-top:14px;padding-top:12px;border-top:1px solid #334155}
+    #telaInicial .field{text-align:left;margin-top:10px}
+    #telaInicial .field label{display:block;font-size:11px;font-weight:900;text-transform:uppercase;color:#e5e7eb;margin-bottom:4px}
+    #telaInicial .field input{width:100%;padding:8px 10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#fff;font-weight:800;box-sizing:border-box}
+    #telaInicial .dirActions{display:flex;gap:14px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+    #telaInicial .btnSmall{min-width:200px;border:none;border-radius:10px;padding:10px 14px;font-weight:900;cursor:pointer}
+    #telaInicial .btnGray{background:#94a3b8;color:#0b1220}
+    #telaInicial .btnEnter{background:#3b82f6;color:#06162f}
     #telaInicial .msg{margin-top:12px;color:#e5e7eb;font-size:12px;min-height:16px}
     noscript{display:block;padding:12px;background:#b91c1c;color:#fff;font-weight:900;text-align:center}
   </style>
 
   <script>
-    // ===== REGRAS DE ESTABILIDADE (SITE OFICIAL) =====
-    // 1) Sempre mostrar a tela inicial (senha) ao abrir
-    // 2) Iframes carregam sempre versão nova (cb automático)
-    // 3) Desativar Service Worker (evita versão antiga em cache)
-
     function qs(id){ return document.getElementById(id); }
     function cacheBust(url){
       const sep = url.includes("?") ? "&" : "?";
@@ -58,6 +64,96 @@
       const b = qs("modeBadge");
       if(b) b.textContent = txt;
     }
+
+    // ===== DIRETORIA (SUPABASE AUTH) =====
+    const TESOURA_UIDS_DIRETORIA = new Set([
+      "c5dc17fc-1077-4825-851e-7b02f020e9dc", // 1baidec (UID_4)
+      "6be13144-f737-41aa-8d42-3ee93d2a9cb7", // 2thiago (UID_5)
+      "ed6acd95-fd4c-457b-bdd4-72fb0b286b2a", // 3love  (UID_1)
+      "d7c63923-6830-4195-a8a0-8597076369f3", // 4le    (UID_2)
+      "fcab8532-aa03-41b4-a320-58e8ea0d2643"  // 5titi  (UID_3)
+    ]);
+    const TESOURA_UIDS_CAIXA = new Set([
+      "c5dc17fc-1077-4825-851e-7b02f020e9dc", // 1baidec
+      "6be13144-f737-41aa-8d42-3ee93d2a9cb7"  // 2thiago
+    ]);
+
+    function TESOURA_SB(){
+      const SUPABASE_URL = "https://xuplzpispukvtggjasxx.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
+      window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      return window.__TESOURA_SUPABASE__;
+    }
+
+    function TESOURA_SET_CAIXA_UI(canCaixa){
+      const btn = qs("tabCaixaBtn");
+      if(!btn) return;
+      if(canCaixa){
+        btn.style.opacity = "1";
+        btn.style.pointerEvents = "auto";
+        btn.title = "";
+      }else{
+        btn.style.opacity = "0.55";
+        btn.style.pointerEvents = "none";
+        btn.title = "Sem permissão para CAIXA";
+      }
+    }
+
+    function TESOURA_DIR_CANCEL(){
+      const box = qs("dirLogin");
+      if(box) box.style.display = "none";
+      const msg = qs("msgTelaInicial");
+      if(msg) msg.textContent = "";
+    }
+    window.TESOURA_DIR_CANCEL = TESOURA_DIR_CANCEL;
+
+    async function TESOURA_DIRETORIA_OK(user){
+      const uid = user?.id || "";
+      if(!TESOURA_UIDS_DIRETORIA.has(uid)){
+        try{ await TESOURA_SB().auth.signOut(); }catch(e){}
+        qs("msgTelaInicial").textContent = "Usuário não autorizado.";
+        return;
+      }
+
+      const canCaixa = TESOURA_UIDS_CAIXA.has(uid);
+      localStorage.setItem("TESOURA_DIRETORIA_UID", uid);
+      localStorage.setItem("TESOURA_DIRETORIA_CAIXA", canCaixa ? "1" : "0");
+
+      window.TESOURA_ROLE = "diretoria";
+      showTelaInicial(false);
+      setBadge(canCaixa ? "Modo: Diretoria" : "Modo: Diretoria (sem Caixa)");
+      TESOURA_SET_CAIXA_UI(canCaixa);
+
+      const btnLogout = qs("btnLogout");
+      if(btnLogout) btnLogout.style.display = "inline-block";
+
+      abrirAba("aba-jogadores");
+      setTimeout(()=>{
+        document.querySelectorAll("iframe").forEach(ifr=>{
+          const base = ifr.getAttribute("data-src");
+          if(base) ifr.src = cacheBust(base);
+        });
+      }, 150);
+    }
+
+    async function TESOURA_DIR_LOGIN(){
+      const email = (qs("dirEmail")?.value || "").trim();
+      const pass  = (qs("dirPass")?.value || "").trim();
+      if(!email || !pass){
+        qs("msgTelaInicial").textContent = "Informe email e senha.";
+        return;
+      }
+
+      qs("msgTelaInicial").textContent = "Entrando...";
+      const sb = TESOURA_SB();
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if(error){
+        qs("msgTelaInicial").textContent = "Falha no login.";
+        return;
+      }
+      await TESOURA_DIRETORIA_OK(data?.user);
+    }
+    window.TESOURA_DIR_LOGIN = TESOURA_DIR_LOGIN;
 
     async function disableServiceWorker(){
       try{
@@ -74,7 +170,6 @@
       }catch(e){}
     }
 
-    // Entrar Jogadores
     function TESOURA_ENTRAR_JOGADORES(){
       const cfg = window.TESOURA_CONFIG || {};
       const pinCfg = String(cfg.APP_PIN || "").trim();
@@ -90,15 +185,19 @@
       setTimeout(()=>TESOURA_TRAVAR_IFRAMES(), 200);
     }
 
-    // Entrar Diretoria
-    function TESOURA_ENTRAR_DIRETORIA(){
-      window.TESOURA_ROLE = "diretoria";
-      showTelaInicial(false);
-      setBadge("Modo: Diretoria");
-      abrirAba("aba-jogadores");
+    async function TESOURA_ENTRAR_DIRETORIA(){
+      const sb = TESOURA_SB();
+      const { data } = await sb.auth.getSession();
+      const sess = data?.session;
+      if(sess?.user?.id){
+        await TESOURA_DIRETORIA_OK(sess.user);
+        return;
+      }
+      const box = qs("dirLogin");
+      if(box) box.style.display = "block";
+      setTimeout(()=>qs("dirEmail")?.focus(), 50);
     }
 
-    // Trava cliques dentro do iframe (modo jogador)
     function travarIframeJogador(iframe){
       try{
         const doc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -143,7 +242,6 @@
       const base = iframe.getAttribute("data-src");
       if(!base) return;
 
-      // evita "flash" de versão antiga
       iframe.src = "about:blank";
       setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
 
@@ -151,6 +249,13 @@
     }
 
     function abrirAba(id){
+      if(id === "aba-caixa" && window.TESOURA_ROLE === "diretoria"){
+        const can = localStorage.getItem("TESOURA_DIRETORIA_CAIXA") === "1";
+        if(!can){
+          alert("CAIXA: acesso permitido somente para 1BAIDEC e 2THIAGO.");
+          return;
+        }
+      }
       const abas = document.querySelectorAll(".tab-content");
       const botoes = document.querySelectorAll(".tab-btn");
 
@@ -171,12 +276,26 @@
     window.addEventListener("load", async ()=>{
       await disableServiceWorker();
 
-      // SEMPRE mostrar a tela inicial ao abrir o site
       window.TESOURA_ROLE = "";
       showTelaInicial(true);
       setBadge("Modo: —");
 
-      // carrega a primeira aba já com versão nova
+      TESOURA_SET_CAIXA_UI(true);
+
+      const btnLogout = qs("btnLogout");
+      if(btnLogout){
+        btnLogout.onclick = async ()=>{
+          try{ await TESOURA_SB().auth.signOut(); }catch(e){}
+          localStorage.removeItem("TESOURA_DIRETORIA_UID");
+          localStorage.removeItem("TESOURA_DIRETORIA_CAIXA");
+          window.TESOURA_ROLE = "";
+          setBadge("Modo: —");
+          showTelaInicial(true);
+          btnLogout.style.display = "none";
+          TESOURA_DIR_CANCEL();
+        };
+      }
+
       abrirAba("aba-jogadores");
     });
   </script>
@@ -197,6 +316,22 @@
         <button class="btnD" onclick="TESOURA_ENTRAR_DIRETORIA()">ENTRAR DIRETORIA</button>
       </div>
 
+      <!-- Login Diretoria (email/senha) -->
+      <div class="dirBox" id="dirLogin">
+        <div class="field">
+          <label>EMAIL (DIRETORIA)</label>
+          <input id="dirEmail" autocomplete="username" placeholder="ex: 1baidec@gmail.com" />
+        </div>
+        <div class="field">
+          <label>SENHA</label>
+          <input id="dirPass" type="password" autocomplete="current-password" placeholder="sua senha" />
+        </div>
+        <div class="dirActions">
+          <button class="btnSmall btnGray" onclick="TESOURA_DIR_CANCEL()">CANCELAR</button>
+          <button class="btnSmall btnEnter" onclick="TESOURA_DIR_LOGIN()">ENTRAR (DIRETORIA)</button>
+        </div>
+      </div>
+
       <div class="msg" id="msgTelaInicial"></div>
     </div>
   </div>
@@ -215,7 +350,7 @@
     <button class="tab-btn" onclick="abrirAba('aba-presenca')">PRESENÇA / ESCALAÇÃO</button>
     <button class="tab-btn" onclick="abrirAba('aba-controle')">CONTROLE GERAL</button>
     <button class="tab-btn" onclick="abrirAba('aba-mensalidade')">MENSALIDADE</button>
-    <button class="tab-btn" onclick="abrirAba('aba-caixa')">CAIXA</button>
+    <button class="tab-btn" id="tabCaixaBtn" onclick="abrirAba('aba-caixa')">CAIXA</button>
     <button class="tab-btn" onclick="abrirAba('aba-gols')">GOLS</button>
     <button class="tab-btn" onclick="abrirAba('aba-banco')">BANCO DE DADOS</button>
   </div>
