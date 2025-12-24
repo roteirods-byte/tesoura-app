@@ -214,7 +214,10 @@ function normalizeConteudo(conteudo, painel){
       }
     }
   }catch(e){ /* mantém como está */ }
-
+// Se já veio como snapshot (columns + rows), exporta EXATAMENTE como foi salvo.
+if(c && typeof c === "object" && Array.isArray(c.columns) && Array.isArray(c.rows)){
+  return { columns: c.columns, rows: c.rows };
+}
   // Template por painel (para PDF/CSV/Excel ficarem iguais ao painel)
   const templated = applyExportTemplate(painel, c);
   if(templated) return templated;
