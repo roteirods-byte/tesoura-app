@@ -131,7 +131,7 @@
         grid-template-columns: repeat(2,minmax(0,1fr));
       }
     }
-  
+
     .page-header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
     .btn-salvar-painel{
         background:#2ecc71; color:#001a2e; border:none; padding:10px 14px; border-radius:10px;
@@ -142,9 +142,9 @@
 </head>
 <body>
   <header class="page-header">
-        <h1>TESOURA - JOGADORES</h1>
-        <button id="btnSalvarPainel" class="btn-salvar-painel">SALVAR PAINEL</button>
-    </header>
+    <h1>TESOURA - JOGADORES</h1>
+    <!-- BOTÃO REMOVIDO POR REGRA DO PROJETO: auto-salvar do painel ocorre ao salvar/excluir jogador -->
+  </header>
 
   <div class="container">
     <div class="painel">
@@ -200,7 +200,7 @@
 
     <div class="painel" style="overflow-x:auto;">
       <h2>Lista de Jogadores</h2>
-      <button class="btn-recarregar" id="btn-recarregar">RECARREGAR LISTA</button>
+      <!-- BOTÃO REMOVIDO POR REGRA DO PROJETO: painel sempre visível e atualizado -->
       <p style="font-size:12px;">ORDEM ALFABÉTICA POR APELIDO. COLUNA IDADE É CALCULADA AUTOMÁTICA.</p>
 
       <table>
@@ -233,57 +233,6 @@
     const SUPABASE_KEY = "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
     window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var supabase = window.__TESOURA_SUPABASE__;
-    // Botão: SALVAR PAINEL (arquiva o painel no Banco de Dados)
-    const btnSalvarPainel = document.getElementById("btnSalvarPainel");
-    if(btnSalvarPainel){
-      btnSalvarPainel.addEventListener("click", async () => {
-        try{
-          btnSalvarPainel.disabled = true;
-          btnSalvarPainel.textContent = "SALVANDO...";
-          const { data: rows, error } = await supabase.from("jogadores")
-            .select("id,camisa,apelido,nome,data_nasc,celular,posicao,hab,vel,mov,pontos,ativo")
-            .order("apelido", { ascending: true });
-          if(error) throw error;
-
-          const ano_ref = new Date().getFullYear();
-          const payloadRows = (rows || []).map(r => ({
-            id: r.id,
-            camisa: r.camisa ?? "",
-            apelido: (r.apelido || "").toUpperCase(),
-            nome: (r.nome || "").toUpperCase(),
-            data_nasc: r.data_nasc || "",
-            idade: (typeof calcularIdade === "function") ? (calcularIdade(r.data_nasc) || "") : "",
-            celular: r.celular || "",
-            posicao: (r.posicao || "").toUpperCase(),
-            hab: r.hab ?? "",
-            vel: r.vel ?? "",
-            mov: r.mov ?? "",
-            pontos: r.pontos ?? "",
-            ativo: (r.ativo ?? true)
-          }));
-          // Conteúdo do arquivo deve ser a lista de linhas (igual ao painel).
-          const { error: err2 } = await supabase.from("arquivos_app").insert([{
-            painel: "jogadores",
-            periodo: "unico",
-            data_ref: new Date().toISOString().slice(0,10),
-            mes_ref: (new Date().getMonth()+1),
-            ano_ref,
-            titulo: "Jogadores (vigente)",
-            conteudo: payloadRows
-          }]);
-          if(err2) throw err2;
-
-          alert("✅ Painel JOGADORES arquivado no BANCO DE DADOS.");
-        }catch(e){
-          console.error(e);
-          alert("❌ Não foi possível arquivar. Entre como DIRETOR e tente novamente.");
-        }finally{
-          btnSalvarPainel.disabled = false;
-          btnSalvarPainel.textContent = "SALVAR PAINEL";
-        }
-      });
-    }
-
 
     const camisaInput = document.getElementById("camisa");
     const nomeInput = document.getElementById("nome");
@@ -300,7 +249,6 @@
 
     const btnSalvar = document.getElementById("btn-salvar");
     const btnCancelar = document.getElementById("btn-cancelar");
-    const btnRecarregar = document.getElementById("btn-recarregar");
 
     let editId = null; // null = novo, número = editar
 
@@ -343,7 +291,7 @@
       if (error) {
         console.error(error);
         statusEl.textContent = "ERRO AO CARREGAR JOGADORES.";
-        return;
+        return [];
       }
 
       data.forEach(j => {
@@ -370,7 +318,7 @@
         tr.appendChild(tdTexto(j.vel ?? ""));
         tr.appendChild(tdTexto(j.mov ?? ""));
         tr.appendChild(tdTexto(j.pontos ?? ""));
-        
+
         const tdEditar = document.createElement("td");
         const btnE = document.createElement("button");
         btnE.textContent = "EDITAR";
@@ -391,9 +339,10 @@
       });
 
       statusEl.textContent = `TOTAL DE JOGADORES: ${data.length}`;
+      return data || [];
     }
 
-   function editarJogador(j) {
+    function editarJogador(j) {
       editId = j.id;
       camisaInput.value = j.camisa ?? "";
       nomeInput.value = j.nome ?? "";
@@ -409,10 +358,81 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    async function excluirJogador(id) {
-      if (!confirm("CONFIRMAR EXCLUSÃO DEFINITIVA DO JOGADOR?")) {
-        return;
+    // ====== AUTO-ARQUIVO NO BANCO DE DADOS (SNAPSHOT IDÊNTICO AO PAINEL) ======
+    function snapshotJogadores(rows){
+      const columns = [
+        "ID","CAMISA","APELIDO","NOME","DATA NASC.","IDADE",
+        "CELULAR","POSIÇÃO","HAB","VEL","MOV","PONTOS"
+      ];
+
+      const outRows = (rows || []).map(j => {
+        const idade = calcularIdade(j.data_nasc);
+        return [
+          j.id ?? "",
+          j.camisa ?? "",
+          (j.apelido || "").toUpperCase(),
+          (j.nome || "").toUpperCase(),
+          j.data_nasc || "",
+          idade !== "" ? idade : "",
+          j.celular || "",
+          (j.posicao || "").toUpperCase(),
+          j.hab ?? "",
+          j.vel ?? "",
+          j.mov ?? "",
+          j.pontos ?? ""
+        ];
+      });
+
+      return { columns, rows: outRows };
+    }
+
+    async function arquivarJogadoresVigente(rows){
+      try{
+        const conteudo = snapshotJogadores(rows);
+        const now = new Date();
+
+        // pega o mais recente e atualiza (evita acumular arquivos)
+        const { data: existing, error: e1 } = await supabase
+          .from("arquivos_app")
+          .select("id")
+          .eq("painel", "jogadores")
+          .eq("periodo", "unico")
+          .order("criado_em", { ascending: false })
+          .limit(1);
+
+        if(e1) throw e1;
+
+        const base = {
+          painel: "jogadores",
+          periodo: "unico",
+          titulo: "Jogadores (vigente)",
+          conteudo,
+          data_ref: now.toISOString().slice(0,10),
+          mes_ref: now.getMonth() + 1,
+          ano_ref: now.getFullYear(),
+          criado_em: now.toISOString()
+        };
+
+        if(existing && existing.length){
+          const { error: e2 } = await supabase
+            .from("arquivos_app")
+            .update(base)
+            .eq("id", existing[0].id);
+          if(e2) throw e2;
+        }else{
+          const { error: e2 } = await supabase
+            .from("arquivos_app")
+            .insert([base]);
+          if(e2) throw e2;
+        }
+      }catch(e){
+        // não trava o painel se o arquivo não conseguir salvar
+        console.error("Auto-arquivo Jogadores falhou:", e);
       }
+    }
+
+    async function excluirJogador(id) {
+      if (!confirm("CONFIRMAR EXCLUSÃO DEFINITIVA DO JOGADOR?")) return;
 
       const { error } = await supabase
         .from("jogadores")
@@ -421,16 +441,17 @@
 
       if (error) {
         console.error(error);
-        statusEl.textContent =
-          "ERRO AO EXCLUIR JOGADOR: " + (error.message || JSON.stringify(error));
+        statusEl.textContent = "ERRO AO EXCLUIR JOGADOR: " + (error.message || JSON.stringify(error));
         return;
       }
 
       statusEl.textContent = "JOGADOR EXCLUÍDO COM SUCESSO.";
-      carregarJogadores();
+
+      const rows = await carregarJogadores();
+      await arquivarJogadoresVigente(rows);
     }
 
-        async function salvarJogador() {
+    async function salvarJogador() {
       let camisa = camisaInput.value ? parseInt(camisaInput.value, 10) : null;
       let nome = nomeInput.value.trim().toUpperCase();
       let apelido = apelidoInput.value.trim().toUpperCase();
@@ -468,15 +489,10 @@
 
       let error;
       if (editId === null) {
-        const resp = await supabase
-          .from("jogadores")
-          .insert(payload);
+        const resp = await supabase.from("jogadores").insert(payload);
         error = resp.error;
       } else {
-        const resp = await supabase
-          .from("jogadores")
-          .update(payload)
-          .eq("id", editId);
+        const resp = await supabase.from("jogadores").update(payload).eq("id", editId);
         error = resp.error;
       }
 
@@ -488,17 +504,17 @@
 
       statusEl.textContent = "JOGADOR SALVO COM SUCESSO.";
       limparFormulario();
-      carregarJogadores();
+
+      const rows = await carregarJogadores();
+      await arquivarJogadoresVigente(rows);
     }
 
-
     function init() {
-      carregarJogadores();
+      carregarJogadores(); // sempre inicia carregado
     }
 
     btnSalvar.addEventListener("click", salvarJogador);
     btnCancelar.addEventListener("click", limparFormulario);
-    btnRecarregar.addEventListener("click", carregarJogadores);
 
     init();
   </script>
