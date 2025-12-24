@@ -10,7 +10,8 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
-
+<script src="app/js/config.js"></script>
+  
   <style>
     :root{
       --bg:#081427;
@@ -448,6 +449,19 @@ window.addEventListener("message", (ev)=>{
   }
 });
 
+// fallback: inicia pelo config.js se não vier postMessage
+try{
+  const cfg = window.TESOURA_CONFIG || {};
+  if(!supabaseClient && cfg.SUPABASE_URL && cfg.SUPABASE_KEY){
+    SUPABASE_URL = cfg.SUPABASE_URL;
+    SUPABASE_ANON_KEY = cfg.SUPABASE_KEY;
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    clearMsg();
+  }
+}catch(e){
+  showMsg("Erro ao iniciar Supabase (fallback): " + e.message, true);
+}
+  
 document.getElementById("btnBuscar").addEventListener("click", buscar);
 document.getElementById("btnLimpar").addEventListener("click", limpar);
 document.getElementById("btnPDF").addEventListener("click", ()=>baixar("pdf"));
