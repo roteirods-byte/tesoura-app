@@ -333,14 +333,23 @@
     await carregarCaixaMes();
   }
 
-  async function excluirLancamento(id) {
-    if (!confirm("Confirmar exclusão deste lançamento?")) return;
+  async function excluirLancamento(item) {
+  if (!confirm("Confirmar exclusão deste lançamento?")) return;
 
-    const { error } = await supabase
-      .from("caixa")
-      .delete()
-      .eq("id", id);
+  const id = (typeof item === "object" && item) ? item.id : item;
 
+  const { error } = await supabase
+    .from("caixa")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("Erro ao excluir lançamento: " + error.message);
+    return;
+  }
+
+  await carregarCaixaMes();
+}
     if (error) {
       alert("Erro ao excluir lançamento: " + error.message);
       return;
