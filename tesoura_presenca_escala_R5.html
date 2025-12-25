@@ -506,71 +506,88 @@ function getDataJogoISO() {
     }
 
     // ===== LOAD BASE =====
-    async function carregarBase(){
+        async function carregarBase(){
+      statusBaseEl.textContent = "Carregando base...";
       try{
-        dataJogoIso = hojeIso();
-        infoDataJogoEl.textContent = `DIA DO JOGO: ${dataJogoIso.split("-").reverse().join("/")}`;
-        msgSalvarEl.textContent = "";
-
-        statusJogadoresEl.textContent = "Carregando jogadores...";
-        tbodyJogadoresTodos.innerHTML = "";
-        tbodyPresentesHoje.innerHTML = "";
-        presentesHoje = [];
-        escala1 = { amarelo: [], azul: [] };
-        escala2 = { amarelo: [], azul: [] };
-
-        // jogadores
-        const { data: jogs, error: errJ } = await supabase
+        // 1) Jogadores: no banco o campo ATIVO pode ser "SIM" (texto) ou boolean.
+        const { data: jogadoresRaw, error: errJ } = await supabase
           .from("jogadores")
           .select("id, apelido, pontos, ativo")
-          .eq("ativo", true)
           .order("apelido", { ascending: true });
 
-        if (errJ){
-          console.error(errJ);
-          statusJogadoresEl.textContent = "ERRO AO CARREGAR JOGADORES. (abra F12 > Console)";
-          return;
-        }
+        if(errJ) throw errJ;
 
-        todosJogadores = jogs || [];
-        mapaJogadores = {};
-        todosJogadores.forEach(j => { mapaJogadores[j.apelido] = j; });
-
-        // mensalidades (carrega do mês atual e meses anteriores do mesmo ano)
-        const hoje = new Date();
-        const ano = hoje.getFullYear();
-        const mes = hoje.getMonth()+1;
-
-        const { data: mens, error: errMens } = await supabase
-          .from("mensalidades")
-          .select("apelido, ano, mes, pago, status, data_pagamento")
-          .lte("ano", ano);
-
-        if (errMens){
-          console.warn("mensalidades:", errMens);
-        }
-
-        mensPorApelido = {};
-        (mens || []).forEach(m=>{
-          if(!mensPorApelido[m.apelido]) mensPorApelido[m.apelido] = [];
-          mensPorApelido[m.apelido].push({
-            ano: Number(m.ano), mes: Number(m.mes),
-            pago: !!m.pago,
-            status: (m.status||"").toUpperCase(),
-            data_pagamento: m.data_pagamento || null
-          });
+        const jogadoresAtivos = (jogadoresRaw || []).filter(j => {
+          const a = j.ativo;
+          return (a === true) || (a === 1) || (a === "SIM") || (a === "sim") || (a === "S") || (a === "s");
         });
 
-        renderJogadoresTodos();
-        renderPresentes();
-        renderEscalacoes();
+        todosJogadores = jogadoresAtivos.map(j => ({
+          id: j.id,
+          apelido: (j.apelido || "").trim(),
+          pontos: Number(j.pontos || 0),
+        }));
 
-        statusJogadoresEl.textContent = "Jogadores carregados.";
-        statusTotalJogadoresEl.textContent = `TOTAL DE JOGADORES: ${todosJogadores.length}`;
-        atualizarInfoPresentes();
-      }catch(e){
-        console.error(e);
-        statusJogadoresEl.textContent = "ERRO NO PAINEL. (abra F12 > Console)";
+        // 2) Mensalidade (para regra de inadimplente) - SEM coluna status.
+        //    Se não existir mensalidade do mês/ano e já passou do prazo, considera inadimplente.
+        mensalidadesMap = {};
+        try{
+          const d = new Date(dia);
+          const ano = d.getFullYear();
+          const mes = d.getMonth() + 1;
+
+          const { data: mens, error: errM } = await supabase
+            .from("mensalidades")
+            .select("apelido, ano, mes, pago, data_pagamento")
+            .eq("ano", ano).eq("mes", mes);
+
+          if(errM) throw errM;
+
+          (mens || []).forEach(r=>{
+            const ap = (r.apelido || "").trim();
+            mensalidadesMap[ap] = !!(r.pago || r.data_pagamento);
+          });
+        }catch(e){
+          console.warn("Aviso: não consegui ler mensalidades (seguindo sem inadimplência).", e);
+          mensalidadesMap = {};
+        }
+
+        // 3) Faltas (histórico): usa presencas.obs = "F" (sem coluna status).
+        faltasMap = {};
+        try{
+          const d = new Date(dia);
+          const ano = d.getFullYear();
+
+          const { data: faltas, error: errF } = await supabase
+            .from("presencas")
+            .select("apelido, obs, data_jogo")
+            .gte("data_jogo", `${ano}-01-01`)
+            .lte("data_jogo", `${ano}-12-31`);
+
+          if(errF) throw errF;
+
+          (faltas || []).forEach(r=>{
+            const ap = (r.apelido || "").trim();
+            const obs = (r.obs || "").trim();
+            if(obs === "F"){
+              faltasMap[ap] = (faltasMap[ap] || 0) + 1;
+            }
+          });
+        }catch(e){
+          console.warn("Aviso: não consegui calcular faltas (seguindo com 0).", e);
+          faltasMap = {};
+        }
+
+        // Render: jogadores e presença do dia
+        renderJogadoresTodos();
+
+        await carregarPresencaHoje();
+
+        statusBaseEl.textContent = "Base carregada.";
+      }catch(err){
+        console.error(err);
+        statusBaseEl.textContent = "ERRO ao carregar base. Ver F12 > Console.";
+        alert("Erro ao carregar base (ver Console).");
       }
     }
 
@@ -866,21 +883,21 @@ function getDataJogoISO() {
         .limit(1);
 
       if (error) { console.warn("Erro domingo anterior:", error.message); return null; }
-      return (data && data[0] && data[0].status) ? data[0].status : null;
+      return (data && data[0] && data[0].obs) ? data[0].obs : null;
     }
 
     async function enrichMetricas(apelidos, dataISO){
       const ano = Number((dataISO||"").slice(0,4)) || (new Date()).getFullYear();
       const out = {};
       for (const ap of apelidos){
-        const [faltasAno, obsPrev] = await Promise.all([
+        const [faltasAno, statusPrev] = await Promise.all([
           getFaltasAno(ap, ano),
           getStatusDomingoAnterior(ap, dataISO),
         ]);
         out[ap] = {
           faltasAno,
-          faltouDomingoAnterior: obsPrev === "F",
-          jogouDoisDomingoAnterior: obsPrev === "1-2"
+          faltouDomingoAnterior: statusPrev === "F",
+          jogouDoisDomingoAnterior: statusPrev === "1-2"
         };
       }
       return out;
@@ -1227,35 +1244,63 @@ function calcularTotalPontos(lista){
       setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
     }
 
-    function baixarPresenca() {
-        if (!dataJogo) return alert("Selecione a data do jogo.");
-        (async ()=>{
-          const { data: pres, error } = await supabase.from("presencas")
-            .select("id, ordem, apelido, hora, obs, nao_vai_jogar")
-            .eq("data_jogo", dataJogo)
-            .order("ordem", { ascending: true });
+        function baixarPresenca(){
+      // Baixa exatamente o que está no painel (colunas e ordem).
+      try{
+        const dataBR = isoToBr(dia);
+        const titulo = `Presença (${dataBR})`;
 
-          if (error) return alert("Erro ao buscar presença: " + error.message);
+        // Pega os dados da memória (presencasHoje) para garantir lista completa.
+        const cols = ["ID","ORDEM","APELIDO","HORA","OBS","NÃO VAI JOGAR"];
+        const rows = (presencasHoje || []).map(p => ([
+          p.id ?? "",
+          p.ordem ?? "",
+          (p.apelido || ""),
+          (p.hora || ""),
+          (p.obs || ""),
+          p.nao_vai_jogar ? "SIM" : ""
+        ]));
 
-          const header = ["ID","ORDEM","APELIDO","HORA","OBS","NÃO VAI JOGAR"];
-          const rows = (pres||[]).map(r => ([
-            r.id ?? "",
-            r.ordem ?? "",
-            r.apelido ?? "",
-            r.hora ?? "",
-            (r.obs ?? ""),
-            (r.nao_vai_jogar ? "SIM" : "")
-          ]));
+        const htmlDoc = `
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<title>${titulo}</title>
+<style>
+  body{font-family:Arial, sans-serif; padding:18px;}
+  h2{margin:0 0 12px 0;}
+  table{border-collapse:collapse; width:100%;}
+  th,td{border:1px solid #999; padding:6px 8px; font-size:12px;}
+  th{background:#f2f2f2; text-align:left;}
+</style>
+</head>
+<body>
+<h2>${titulo}</h2>
+<table>
+  <thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead>
+  <tbody>
+    ${rows.map(r=>`<tr>${r.map(v=>`<td>${String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}</td>`).join("")}</tr>`).join("")}
+  </tbody>
+</table>
+</body>
+</html>`;
 
-          const csv = [header, ...rows]
-            .map(line => line.map(v => `"${String(v).replace(/"/g,'""')}"`).join(";"))
-            .join("
-");
-
-          downloadTextFile(csv, `presenca_${dataJogo}.csv`, "text/csv;charset=utf-8");
-        })();
+        const blob = new Blob([htmlDoc], {type:"text/html;charset=utf-8"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `presenca_${dia}.html`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+      }catch(e){
+        console.error(e);
+        alert("Erro ao baixar presença.");
       }
+    }
 
+    
 
     function printEscalacao(tempo){
       const dia = getDataJogoISO();
@@ -1374,14 +1419,18 @@ function calcularTotalPontos(lista){
           await supabase.from("arquivos_app").delete()
             .eq("painel","presenca").eq("periodo","semanal").eq("data_ref", dia);
 
+                    const presTableHtml = document.getElementById("tblPresencaHoje")?.outerHTML || "";
+          const presConteudo = { table_html: presTableHtml };
+
           const { error: errArqPres } = await supabase.from("arquivos_app").insert([{
             painel: "presenca",
             periodo: "semanal",
             data_ref: dia,
             mes_ref,
             ano_ref,
+            referencia: isoToBr(dia),
             titulo: `Presença (${isoToBr(dia)})`,
-            conteudo: presPayload
+            conteudo: presConteudo
           }]);
           if(errArqPres) throw errArqPres;
 
@@ -1395,14 +1444,21 @@ function calcularTotalPontos(lista){
           await supabase.from("arquivos_app").delete()
             .eq("painel","escalacao").eq("periodo","semanal").eq("data_ref", dia);
 
+                    const escAreaHtml = document.getElementById("areaEscalacao")?.outerHTML
+            || document.getElementById("painelEscalacao")?.outerHTML
+            || "";
+
+          const escConteudo = { table_html: escAreaHtml };
+
           const { error: errArqEsc } = await supabase.from("arquivos_app").insert([{
             painel: "escalacao",
             periodo: "semanal",
             data_ref: dia,
             mes_ref,
             ano_ref,
+            referencia: isoToBr(dia),
             titulo: `Escalação (${isoToBr(dia)})`,
-            conteudo: escPayload
+            conteudo: escConteudo
           }]);
           if(errArqEsc) throw errArqEsc;
 
