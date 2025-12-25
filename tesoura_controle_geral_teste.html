@@ -42,7 +42,6 @@
     .sticky-faltas { position: sticky; left: 140px; z-index: 3; background: #020617; }
     thead .sticky-atleta, thead .sticky-faltas { z-index: 5; background: #f97316; color: #ffffff; }
 
-    /* LINHA BRANCA VERTICAL DOS 2 LADOS DO TOTAL FALTAS */
     .sticky-faltas{
       border-left: 2px solid rgba(255,255,255,0.85) !important;
       border-right: 2px solid rgba(255,255,255,0.85) !important;
@@ -70,9 +69,9 @@
     <div class="status" id="status">Atualizando automaticamente...</div>
   </div>
 
-  <div class="painel" id="wrapTabela" style="overflow-x:auto; max-width:100%;">
+  <div class="painel" style="overflow-x:auto; max-width:100%;">
     <h2>JOGADORES X DOMINGOS</h2>
-    <table id="tblControle">
+    <table>
       <thead id="theadControle"></thead>
       <tbody id="tbodyControle"></tbody>
     </table>
@@ -127,7 +126,6 @@
     return arr;
   }
 
-  // SALVA NO BANCO (MESMO VAZIO) + COM CABEÇALHO COMPLETO
   async function arquivarControleGeralVigente(conteudo){
     try{
       const painel = "controle geral";
@@ -169,30 +167,29 @@
       theadControle.innerHTML = "";
       tbodyControle.innerHTML = "";
 
-      const mesesOrdem = buildUltimos3Meses(); // <<<<< CORRIGIDO
+      const mesesOrdem = buildUltimos3Meses();
       const domingosMes = mesesOrdem.map(mm => getDomingosMes(mm.ano, mm.mes));
 
-      // ===== CABEÇALHO (2 LINHAS) =====
+      // ===== CABEÇALHO (2 LINHAS) NA TELA =====
       const trMeses = document.createElement("tr");
       const trDias  = document.createElement("tr");
 
-      const thAtletaSpan = document.createElement("th");
-      thAtletaSpan.textContent = "ATLETA";
-      thAtletaSpan.rowSpan = 2;
-      thAtletaSpan.className = "col-atleta sticky-atleta";
-      trMeses.appendChild(thAtletaSpan);
+      const thAtleta = document.createElement("th");
+      thAtleta.textContent = "ATLETA";
+      thAtleta.rowSpan = 2;
+      thAtleta.className = "col-atleta sticky-atleta";
+      trMeses.appendChild(thAtleta);
 
       const thTotalTop = document.createElement("th");
       thTotalTop.textContent = "TOTAL";
       thTotalTop.className = "col-faltas sticky-faltas";
       trMeses.appendChild(thTotalTop);
 
-      const thFaltasBottom = document.createElement("th");
-      thFaltasBottom.textContent = "FALTAS";
-      thFaltasBottom.className = "col-faltas sticky-faltas";
-      trDias.appendChild(thFaltasBottom);
+      const thFaltas = document.createElement("th");
+      thFaltas.textContent = "FALTAS";
+      thFaltas.className = "col-faltas sticky-faltas";
+      trDias.appendChild(thFaltas);
 
-      // mês + domingos
       mesesOrdem.forEach((mm, idx) => {
         const listaDom = domingosMes[idx] || [];
         const thMes = document.createElement("th");
@@ -204,7 +201,6 @@
         listaDom.forEach(d => {
           const thDia = document.createElement("th");
           thDia.textContent = d.rotulo;
-          thDia.dataset.iso = d.iso;
           trDias.appendChild(thDia);
         });
       });
@@ -212,7 +208,7 @@
       theadControle.appendChild(trMeses);
       theadControle.appendChild(trDias);
 
-      // ===== PERÍODO DE BUSCA (3 MESES) =====
+      // ===== PERÍODO (3 MESES) =====
       const ini = mesesOrdem[0];
       const fim = mesesOrdem[2];
       const iniIso = `${ini.ano}-${String(ini.mes).padStart(2, "0")}-01`;
@@ -222,7 +218,6 @@
         .from("jogadores")
         .select("apelido")
         .order("apelido", { ascending: true });
-
       if (errJog) throw errJog;
 
       const { data: pres, error: errPres } = await sb
@@ -230,7 +225,6 @@
         .select("data_jogo, apelido, presenca, faltoso")
         .gte("data_jogo", iniIso)
         .lte("data_jogo", fimIso);
-
       if (errPres) throw errPres;
 
       const { data: esc, error: errEsc } = await sb
@@ -238,7 +232,6 @@
         .select("data_jogo, apelido, tempo")
         .gte("data_jogo", iniIso)
         .lte("data_jogo", fimIso);
-
       if (errEsc) throw errEsc;
 
       const mapaPres = {};
@@ -251,23 +244,52 @@
         if (e.tempo !== null && e.tempo !== undefined && e.tempo !== "") mapaEsc[key].add(e.tempo);
       });
 
-      // ===== SNAPSHOT (para download igual: inclui meses/ano no cabeçalho) =====
-      const head1 = ["ATLETA", "TOTAL"];
-      const head2 = ["", "FALTAS"];
+      // ===== SNAPSHOT PARA BANCO: COM MESCLAS (PDF/EXCEL) =====
+      // headerRows (AOA) para CSV/Excel + merges + pdfHead (colSpan/rowSpan)
+      const headRow1 = ["ATLETA", "TOTAL"];
+      const headRow2 = ["", "FALTAS"];
 
+      // merges (A1:A2) para ATLETA
+      const merges = [{ s:{r:0,c:0}, e:{r:1,c:0} }];
+
+      // pdfHead com mesclas (para ficar IGUAL ao painel)
+      const pdfRow1 = [
+        { content: "ATLETA", rowSpan: 2 },
+        { content: "TOTAL" }
+      ];
+      const pdfRow2 = [
+        { content: "FALTAS" }
+      ];
+
+      let colCursor = 2; // coluna C (0=A,1=B,2=C)
       mesesOrdem.forEach((mm, idx) => {
         const listaDom = domingosMes[idx] || [];
         const nomeMes = nomesMes[mm.mes] || `MÊS ${mm.mes}`;
         const labelMes = `MÊS ${String(mm.mes).padStart(2,"0")} - ${nomeMes} - ${mm.ano}`;
-        listaDom.forEach(d => {
-          head1.push(labelMes);
-          head2.push(d.rotulo);
-        });
+
+        const span = Math.max(1, listaDom.length);
+
+        // AOA: coloca o label no primeiro, e blanks nos outros pra mesclar
+        headRow1.push(labelMes);
+        for(let k=1;k<span;k++) headRow1.push("");
+
+        // merges do mês (linha 1)
+        merges.push({ s:{r:0,c:colCursor}, e:{r:0,c:colCursor+span-1} });
+
+        // PDF: célula com colSpan
+        pdfRow1.push({ content: labelMes, colSpan: span });
+        // precisa preencher placeholders pra colSpan (autoTable exige)
+        for(let k=1;k<span;k++) pdfRow1.push({ content: "" });
+
+        // linha 2: domingos
+        listaDom.forEach(d => headRow2.push(d.rotulo));
+        listaDom.forEach(d => pdfRow2.push({ content: d.rotulo }));
+
+        colCursor += span;
       });
 
+      // linhas
       const rowsSnap = [];
-
-      // ===== LINHAS =====
       (jogadores || []).forEach(j => {
         const apelido = j.apelido;
         const tr = document.createElement("tr");
@@ -323,20 +345,22 @@
 
       statusEl.textContent = "ATUALIZADO AUTOMATICAMENTE.";
 
-      // salva com cabeçalho completo (2 linhas)
       await arquivarControleGeralVigente({
-        headerRows: [head1, head2],
-        columns: head2,   // compatibilidade
+        headerRows: [headRow1, headRow2],
+        xlsxMerges: merges,
+        pdfHead: [pdfRow1, pdfRow2],
+        columns: headRow2,
         rows: rowsSnap
       });
 
     } catch (e) {
       console.error(e);
       statusEl.textContent = "ERRO (ver Console).";
-      // salva vazio mesmo assim
       try{
         await arquivarControleGeralVigente({
           headerRows: [["ATLETA","TOTAL"],["","FALTAS"]],
+          xlsxMerges: [{s:{r:0,c:0},e:{r:1,c:0}}],
+          pdfHead: [[{content:"ATLETA",rowSpan:2},{content:"TOTAL"}],[{content:"FALTAS"}]],
           columns: ["ATLETA","TOTAL FALTAS"],
           rows: []
         });
