@@ -10,8 +10,10 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
-<script src="app/js/config.js"></script>
-  
+
+  <!-- config do app (fallback do Supabase) -->
+  <script src="app/js/config.js"></script>
+
   <style>
     :root{
       --bg:#081427;
@@ -130,11 +132,35 @@
 
 <script>
 /* =========================================================
-   SUPABASE (via postMessage do index / login)
+   SUPABASE
+   - recebe via postMessage do index / login
+   - fallback: usa app/js/config.js
    ========================================================= */
 let SUPABASE_URL = null;
 let SUPABASE_ANON_KEY = null;
 let supabaseClient = null;
+
+function initSupabase(url, key){
+  try{
+    SUPABASE_URL = url;
+    SUPABASE_ANON_KEY = key;
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    clearMsg();
+  }catch(e){
+    showMsg("Erro ao iniciar Supabase: " + e.message, true);
+  }
+}
+
+function tryFallbackSupabase(){
+  try{
+    const cfg = window.TESOURA_CONFIG || {};
+    const url = cfg.SUPABASE_URL;
+    const key = cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY;
+    if(url && key && !supabaseClient){
+      initSupabase(url, key);
+    }
+  }catch(_){ }
+}
 
 function showMsg(text, isErr=false){
   const el = document.getElementById("msg");
@@ -150,8 +176,9 @@ function clearMsg(){
 }
 
 /* =========================================================
-   EXPORTAÇÃO (colunas por painel)
-   - aqui está o “conserto” do PDF “diferente do original”
+   EXPORTAÇÃO (templates antigos)
+   - IMPORTANTE: se o conteúdo já vier como "snapshot" (columns/rows/headerRows),
+     o sistema NÃO altera (mantém idêntico ao painel)
    ========================================================= */
 const EXPORT_TEMPLATES = {
   "jogadores": {
@@ -214,15 +241,25 @@ function normalizeConteudo(conteudo, painel){
       }
     }
   }catch(e){ /* mantém como está */ }
-// Se já veio como snapshot (columns + rows), exporta EXATAMENTE como foi salvo.
-if(c && typeof c === "object" && Array.isArray(c.columns) && Array.isArray(c.rows)){
-  return { columns: c.columns, rows: c.rows };
-}
-  // Template por painel (para PDF/CSV/Excel ficarem iguais ao painel)
+
+  // 1) SNAPSHOT: mantém exatamente como foi salvo
+  if(c && typeof c === "object"){
+    if(Array.isArray(c.headerRows) && Array.isArray(c.rows)){
+      const headerRows = c.headerRows;
+      const columns = Array.isArray(c.columns) ? c.columns : (headerRows[headerRows.length - 1] || []);
+      const rows = c.rows;
+      return { headerRows, columns, rows };
+    }
+    if(Array.isArray(c.columns) && Array.isArray(c.rows)){
+      return { columns: c.columns, rows: c.rows };
+    }
+  }
+
+  // 2) Template por painel (para conteúdos antigos)
   const templated = applyExportTemplate(painel, c);
   if(templated) return templated;
 
-  // fallback genérico (exporta tudo)
+  // 3) fallback genérico
   if(Array.isArray(c)){
     const first = c[0] || {};
     const columns = Object.keys(first);
@@ -251,9 +288,10 @@ function safeFilename(s){
     .replace(/^_+|_+$/g,"");
 }
 
-function downloadCSV(filename, columns, rows){
+function downloadCSV(filename, columns, rows, headerRows=null){
   const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const csv = [columns.map(esc).join(","), ...rows.map(r => r.map(esc).join(","))].join("\n");
+  const all = headerRows ? [...headerRows, ...rows] : [columns, ...rows];
+  const csv = all.map(r => r.map(esc).join(",")).join("\n");
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -262,15 +300,15 @@ function downloadCSV(filename, columns, rows){
   URL.revokeObjectURL(a.href);
 }
 
-function downloadXLSX(filename, columns, rows){
-  const data = [columns, ...rows];
+function downloadXLSX(filename, columns, rows, headerRows=null){
+  const data = headerRows ? [...headerRows, ...rows] : [columns, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "dados");
   XLSX.writeFile(wb, filename);
 }
 
-function downloadPDF(filename, title, columns, rows){
+function downloadPDF(filename, title, columns, rows, headerRows=null){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
 
@@ -278,9 +316,11 @@ function downloadPDF(filename, title, columns, rows){
   doc.setFontSize(12);
   doc.text(title, 40, 40);
 
+  const head = headerRows ? headerRows : [columns];
+
   doc.autoTable({
     startY: 60,
-    head: [columns],
+    head,
     body: rows,
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 3, lineWidth: 0.4, lineColor: [220,220,220] },
@@ -317,7 +357,6 @@ function render(){
     `;
     tr.style.cursor = "pointer";
     tr.addEventListener("click", (e) => {
-      // evita conflito com botão excluir
       if(e.target && e.target.getAttribute && e.target.getAttribute("data-del") !== null) return;
       selecionado = item;
       setDownloadEnabled(true);
@@ -326,7 +365,6 @@ function render(){
     tb.appendChild(tr);
   });
 
-  // excluir (diretoria)
   tb.querySelectorAll("button[data-del]").forEach(btn=>{
     btn.addEventListener("click", async (e)=>{
       e.stopPropagation();
@@ -334,6 +372,11 @@ function render(){
       const item = itens[i];
       if(!item) return;
       if(!confirm("Excluir este arquivo salvo?")) return;
+
+      if(!supabaseClient){
+        showMsg("Supabase não inicializado (volte para o login).", true);
+        return;
+      }
 
       try{
         const { error } = await supabaseClient
@@ -361,6 +404,8 @@ function setDownloadEnabled(v){
 
 async function buscar(){
   clearMsg();
+  tryFallbackSupabase();
+
   if(!supabaseClient){
     showMsg("Supabase não inicializado (volte para o login).", true);
     return;
@@ -377,7 +422,6 @@ async function buscar(){
     .eq("periodo", periodo)
     .order("criado_em", { ascending: false });
 
-  // só filtra referência se foi digitado
   if(ref) q = q.eq("referencia", ref);
 
   const { data, error } = await q;
@@ -416,22 +460,24 @@ function baixar(tipo){
     showMsg("Selecione um arquivo salvo na lista.", true);
     return;
   }
-  const item = selecionado;
 
+  const item = selecionado;
   const norm = normalizeConteudo(item.conteudo, item.painel);
+
   const columns = norm.columns || ["dados"];
   const rows = norm.rows || [];
+  const headerRows = Array.isArray(norm.headerRows) ? norm.headerRows : null;
 
   const stamp = new Date().toISOString().replace(/[:\-]/g,"").slice(0,15);
   const base = `${safeFilename(item.painel)}_${safeFilename(item.periodo)}_${stamp}`;
   const title = item.titulo || "Arquivo salvo";
 
   if(tipo === "pdf"){
-    downloadPDF(`${base}.pdf`, title, columns, rows);
+    downloadPDF(`${base}.pdf`, title, columns, rows, headerRows);
   }else if(tipo === "csv"){
-    downloadCSV(`${base}.csv`, columns, rows);
+    downloadCSV(`${base}.csv`, columns, rows, headerRows);
   }else{
-    downloadXLSX(`${base}.xlsx`, columns, rows);
+    downloadXLSX(`${base}.xlsx`, columns, rows, headerRows);
   }
 }
 
@@ -441,36 +487,17 @@ function baixar(tipo){
 window.addEventListener("message", (ev)=>{
   const msg = ev.data || {};
   if(msg.type === "TESOURA_SUPABASE_CONFIG"){
-    SUPABASE_URL = msg.url;
-    SUPABASE_ANON_KEY = msg.key;
-    try{
-      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      clearMsg();
-    }catch(e){
-      showMsg("Erro ao iniciar Supabase: " + e.message, true);
-    }
+    initSupabase(msg.url, msg.key);
   }
 });
 
-// fallback: inicia pelo config.js se não vier postMessage
-try{
-  const cfg = window.TESOURA_CONFIG || {};
-  if(!supabaseClient && cfg.SUPABASE_URL && cfg.SUPABASE_KEY){
-    SUPABASE_URL = cfg.SUPABASE_URL;
-    SUPABASE_ANON_KEY = cfg.SUPABASE_KEY;
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    clearMsg();
-  }
-}catch(e){
-  showMsg("Erro ao iniciar Supabase (fallback): " + e.message, true);
-}
-  
 document.getElementById("btnBuscar").addEventListener("click", buscar);
 document.getElementById("btnLimpar").addEventListener("click", limpar);
 document.getElementById("btnPDF").addEventListener("click", ()=>baixar("pdf"));
 document.getElementById("btnCSV").addEventListener("click", ()=>baixar("csv"));
 document.getElementById("btnXLSX").addEventListener("click", ()=>baixar("xlsx"));
 
+tryFallbackSupabase();
 render();
 </script>
 </body>
