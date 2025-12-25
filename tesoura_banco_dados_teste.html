@@ -6,9 +6,6 @@
   <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
   <script src="app/js/config.js"></script>
 
   <style>
@@ -104,7 +101,7 @@
       <div class="downloadBar">
         <button class="btn btnBlue" id="btnPDF" disabled>BAIXAR PDF</button>
         <button class="btn btnBlue" id="btnCSV" disabled>BAIXAR CSV</button>
-        <button class="btn btnBlue" id="btnXLSX" disabled>BAIXAR EXCEL</button>
+        <button class="btn btnBlue" id="btnXLS" disabled>BAIXAR EXCEL</button>
       </div>
 
       <div class="hint">Diretoria pode excluir arquivo salvo (quando permitido).</div>
@@ -150,7 +147,7 @@ function safeFilename(s){
     .replace(/^_+|_+$/g,"");
 }
 
-function normalizeConteudo(conteudo, painel){
+function normalizeConteudo(conteudo){
   let c = conteudo;
   try{
     if(typeof c === "string"){
@@ -161,17 +158,23 @@ function normalizeConteudo(conteudo, painel){
     }
   }catch(_){}
 
-  if(c && typeof c === "object"){
-    // snapshot moderno
-    if(Array.isArray(c.rows) && (Array.isArray(c.headerRows) || Array.isArray(c.columns))){
-      return {
-        headerRows: Array.isArray(c.headerRows) ? c.headerRows : null,
-        columns: Array.isArray(c.columns) ? c.columns : (Array.isArray(c.headerRows) ? (c.headerRows[c.headerRows.length-1]||[]) : []),
-        rows: c.rows,
-        xlsxMerges: Array.isArray(c.xlsxMerges) ? c.xlsxMerges : null,
-        pdfHead: Array.isArray(c.pdfHead) ? c.pdfHead : null
-      };
-    }
+  // ✅ Prioridade: HTML snapshot (fica idêntico ao painel)
+  if(c && typeof c === "object" && (c.table_html || c.html_table)){
+    return {
+      title: c.title || "",
+      table_html: c.table_html || c.html_table,
+      table_css: c.table_css || ""
+    };
+  }
+
+  // snapshot normal (rows/columns)
+  if(c && typeof c === "object" && Array.isArray(c.rows)){
+    return {
+      title: c.title || "",
+      headerRows: Array.isArray(c.headerRows) ? c.headerRows : null,
+      columns: Array.isArray(c.columns) ? c.columns : (Array.isArray(c.headerRows) ? (c.headerRows[c.headerRows.length-1]||[]) : []),
+      rows: c.rows
+    };
   }
 
   // fallback genérico
@@ -179,69 +182,126 @@ function normalizeConteudo(conteudo, painel){
     const first = c[0] || {};
     const columns = Object.keys(first);
     const rows = c.map(obj => columns.map(k => obj?.[k] ?? ""));
-    return { columns, rows, headerRows:null, xlsxMerges:null, pdfHead:null };
+    return { columns, rows, headerRows:null };
   }
   if(typeof c === "object" && c){
     const columns = Object.keys(c);
     const rows = [columns.map(k => c[k] ?? "")];
-    return { columns, rows, headerRows:null, xlsxMerges:null, pdfHead:null };
+    return { columns, rows, headerRows:null };
   }
-  return { columns:["conteúdo"], rows:[[String(c ?? "")]], headerRows:null, xlsxMerges:null, pdfHead:null };
+  return { columns:["conteúdo"], rows:[[String(c ?? "")]], headerRows:null };
 }
 
-function downloadCSV(filename, columns, rows, headerRows=null){
-  const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const all = headerRows ? [...headerRows, ...rows] : [columns, ...rows];
-  const csv = all.map(r => r.map(esc).join(",")).join("\n");
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+function buildTableHTMLFromSnapshot(norm){
+  // se já veio pronto, usa
+  if(norm.table_html) return norm.table_html;
+
+  const headerRows = Array.isArray(norm.headerRows) ? norm.headerRows : null;
+  const columns = Array.isArray(norm.columns) ? norm.columns : [];
+  const rows = Array.isArray(norm.rows) ? norm.rows : [];
+
+  let thead = "";
+  if(headerRows && headerRows.length){
+    thead = "<thead>" + headerRows.map(r=>{
+      return "<tr>" + r.map(v=>`<th>${String(v ?? "").toUpperCase()}</th>`).join("") + "</tr>";
+    }).join("") + "</thead>";
+  }else{
+    thead = "<thead><tr>" + columns.map(c=>`<th>${String(c ?? "").toUpperCase()}</th>`).join("") + "</tr></thead>";
+  }
+
+  const tbody = "<tbody>" + rows.map(r=>{
+    return "<tr>" + (r||[]).map(v=>`<td>${String(v ?? "").toUpperCase()}</td>`).join("") + "</tr>";
+  }).join("") + "</tbody>";
+
+  return `<table>${thead}${tbody}</table>`;
+}
+
+function downloadBlob(filename, mime, content){
+  const blob = new Blob([content], { type: mime });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 800);
 }
 
-function downloadXLSX(filename, columns, rows, headerRows=null, merges=null){
-  const data = headerRows ? [...headerRows, ...rows] : [columns, ...rows];
-  const ws = XLSX.utils.aoa_to_sheet(data);
-
-  if(Array.isArray(merges) && merges.length){
-    ws["!merges"] = merges;
-  }
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "dados");
-
-  // Blob (mais compatível que writeFile)
-  const out = XLSX.write(wb, { bookType:"xlsx", type:"array" });
-  const blob = new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function downloadPDF(filename, title, columns, rows, headerRows=null, pdfHead=null){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(12);
-  doc.text(title, 40, 40);
-
-  const head = pdfHead ? pdfHead : (headerRows ? headerRows : [columns]);
-
-  doc.autoTable({
-    startY: 60,
-    head,
-    body: rows,
-    theme: "grid",
-    styles: { fontSize: 8, cellPadding: 3, lineWidth: 0.4, lineColor: [220,220,220] },
-    headStyles: { fillColor: [255, 127, 39], textColor: [255,255,255], fontStyle: "bold" }
+function downloadCSV(filename, tableHtml){
+  // extrai texto do table HTML -> CSV simples
+  const div = document.createElement("div");
+  div.innerHTML = tableHtml;
+  const table = div.querySelector("table");
+  const lines = [];
+  (table.querySelectorAll("tr") || []).forEach(tr=>{
+    const cells = Array.from(tr.querySelectorAll("th,td")).map(td=>{
+      const v = (td.textContent || "").replace(/"/g,'""');
+      return `"${v}"`;
+    });
+    lines.push(cells.join(","));
   });
+  downloadBlob(filename, "text/csv;charset=utf-8", lines.join("\n"));
+}
 
-  doc.save(filename);
+function downloadExcelXLS(filename, title, tableHtml, css){
+  // ✅ Excel sem biblioteca: HTML workbook (.xls) — funciona em qualquer painel
+  const xls =
+`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body{font-family:Arial,Helvetica,sans-serif}
+  h1{font-size:14px;margin:0 0 10px 0}
+  table{border-collapse:collapse;font-size:12px}
+  th,td{border:1px solid #cfcfcf;padding:6px 8px;white-space:nowrap;text-align:center}
+  th{background:#ff7f27;color:#fff;font-weight:700}
+  ${css || ""}
+</style>
+</head>
+<body>
+<h1>${(title||"").toUpperCase()}</h1>
+${tableHtml}
+</body>
+</html>`;
+  downloadBlob(filename, "application/vnd.ms-excel;charset=utf-8", xls);
+}
+
+function openPrintWindow(title, tableHtml, css){
+  // ✅ PDF idêntico: abre HTML e imprime (Salvar como PDF)
+  const html =
+`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${title || "TESOURA"}</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;margin:18px}
+  h1{font-size:14px;margin:0 0 10px 0}
+  table{border-collapse:collapse;font-size:12px}
+  th,td{border:1px solid #cfcfcf;padding:6px 8px;white-space:nowrap;text-align:center}
+  th{background:#ff7f27;color:#fff;font-weight:800;text-transform:uppercase}
+  td{text-transform:uppercase}
+  ${css || ""}
+</style>
+</head>
+<body>
+<h1>${(title||"").toUpperCase()}</h1>
+${tableHtml}
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if(!w){
+    showMsg("Pop-up bloqueado. Libere pop-up e tente novamente.", true);
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+
+  // chama o print dentro do clique do usuário (evita bloqueio)
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 250);
 }
 
 let itens = [];
@@ -250,7 +310,7 @@ let selecionado = null;
 function setDownloadEnabled(v){
   document.getElementById("btnPDF").disabled = !v;
   document.getElementById("btnCSV").disabled = !v;
-  document.getElementById("btnXLSX").disabled = !v;
+  document.getElementById("btnXLS").disabled = !v;
 }
 
 function render(){
@@ -365,25 +425,26 @@ function baixar(tipo){
   }
 
   const item = selecionado;
-  const norm = normalizeConteudo(item.conteudo, item.painel);
-
-  const columns = norm.columns || ["dados"];
-  const rows = norm.rows || [];
-  const headerRows = Array.isArray(norm.headerRows) ? norm.headerRows : null;
-  const merges = Array.isArray(norm.xlsxMerges) ? norm.xlsxMerges : null;
-  const pdfHead = Array.isArray(norm.pdfHead) ? norm.pdfHead : null;
+  const norm = normalizeConteudo(item.conteudo);
 
   const stamp = new Date().toISOString().replace(/[:\-]/g,"").slice(0,15);
   const base = `${safeFilename(item.painel)}_${safeFilename(item.periodo)}_${stamp}`;
   const title = item.titulo || "Arquivo salvo";
 
+  const tableHtml = buildTableHTMLFromSnapshot(norm);
+  const css = norm.table_css || "";
+
   if(tipo === "pdf"){
-    downloadPDF(`${base}.pdf`, title, columns, rows, headerRows, pdfHead);
-  }else if(tipo === "csv"){
-    downloadCSV(`${base}.csv`, columns, rows, headerRows);
-  }else{
-    downloadXLSX(`${base}.xlsx`, columns, rows, headerRows, merges);
+    // ✅ PDF idêntico (Salvar como PDF)
+    openPrintWindow(title, tableHtml, css);
+    return;
   }
+  if(tipo === "csv"){
+    downloadCSV(`${base}.csv`, tableHtml);
+    return;
+  }
+  // Excel
+  downloadExcelXLS(`${base}.xls`, title, tableHtml, css);
 }
 
 window.addEventListener("message", (ev)=>{
@@ -397,7 +458,7 @@ document.getElementById("btnBuscar").addEventListener("click", buscar);
 document.getElementById("btnLimpar").addEventListener("click", limpar);
 document.getElementById("btnPDF").addEventListener("click", ()=>baixar("pdf"));
 document.getElementById("btnCSV").addEventListener("click", ()=>baixar("csv"));
-document.getElementById("btnXLSX").addEventListener("click", ()=>baixar("xlsx"));
+document.getElementById("btnXLS").addEventListener("click", ()=>baixar("xls"));
 
 tryFallbackSupabase();
 render();
