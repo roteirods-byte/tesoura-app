@@ -1229,16 +1229,22 @@ function calcularTotalPontos(lista){
 
     function baixarPresenca(){
       const dia = getDataJogoISO();
+
       // Exporta somente a lista de presença (quem chegou)
-      const rows = (presentesHoje||[]).map((p,idx)=>({
-        ordem: idx+1,
-        id: p.id ?? "",
-        apelido: (p.apelido||"").toUpperCase(),
-        hora: p.horaChegada || "",
-        nao_vai_jogar: p.naoVaiJogar ? "SIM" : "",
-        obs: (p.obs||""),
-        pago: isPagoHoje(p.apelido) ? "P (verde)" : "P (vermelho)"
-      }));
+      const rows = (presentesHoje||[]).map((p,idx)=> {
+        const baseObs = String(p.obs||"").trim();
+        const pay = isPagoHoje(p.apelido) ? "P (verde)" : "P (vermelho)";
+        const obs = baseObs ? `${baseObs} | ${pay}` : pay;
+
+        return {
+          id: p.id ?? "",
+          ordem: idx+1,
+          apelido: (p.apelido||"").toUpperCase(),
+          hora: p.horaChegada || "",
+          obs,
+          nao_vai_jogar: p.naoVaiJogar ? "SIM" : "",
+        };
+      });
 
       const titulo = `Presença (${isoToBr(dia)})`;
       const html = `
@@ -1253,18 +1259,26 @@ function calcularTotalPontos(lista){
       <h2>${titulo}</h2>
       <table>
         <thead><tr>
-          <th>ORDEM</th><th>ID</th><th>APELIDO</th><th>HORA</th><th>NÃO VAI JOGAR</th><th>OBS</th><th>PAGAMENTO</th>
+          <th>ID</th><th>ORDEM</th><th>APELIDO</th><th>HORA</th><th>OBS</th><th>NÃO VAI JOGAR</th>
         </tr></thead>
         <tbody>
           ${rows.map(r=>`<tr>
-            <td>${r.ordem}</td><td>${r.id}</td><td>${r.apelido}</td><td>${r.hora}</td><td>${r.nao_vai_jogar}</td><td>${r.obs}</td><td>${r.pago}</td>
+            <td>${r.id}</td><td>${r.ordem}</td><td>${r.apelido}</td><td>${r.hora}</td><td>${r.obs}</td><td>${r.nao_vai_jogar}</td>
           </tr>`).join("")}
         </tbody>
       </table>
       </body></html>`;
 
-      // Excel (HTML) — abre no Excel como planilha
-      downloadBlob(`presenca_${dia}.xls`, "application/vnd.ms-excel", html);
+      // Excel simples (.xls) — suficiente e rápido no dia do jogo
+      const blob = new Blob([html], {type:"application/vnd.ms-excel"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href=url;
+      a.download = `presenca_${dia}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
     }
 
     function printEscalacao(tempo){
