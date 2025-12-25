@@ -267,6 +267,8 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
           <div class="no-print" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
             <button id="btn-limpar-presentes" class="btn-perigo">Limpar hoje</button>
 <button id="btn-escalar-1t" class="btn-primario">Escalar 1º tempo</button>
+<button id="btn-desfazer-1t" class="btn-neutro">Desfazer 1º tempo</button>
+<button id="btn-baixar-presenca" class="btn-neutro">Baixar presença</button>
 <span style="margin-left:10px;color:#cbd5e1;font-size:12px;">Horário de corte: 06:15</span>
             
           </div>
@@ -299,6 +301,9 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
         <div class="no-print" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
           <div id="msg-salvar" class="msg-salvar"></div>
           <button id="btn-escalar-2t" class="btn-primario">Escalar 2º tempo</button>
+          <button id="btn-desfazer-2t" class="btn-neutro">Desfazer 2º tempo</button>
+          <button id="btn-baixar-1t" class="btn-neutro">Baixar 1º tempo</button>
+          <button id="btn-baixar-2t" class="btn-neutro">Baixar 2º tempo</button>
           <button id="btn-salvar-jogo" class="btn-neutro">Salvar</button>
         </div>
       </div>
@@ -388,6 +393,12 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
     const btnEscalar1T = document.getElementById("btn-escalar-1t");
     const btnEscalar2T = document.getElementById("btn-escalar-2t");
     const btnSalvarJogo = document.getElementById("btn-salvar-jogo");
+
+    const btnDesfazer1T = document.getElementById("btn-desfazer-1t");
+    const btnDesfazer2T = document.getElementById("btn-desfazer-2t");
+    const btnBaixarPresenca = document.getElementById("btn-baixar-presenca");
+    const btnBaixar1T = document.getElementById("btn-baixar-1t");
+    const btnBaixar2T = document.getElementById("btn-baixar-2t");
 
     const tbody1T = document.getElementById("tbody-1t");
     const tbody2T = document.getElementById("tbody-2t");
@@ -611,8 +622,10 @@ function getDataJogoISO() {
       };
       presentesHoje.push(registro);
       presentesHoje.sort((a,b)=>comparaHoraStr(a.horaChegada,b.horaChegada));
+
+      // NÃO pode apagar a escalação quando chega mais gente.
+      syncEscalacoesComPresenca();
       atualizarInfoPresentes();
-      limparEscalacoes();
       renderPresentes();
       renderEscalacoes();
     }
@@ -620,19 +633,57 @@ function getDataJogoISO() {
     function toggleNaoVaiJogar(apelido){
       const p=presentesHoje.find(x=>x.apelido===apelido);
       if(!p) return;
+
       p.naoVaiJogar=!p.naoVaiJogar;
-      // risco visual imediato
-      limparEscalacoes();
+
+      // Se marcou "não vai jogar", remove da escalação (mas NÃO mexe na lista de presença).
+      if(p.naoVaiJogar){
+        removerApelidoDasEscalacoes(apelido);
+        p.saiu=false;
+      }
+
+      syncEscalacoesComPresenca();
       renderPresentes();
       renderEscalacoes();
     }
 
     function excluirPresente(apelido){
+      // remove da lista de presença
       presentesHoje = presentesHoje.filter(p=>p.apelido!==apelido);
+
+      // remove também da escalação (se estava)
+      removerApelidoDasEscalacoes(apelido);
+
       atualizarInfoPresentes();
-      limparEscalacoes();
+      syncEscalacoesComPresenca();
       renderPresentes();
       renderEscalacoes();
+    }
+
+    // ===== SINCRONIZAÇÃO (NÃO DESFAZER RISCOS AO CHEGAR NOVO JOGADOR) =====
+    function removerApelidoDasEscalacoes(apelido){
+      const filt = (arr)=> (arr||[]).filter(e=>e && e.apelido !== apelido);
+      escala1.amarelo = filt(escala1.amarelo);
+      escala1.azul   = filt(escala1.azul);
+      escala2.amarelo = filt(escala2.amarelo);
+      escala2.azul   = filt(escala2.azul);
+    }
+
+    function syncEscalacoesComPresenca(){
+      // Mantém escalação, mas remove:
+      // - quem não está mais presente hoje
+      // - quem está marcado como "não vai jogar"
+      const presentesSet = new Set((presentesHoje||[]).map(p=>p.apelido));
+      const naoSet = new Set((presentesHoje||[]).filter(p=>p.naoVaiJogar).map(p=>p.apelido));
+
+      const keep = (arr)=> (arr||[]).filter(e => e && presentesSet.has(e.apelido) && !naoSet.has(e.apelido));
+
+      escala1.amarelo = keep(escala1.amarelo);
+      escala1.azul    = keep(escala1.azul);
+      escala2.amarelo = keep(escala2.amarelo);
+      escala2.azul    = keep(escala2.azul);
+
+      atualizarObs(); // recalcula riscos/OBS com base na escalação atual
     }
 
     function renderPresentes(){
@@ -1140,6 +1191,133 @@ function calcularTotalPontos(lista){
       renderEscalacoes();
     }
 
+    // ===== DESFAZER ESCALAÇÃO (não mexe na lista de presença) =====
+    function desfazerEscalacao1T(){
+      if(!confirm("Desfazer escalação do 1º tempo?")) return;
+      escala1 = { amarelo: [], azul: [] };
+
+      // limpa "saiu" (só faz sentido quando existe 1º tempo)
+      (presentesHoje||[]).forEach(p=>{ p.saiu=false; });
+
+      syncEscalacoesComPresenca();
+      renderPresentes();
+      renderEscalacoes();
+      toast("Escalação 1º tempo desfeita.", true);
+    }
+
+    function desfazerEscalacao2T(){
+      if(!confirm("Desfazer escalação do 2º tempo?")) return;
+      escala2 = { amarelo: [], azul: [] };
+
+      syncEscalacoesComPresenca();
+      renderPresentes();
+      renderEscalacoes();
+      toast("Escalação 2º tempo desfeita.", true);
+    }
+
+    // ===== BAIXAR (rápido) =====
+    function downloadBlob(filename, mime, content){
+      const blob = new Blob([content], {type: mime});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
+    }
+
+    function baixarPresenca(){
+      const dia = getDataJogoISO();
+      // Exporta somente a lista de presença (quem chegou)
+      const rows = (presentesHoje||[]).map((p,idx)=>({
+        ordem: idx+1,
+        id: p.id ?? "",
+        apelido: (p.apelido||"").toUpperCase(),
+        hora: p.horaChegada || "",
+        nao_vai_jogar: p.naoVaiJogar ? "SIM" : "",
+        obs: (p.obs||""),
+        pago: isPagoHoje(p.apelido) ? "P (verde)" : "P (vermelho)"
+      }));
+
+      const titulo = `Presença (${isoToBr(dia)})`;
+      const html = `
+      <html><head><meta charset="utf-8">
+      <style>
+        body{font-family:Arial,sans-serif}
+        h2{margin:0 0 10px 0}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #ccc;padding:6px;font-size:12px}
+        th{background:#ff7f27;color:#000;font-weight:900}
+      </style></head><body>
+      <h2>${titulo}</h2>
+      <table>
+        <thead><tr>
+          <th>ORDEM</th><th>ID</th><th>APELIDO</th><th>HORA</th><th>NÃO VAI JOGAR</th><th>OBS</th><th>PAGAMENTO</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr>
+            <td>${r.ordem}</td><td>${r.id}</td><td>${r.apelido}</td><td>${r.hora}</td><td>${r.nao_vai_jogar}</td><td>${r.obs}</td><td>${r.pago}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+      </body></html>`;
+
+      // Excel (HTML) — abre no Excel como planilha
+      downloadBlob(`presenca_${dia}.xls`, "application/vnd.ms-excel", html);
+    }
+
+    function printEscalacao(tempo){
+      const dia = getDataJogoISO();
+      const titulo = tempo === 1 ? `Escalação 1º Tempo (${isoToBr(dia)})` : `Escalação 2º Tempo (${isoToBr(dia)})`;
+
+      const esc = (tempo===1) ? escala1 : escala2;
+      const maxLen = Math.max((esc.amarelo||[]).length, (esc.azul||[]).length, 10);
+
+      const rows = [];
+      for(let i=0;i<maxLen;i++){
+        const am = esc.amarelo[i]?.apelido ? esc.amarelo[i].apelido.toUpperCase() : "";
+        const az = esc.azul[i]?.apelido ? esc.azul[i].apelido.toUpperCase() : "";
+        rows.push({am, az});
+      }
+
+      const html = `
+      <html><head><meta charset="utf-8">
+      <title>${titulo}</title>
+      <style>
+        body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
+        .wrap{padding:16px}
+        h2{margin:0 0 10px 0;color:#ff7f27}
+        table{border-collapse:collapse;width:100%;background:#0b1220}
+        th,td{border:1px solid #334155;padding:8px;font-size:14px}
+        th{background:#ff7f27;color:#000;font-weight:900;text-align:center}
+        .am{color:#fbbf24;font-weight:900}
+        .az{color:#60a5fa;font-weight:900}
+        @media print{
+          body{background:#fff;color:#000}
+          th{background:#ff7f27 !important;color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        }
+      </style></head>
+      <body><div class="wrap">
+        <h2>${titulo}</h2>
+        <table>
+          <thead><tr><th>AMARELO</th><th>AZUL</th></tr></thead>
+          <tbody>
+            ${rows.map(r=>`<tr><td class="am">${r.am}</td><td class="az">${r.az}</td></tr>`).join("")}
+          </tbody>
+        </table>
+      </div></body></html>`;
+
+      const w = window.open("", "_blank");
+      if(!w){ alert("Bloqueador de pop-up. Libere e tente novamente."); return; }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      try{ w.focus(); }catch(e){}
+      setTimeout(()=>{ try{ w.print(); }catch(e){} }, 250);
+    }
+
+
     // ===== SALVAR (SEM UPSERT, PARA NÃO DEPENDER DE CONSTRAINT) =====
     async function salvarJogo(){
       try{
@@ -1256,6 +1434,12 @@ function calcularTotalPontos(lista){
     btnEscalar1T.addEventListener("click", escalarPrimeiroTempo);
     btnEscalar2T.addEventListener("click", escalarSegundoTempo);
     btnSalvarJogo.addEventListener("click", salvarJogo);
+
+    if(btnDesfazer1T) btnDesfazer1T.addEventListener("click", desfazerEscalacao1T);
+    if(btnDesfazer2T) btnDesfazer2T.addEventListener("click", desfazerEscalacao2T);
+    if(btnBaixarPresenca) btnBaixarPresenca.addEventListener("click", baixarPresenca);
+    if(btnBaixar1T) btnBaixar1T.addEventListener("click", ()=>printEscalacao(1));
+    if(btnBaixar2T) btnBaixar2T.addEventListener("click", ()=>printEscalacao(2));
 
     carregarBase();
 </script>
