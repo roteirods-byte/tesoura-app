@@ -5,28 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TESOURA - BANCO DE DADOS (GUARDIÃO)</title>
 
-  <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
-
-  <!-- config do app (fallback do Supabase) -->
   <script src="app/js/config.js"></script>
 
   <style>
-    :root{
-      --bg:#081427;
-      --card:#0b1b33;
-      --card2:#0a1830;
-      --line:#0f2a4a;
-      --txt:#e9f2ff;
-      --muted:#9fb3cc;
-      --orange:#ff7f27;
-      --green:#2ecc71;
-      --red:#ff4d4d;
-      --blueBtn:#58b4ff;
-    }
+    :root{--bg:#081427;--card:#0b1b33;--card2:#0a1830;--line:#0f2a4a;--txt:#e9f2ff;--muted:#9fb3cc;--orange:#ff7f27;--red:#ff4d4d;--blueBtn:#58b4ff}
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,Helvetica,sans-serif}
     .wrap{max-width:1100px;margin:24px auto;padding:0 14px}
@@ -47,13 +33,12 @@
     table{width:100%;border-collapse:collapse;margin-top:12px}
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:13px;text-align:left}
     th{color:var(--orange);font-weight:800}
-    .right{margin-left:auto}
     .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
     .downloadBar{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
     .hint{margin-top:8px;font-size:12px;color:var(--muted)}
-    .muted{color:var(--muted)}
     .line{height:1px;background:var(--line);margin:10px 0}
+    .muted{color:var(--muted)}
   </style>
 </head>
 <body>
@@ -91,7 +76,7 @@
           <div class="small">Ex.: domingo, mês, ano (quando existir)</div>
         </div>
 
-        <div class="actions right">
+        <div class="actions" style="margin-left:auto">
           <button class="btn btnGreen" id="btnBuscar">BUSCAR</button>
           <button class="btn btnOrange" id="btnLimpar">LIMPAR</button>
         </div>
@@ -101,11 +86,9 @@
 
       <div class="line"></div>
 
-      <div class="small">
-        Aqui você vê apenas o histórico de arquivos salvos e pode baixar. Visualização/edição é feita no próprio painel.
-      </div>
+      <div class="small">Banco de Dados é somente leitura. Aqui você baixa exatamente o que o painel salvou.</div>
 
-      <table id="tbl">
+      <table>
         <thead>
           <tr>
             <th>criado em</th>
@@ -124,43 +107,12 @@
         <button class="btn btnBlue" id="btnXLSX" disabled>BAIXAR EXCEL</button>
       </div>
 
-      <div class="hint">
-        Banco de Dados é somente leitura. Diretoria pode excluir arquivos de teste (quando disponível).
-      </div>
+      <div class="hint">Diretoria pode excluir arquivo salvo (quando permitido).</div>
     </div>
   </div>
 
 <script>
-/* =========================================================
-   SUPABASE
-   - recebe via postMessage do index / login
-   - fallback: usa app/js/config.js
-   ========================================================= */
-let SUPABASE_URL = null;
-let SUPABASE_ANON_KEY = null;
 let supabaseClient = null;
-
-function initSupabase(url, key){
-  try{
-    SUPABASE_URL = url;
-    SUPABASE_ANON_KEY = key;
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    clearMsg();
-  }catch(e){
-    showMsg("Erro ao iniciar Supabase: " + e.message, true);
-  }
-}
-
-function tryFallbackSupabase(){
-  try{
-    const cfg = window.TESOURA_CONFIG || {};
-    const url = cfg.SUPABASE_URL;
-    const key = cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY;
-    if(url && key && !supabaseClient){
-      initSupabase(url, key);
-    }
-  }catch(_){ }
-}
 
 function showMsg(text, isErr=false){
   const el = document.getElementById("msg");
@@ -168,69 +120,36 @@ function showMsg(text, isErr=false){
   el.textContent = text;
   el.className = isErr ? "msg msgErr" : "msg";
 }
-
 function clearMsg(){
   const el = document.getElementById("msg");
   el.style.display = "none";
   el.textContent = "";
 }
-
-/* =========================================================
-   EXPORTAÇÃO (templates antigos)
-   - IMPORTANTE: se o conteúdo já vier como "snapshot" (columns/rows/headerRows),
-     o sistema NÃO altera (mantém idêntico ao painel)
-   ========================================================= */
-const EXPORT_TEMPLATES = {
-  "jogadores": {
-    columns: [
-      { key: "id",        label: "ID" },
-      { key: "apelido",   label: "APELIDO" },
-      { key: "nome",      label: "NOME" },
-      { key: "celular",   label: "CELULAR" },
-      { key: "posicao",   label: "POSIÇÃO" },
-      { key: "hab",       label: "HAB" },
-      { key: "vel",       label: "VEL" },
-      { key: "mov",       label: "MOV" },
-      { key: "pontos",    label: "PONTOS" },
-      { key: "camisa",    label: "CAMISA" },
-      { key: "data_nasc", label: "DATA NASC" },
-      { key: "idade",     label: "IDADE" },
-      {
-        key: "ativo",
-        label: "ATIVO",
-        format: (v) => (v === true || v === "true") ? "SIM" : (v === false || v === "false") ? "NÃO" : (v ?? "")
-      }
-    ],
-    sort: (a,b) => {
-      const aa = (a?.apelido ?? "").toString().toUpperCase();
-      const bb = (b?.apelido ?? "").toString().toUpperCase();
-      if(aa < bb) return -1;
-      if(aa > bb) return  1;
-      return (Number(a?.id) || 0) - (Number(b?.id) || 0);
-    }
+function initSupabase(url, key){
+  try{
+    supabaseClient = supabase.createClient(url, key);
+    clearMsg();
+  }catch(e){
+    showMsg("Erro ao iniciar Supabase: " + e.message, true);
   }
-};
-
-function applyExportTemplate(painel, data){
-  const key = (painel || "").toString().toLowerCase().trim();
-  const tpl = EXPORT_TEMPLATES[key];
-  if(!tpl) return null;
-
-  const arr = Array.isArray(data) ? data : (data ? [data] : []);
-  const sorted = tpl.sort ? [...arr].sort(tpl.sort) : arr;
-
-  const columns = tpl.columns.map(c => c.label);
-  const rows = sorted.map(obj => tpl.columns.map(c => {
-    const v = obj ? obj[c.key] : "";
-    return c.format ? c.format(v) : (v ?? "");
-  }));
-
-  return { columns, rows };
+}
+function tryFallbackSupabase(){
+  try{
+    const cfg = window.TESOURA_CONFIG || {};
+    const url = cfg.SUPABASE_URL;
+    const key = cfg.SUPABASE_KEY || cfg.SUPABASE_ANON_KEY;
+    if(url && key && !supabaseClient) initSupabase(url, key);
+  }catch(_){}
 }
 
-/* =========================================================
-   NORMALIZA CONTEÚDO SALVO
-   ========================================================= */
+function safeFilename(s){
+  return (s || "arquivo").toString()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-zA-Z0-9_\-\.]+/g,"_")
+    .replace(/_+/g,"_")
+    .replace(/^_+|_+$/g,"");
+}
+
 function normalizeConteudo(conteudo, painel){
   let c = conteudo;
   try{
@@ -240,52 +159,34 @@ function normalizeConteudo(conteudo, painel){
         c = JSON.parse(s);
       }
     }
-  }catch(e){ /* mantém como está */ }
+  }catch(_){}
 
-  // 1) SNAPSHOT: mantém exatamente como foi salvo
   if(c && typeof c === "object"){
-    if(Array.isArray(c.headerRows) && Array.isArray(c.rows)){
-      const headerRows = c.headerRows;
-      const columns = Array.isArray(c.columns) ? c.columns : (headerRows[headerRows.length - 1] || []);
-      const rows = c.rows;
-      return { headerRows, columns, rows };
-    }
-    if(Array.isArray(c.columns) && Array.isArray(c.rows)){
-      return { columns: c.columns, rows: c.rows };
+    // snapshot moderno
+    if(Array.isArray(c.rows) && (Array.isArray(c.headerRows) || Array.isArray(c.columns))){
+      return {
+        headerRows: Array.isArray(c.headerRows) ? c.headerRows : null,
+        columns: Array.isArray(c.columns) ? c.columns : (Array.isArray(c.headerRows) ? (c.headerRows[c.headerRows.length-1]||[]) : []),
+        rows: c.rows,
+        xlsxMerges: Array.isArray(c.xlsxMerges) ? c.xlsxMerges : null,
+        pdfHead: Array.isArray(c.pdfHead) ? c.pdfHead : null
+      };
     }
   }
 
-  // 2) Template por painel (para conteúdos antigos)
-  const templated = applyExportTemplate(painel, c);
-  if(templated) return templated;
-
-  // 3) fallback genérico
+  // fallback genérico
   if(Array.isArray(c)){
     const first = c[0] || {};
     const columns = Object.keys(first);
     const rows = c.map(obj => columns.map(k => obj?.[k] ?? ""));
-    return { columns, rows };
+    return { columns, rows, headerRows:null, xlsxMerges:null, pdfHead:null };
   }
-
   if(typeof c === "object" && c){
     const columns = Object.keys(c);
     const rows = [columns.map(k => c[k] ?? "")];
-    return { columns, rows };
+    return { columns, rows, headerRows:null, xlsxMerges:null, pdfHead:null };
   }
-
-  return { columns: ["conteúdo"], rows: [[String(c ?? "")]] };
-}
-
-/* =========================================================
-   DOWNLOADS
-   ========================================================= */
-function safeFilename(s){
-  return (s || "arquivo")
-    .toString()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^a-zA-Z0-9_\-\.]+/g,"_")
-    .replace(/_+/g,"_")
-    .replace(/^_+|_+$/g,"");
+  return { columns:["conteúdo"], rows:[[String(c ?? "")]], headerRows:null, xlsxMerges:null, pdfHead:null };
 }
 
 function downloadCSV(filename, columns, rows, headerRows=null){
@@ -300,15 +201,28 @@ function downloadCSV(filename, columns, rows, headerRows=null){
   URL.revokeObjectURL(a.href);
 }
 
-function downloadXLSX(filename, columns, rows, headerRows=null){
+function downloadXLSX(filename, columns, rows, headerRows=null, merges=null){
   const data = headerRows ? [...headerRows, ...rows] : [columns, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(data);
+
+  if(Array.isArray(merges) && merges.length){
+    ws["!merges"] = merges;
+  }
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "dados");
-  XLSX.writeFile(wb, filename);
+
+  // Blob (mais compatível que writeFile)
+  const out = XLSX.write(wb, { bookType:"xlsx", type:"array" });
+  const blob = new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
-function downloadPDF(filename, title, columns, rows, headerRows=null){
+function downloadPDF(filename, title, columns, rows, headerRows=null, pdfHead=null){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
 
@@ -316,7 +230,7 @@ function downloadPDF(filename, title, columns, rows, headerRows=null){
   doc.setFontSize(12);
   doc.text(title, 40, 40);
 
-  const head = headerRows ? headerRows : [columns];
+  const head = pdfHead ? pdfHead : (headerRows ? headerRows : [columns]);
 
   doc.autoTable({
     startY: 60,
@@ -330,11 +244,14 @@ function downloadPDF(filename, title, columns, rows, headerRows=null){
   doc.save(filename);
 }
 
-/* =========================================================
-   BUSCA / LISTA
-   ========================================================= */
 let itens = [];
 let selecionado = null;
+
+function setDownloadEnabled(v){
+  document.getElementById("btnPDF").disabled = !v;
+  document.getElementById("btnCSV").disabled = !v;
+  document.getElementById("btnXLSX").disabled = !v;
+}
 
 function render(){
   const tb = document.getElementById("tb");
@@ -373,17 +290,14 @@ function render(){
       if(!item) return;
       if(!confirm("Excluir este arquivo salvo?")) return;
 
+      tryFallbackSupabase();
       if(!supabaseClient){
         showMsg("Supabase não inicializado (volte para o login).", true);
         return;
       }
 
       try{
-        const { error } = await supabaseClient
-          .from("arquivos_app")
-          .delete()
-          .eq("id", item.id);
-
+        const { error } = await supabaseClient.from("arquivos_app").delete().eq("id", item.id);
         if(error) throw error;
         showMsg("Arquivo excluído.");
         await buscar();
@@ -394,12 +308,6 @@ function render(){
   });
 
   setDownloadEnabled(false);
-}
-
-function setDownloadEnabled(v){
-  document.getElementById("btnPDF").disabled = !v;
-  document.getElementById("btnCSV").disabled = !v;
-  document.getElementById("btnXLSX").disabled = !v;
 }
 
 async function buscar(){
@@ -415,9 +323,7 @@ async function buscar(){
   const periodo = document.getElementById("fPeriodo").value;
   const ref = (document.getElementById("fRef").value || "").trim();
 
-  let q = supabaseClient
-    .from("arquivos_app")
-    .select("*")
+  let q = supabaseClient.from("arquivos_app").select("*")
     .eq("painel", painel)
     .eq("periodo", periodo)
     .order("criado_em", { ascending: false });
@@ -452,9 +358,6 @@ function limpar(){
   render();
 }
 
-/* =========================================================
-   BAIXAR (PDF / CSV / XLSX)
-   ========================================================= */
 function baixar(tipo){
   if(!selecionado){
     showMsg("Selecione um arquivo salvo na lista.", true);
@@ -467,23 +370,22 @@ function baixar(tipo){
   const columns = norm.columns || ["dados"];
   const rows = norm.rows || [];
   const headerRows = Array.isArray(norm.headerRows) ? norm.headerRows : null;
+  const merges = Array.isArray(norm.xlsxMerges) ? norm.xlsxMerges : null;
+  const pdfHead = Array.isArray(norm.pdfHead) ? norm.pdfHead : null;
 
   const stamp = new Date().toISOString().replace(/[:\-]/g,"").slice(0,15);
   const base = `${safeFilename(item.painel)}_${safeFilename(item.periodo)}_${stamp}`;
   const title = item.titulo || "Arquivo salvo";
 
   if(tipo === "pdf"){
-    downloadPDF(`${base}.pdf`, title, columns, rows, headerRows);
+    downloadPDF(`${base}.pdf`, title, columns, rows, headerRows, pdfHead);
   }else if(tipo === "csv"){
     downloadCSV(`${base}.csv`, columns, rows, headerRows);
   }else{
-    downloadXLSX(`${base}.xlsx`, columns, rows, headerRows);
+    downloadXLSX(`${base}.xlsx`, columns, rows, headerRows, merges);
   }
 }
 
-/* =========================================================
-   INIT
-   ========================================================= */
 window.addEventListener("message", (ev)=>{
   const msg = ev.data || {};
   if(msg.type === "TESOURA_SUPABASE_CONFIG"){
