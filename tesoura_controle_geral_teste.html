@@ -5,69 +5,20 @@
   <title>TESOURA - CONTROLE GERAL</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0b1220;
-      color: #fff;
-    }
-    header {
-      padding: 14px 18px;
-      border-bottom: 2px solid #f97316;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #07101f;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 16px;
-      letter-spacing: 0.5px;
-      color: #f97316;
-      text-transform: uppercase;
-      font-weight: 900;
-    }
-    .wrap {
-      max-width: 1100px;
-      margin: 18px auto;
-      padding: 0 12px;
-    }
-    .painel {
-      background: #020617;
-      border: 1px solid #0f172a;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 14px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
-    }
-    .painel h2 {
-      margin: 0 0 10px;
-      color: #f97316;
-      font-size: 14px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      font-weight: 900;
-    }
-    .status {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #9ca3af;
-    }
+    body { margin: 0; font-family: Arial, sans-serif; background: #0b1220; color: #fff; }
+    header { padding: 14px 18px; border-bottom: 2px solid #f97316; display: flex; align-items: center; justify-content: space-between; background: #07101f; }
+    header h1 { margin: 0; font-size: 16px; letter-spacing: 0.5px; color: #f97316; text-transform: uppercase; font-weight: 900; }
+    .wrap { max-width: 1100px; margin: 18px auto; padding: 0 12px; }
+    .painel { background: #020617; border: 1px solid #0f172a; border-radius: 12px; padding: 12px; margin-bottom: 14px; box-shadow: 0 6px 16px rgba(0,0,0,0.35); }
+    .painel h2 { margin: 0 0 10px; color: #f97316; font-size: 14px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 900; }
+    .status { margin-top: 8px; font-size: 12px; color: #9ca3af; }
 
-    /* ===== TABELA ===== */
-    table {
-      border-collapse: collapse;
-      font-size: 12px;
-      width: max-content;
-      min-width: 100%;
-    }
+    table { border-collapse: collapse; font-size: 12px; width: max-content; min-width: 100%; }
     thead th {
-      position: sticky;
-      top: 0;
-      background: #f97316;      /* abóbora */
-      color: #ffffff;            /* texto branco */
+      position: sticky; top: 0;
+      background: #f97316; color: #ffffff;
       z-index: 2;
-      border: 1px solid rgba(255,255,255,0.45); /* linhas brancas */
+      border: 1px solid rgba(255,255,255,0.45);
       padding: 6px 8px;
       text-align: center;
       white-space: nowrap;
@@ -75,7 +26,7 @@
       text-transform: uppercase;
     }
     tbody td {
-      border: 1px solid rgba(255,255,255,0.20); /* linhas brancas */
+      border: 1px solid rgba(255,255,255,0.20);
       padding: 5px 6px;
       text-align: center;
       white-space: nowrap;
@@ -84,23 +35,19 @@
     }
     tbody tr:nth-child(even) td { background: #061024; }
 
-    /* Larguras menores */
     .col-atleta { min-width: 140px; text-align: left; padding-left: 10px; font-weight: 900; }
     .col-faltas { min-width: 85px; font-weight: 900; }
 
-    /* Colunas fixas (ATLETA + TOTAL FALTAS) */
     .sticky-atleta { position: sticky; left: 0; z-index: 3; background: #020617; }
     .sticky-faltas { position: sticky; left: 140px; z-index: 3; background: #020617; }
-
     thead .sticky-atleta, thead .sticky-faltas { z-index: 5; background: #f97316; color: #ffffff; }
 
-    /* ====== PEDIDO: LINHA BRANCA VERTICAL DOS 2 LADOS DO TOTAL FALTAS ====== */
+    /* LINHA BRANCA VERTICAL DOS 2 LADOS DO TOTAL FALTAS */
     .sticky-faltas{
       border-left: 2px solid rgba(255,255,255,0.85) !important;
       border-right: 2px solid rgba(255,255,255,0.85) !important;
     }
 
-    /* Legenda P cores */
     .pverde { color: #22c55e; font-weight: 900; }
     .pvermelho { color: #ef4444; font-weight: 900; }
   </style>
@@ -113,7 +60,6 @@
 </header>
 
 <div class="wrap">
-  <!-- FILTRO REMOVIDO (ANO / CARREGAR LISTA). AGORA É AUTOMÁTICO -->
   <div class="painel">
     <h2>INFORMAÇÕES</h2>
     <p style="margin:0;font-size:12px;color:#cbd5e1;">
@@ -136,7 +82,6 @@
 <script src="app/js/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ===== CONEXÃO SUPABASE =====
   const CFG = window.TESOURA_CONFIG || {};
   const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
   const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
@@ -154,8 +99,7 @@
     9: "SETEMBRO", 10: "OUTUBRO", 11: "NOVEMBRO", 12: "DEZEMBRO"
   };
 
-  // ====== PEDIDO: já deixar preparado 2026 ======
-  const ANO_PAINEL_FIXO = 2026;
+  function lastDayOfMonth(ano, mes){ return new Date(ano, mes, 0).getDate(); }
 
   function getDomingosMes(ano, mes) {
     const domingos = [];
@@ -172,32 +116,18 @@
     return domingos;
   }
 
-  function lastDayOfMonth(ano, mes){
-    return new Date(ano, mes, 0).getDate(); // mes 1..12
-  }
-
-  // ====== PEDIDO: mês vigente + 2 anteriores (sempre visível) ======
+  // MÊS VIGENTE + 2 ANTERIORES (DATA REAL DO COMPUTADOR, CRUZA ANO)
   function buildUltimos3Meses(){
     const hoje = new Date();
-    const mesAtual = hoje.getMonth() + 1; // usa o mês do computador
     const arr = [];
-    for(let k=2; k>=0; k--){
-      let m = mesAtual - k;
-      let a = ANO_PAINEL_FIXO;
-      if(m <= 0){
-        a = ANO_PAINEL_FIXO - 1;
-        m = 12 + m;
-      }
-      arr.push({ano:a, mes:m});
+    for(let off=2; off>=0; off--){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - off, 1);
+      arr.push({ ano: d.getFullYear(), mes: d.getMonth() + 1 });
     }
     return arr;
   }
 
-  function snapshotControleGeral(columns, rows){
-    return { columns, rows };
-  }
-
-  // ====== SALVAR NO BANCO (mesmo vazio) ======
+  // SALVA NO BANCO (MESMO VAZIO) + COM CABEÇALHO COMPLETO
   async function arquivarControleGeralVigente(conteudo){
     try{
       const painel = "controle geral";
@@ -233,18 +163,18 @@
     }
   }
 
-  async function carregarLista() {
+  async function carregarTabela() {
     try {
       statusEl.textContent = "CARREGANDO...";
       theadControle.innerHTML = "";
       tbodyControle.innerHTML = "";
 
-      const mesesOrdem = buildUltimos3Meses();
+      const mesesOrdem = buildUltimos3Meses(); // <<<<< CORRIGIDO
       const domingosMes = mesesOrdem.map(mm => getDomingosMes(mm.ano, mm.mes));
 
       // ===== CABEÇALHO (2 LINHAS) =====
       const trMeses = document.createElement("tr");
-      const trDias = document.createElement("tr");
+      const trDias  = document.createElement("tr");
 
       const thAtletaSpan = document.createElement("th");
       thAtletaSpan.textContent = "ATLETA";
@@ -252,18 +182,17 @@
       thAtletaSpan.className = "col-atleta sticky-atleta";
       trMeses.appendChild(thAtletaSpan);
 
-      // TOTAL / FALTAS (2 linhas)
-      const thFaltasTop = document.createElement("th");
-      thFaltasTop.textContent = "TOTAL";
-      thFaltasTop.className = "col-faltas sticky-faltas";
-      trMeses.appendChild(thFaltasTop);
+      const thTotalTop = document.createElement("th");
+      thTotalTop.textContent = "TOTAL";
+      thTotalTop.className = "col-faltas sticky-faltas";
+      trMeses.appendChild(thTotalTop);
 
       const thFaltasBottom = document.createElement("th");
       thFaltasBottom.textContent = "FALTAS";
       thFaltasBottom.className = "col-faltas sticky-faltas";
       trDias.appendChild(thFaltasBottom);
 
-      // meses + domingos
+      // mês + domingos
       mesesOrdem.forEach((mm, idx) => {
         const listaDom = domingosMes[idx] || [];
         const thMes = document.createElement("th");
@@ -283,24 +212,18 @@
       theadControle.appendChild(trMeses);
       theadControle.appendChild(trDias);
 
-      // ===== BUSCAS =====
+      // ===== PERÍODO DE BUSCA (3 MESES) =====
+      const ini = mesesOrdem[0];
+      const fim = mesesOrdem[2];
+      const iniIso = `${ini.ano}-${String(ini.mes).padStart(2, "0")}-01`;
+      const fimIso = `${fim.ano}-${String(fim.mes).padStart(2, "0")}-${String(lastDayOfMonth(fim.ano, fim.mes)).padStart(2,"0")}`;
+
       const { data: jogadores, error: errJog } = await sb
         .from("jogadores")
         .select("apelido")
         .order("apelido", { ascending: true });
 
-      if (errJog) {
-        console.error(errJog);
-        statusEl.textContent = "ERRO AO BUSCAR JOGADORES.";
-        // mesmo assim salva vazio no banco (com cabeçalho)
-        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
-        return;
-      }
-
-      const ini = mesesOrdem[0];
-      const fim = mesesOrdem[mesesOrdem.length - 1];
-      const iniIso = `${ini.ano}-${String(ini.mes).padStart(2, "0")}-01`;
-      const fimIso = `${fim.ano}-${String(fim.mes).padStart(2, "0")}-${String(lastDayOfMonth(fim.ano, fim.mes)).padStart(2,"0")}`;
+      if (errJog) throw errJog;
 
       const { data: pres, error: errPres } = await sb
         .from("presencas")
@@ -308,15 +231,7 @@
         .gte("data_jogo", iniIso)
         .lte("data_jogo", fimIso);
 
-      if (errPres) {
-        console.error(errPres);
-        statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS.";
-        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
-        return;
-      }
-
-      const mapaPres = {};
-      (pres || []).forEach(p => { mapaPres[`${p.apelido}::${p.data_jogo}`] = p; });
+      if (errPres) throw errPres;
 
       const { data: esc, error: errEsc } = await sb
         .from("escalacao")
@@ -324,12 +239,10 @@
         .gte("data_jogo", iniIso)
         .lte("data_jogo", fimIso);
 
-      if (errEsc) {
-        console.error(errEsc);
-        statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO.";
-        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
-        return;
-      }
+      if (errEsc) throw errEsc;
+
+      const mapaPres = {};
+      (pres || []).forEach(p => { mapaPres[`${p.apelido}::${p.data_jogo}`] = p; });
 
       const mapaEsc = {};
       (esc || []).forEach(e => {
@@ -338,13 +251,21 @@
         if (e.tempo !== null && e.tempo !== undefined && e.tempo !== "") mapaEsc[key].add(e.tempo);
       });
 
-      // ===== COLUNAS PARA SNAPSHOT (download idêntico) =====
-      const columns = ["ATLETA","TOTAL FALTAS"];
+      // ===== SNAPSHOT (para download igual: inclui meses/ano no cabeçalho) =====
+      const head1 = ["ATLETA", "TOTAL"];
+      const head2 = ["", "FALTAS"];
+
       mesesOrdem.forEach((mm, idx) => {
         const listaDom = domingosMes[idx] || [];
-        listaDom.forEach(d => columns.push(d.rotulo));
+        const nomeMes = nomesMes[mm.mes] || `MÊS ${mm.mes}`;
+        const labelMes = `MÊS ${String(mm.mes).padStart(2,"0")} - ${nomeMes} - ${mm.ano}`;
+        listaDom.forEach(d => {
+          head1.push(labelMes);
+          head2.push(d.rotulo);
+        });
       });
-      const rows = [];
+
+      const rowsSnap = [];
 
       // ===== LINHAS =====
       (jogadores || []).forEach(j => {
@@ -397,23 +318,33 @@
         row[1] = String(totalFaltas);
 
         tbodyControle.appendChild(tr);
-        rows.push(row);
+        rowsSnap.push(row);
       });
 
       statusEl.textContent = "ATUALIZADO AUTOMATICAMENTE.";
-      await arquivarControleGeralVigente(snapshotControleGeral(columns, rows));
+
+      // salva com cabeçalho completo (2 linhas)
+      await arquivarControleGeralVigente({
+        headerRows: [head1, head2],
+        columns: head2,   // compatibilidade
+        rows: rowsSnap
+      });
+
     } catch (e) {
       console.error(e);
       statusEl.textContent = "ERRO (ver Console).";
-      // tenta salvar vazio mesmo em erro
+      // salva vazio mesmo assim
       try{
-        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
+        await arquivarControleGeralVigente({
+          headerRows: [["ATLETA","TOTAL"],["","FALTAS"]],
+          columns: ["ATLETA","TOTAL FALTAS"],
+          rows: []
+        });
       }catch(_){}
     }
   }
 
-  // ====== AUTO (sem botão) ======
-  carregarLista();
+  carregarTabela();
 </script>
 </body>
 </html>
