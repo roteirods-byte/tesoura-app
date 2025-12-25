@@ -48,30 +48,6 @@
       text-transform: uppercase;
       font-weight: 900;
     }
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    select, button {
-      border-radius: 10px;
-      border: 1px solid #0f172a;
-      padding: 10px 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-      font-size: 12px;
-    }
-    select {
-      background: #0b1220;
-      color: #fff;
-      min-width: 140px;
-    }
-    button { cursor: pointer; }
-    .btn {
-      background: #38bdf8;
-      color: #04202b;
-    }
     .status {
       margin-top: 8px;
       font-size: 12px;
@@ -89,7 +65,7 @@
       position: sticky;
       top: 0;
       background: #f97316;      /* abóbora */
-      color: #ffffff;            /* pedido: texto branco */
+      color: #ffffff;            /* texto branco */
       z-index: 2;
       border: 1px solid rgba(255,255,255,0.45); /* linhas brancas */
       padding: 6px 8px;
@@ -108,16 +84,23 @@
     }
     tbody tr:nth-child(even) td { background: #061024; }
 
-    /* Larguras menores (pedido) */
+    /* Larguras menores */
     .col-atleta { min-width: 140px; text-align: left; padding-left: 10px; font-weight: 900; }
     .col-faltas { min-width: 85px; font-weight: 900; }
 
     /* Colunas fixas (ATLETA + TOTAL FALTAS) */
     .sticky-atleta { position: sticky; left: 0; z-index: 3; background: #020617; }
     .sticky-faltas { position: sticky; left: 140px; z-index: 3; background: #020617; }
+
     thead .sticky-atleta, thead .sticky-faltas { z-index: 5; background: #f97316; color: #ffffff; }
 
-    /* Legenda P cores (pedido) */
+    /* ====== PEDIDO: LINHA BRANCA VERTICAL DOS 2 LADOS DO TOTAL FALTAS ====== */
+    .sticky-faltas{
+      border-left: 2px solid rgba(255,255,255,0.85) !important;
+      border-right: 2px solid rgba(255,255,255,0.85) !important;
+    }
+
+    /* Legenda P cores */
     .pverde { color: #22c55e; font-weight: 900; }
     .pvermelho { color: #ef4444; font-weight: 900; }
   </style>
@@ -130,25 +113,18 @@
 </header>
 
 <div class="wrap">
+  <!-- FILTRO REMOVIDO (ANO / CARREGAR LISTA). AGORA É AUTOMÁTICO -->
   <div class="painel">
-    <h2>FILTRO</h2>
-    <div class="row">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <label style="font-weight:900;text-transform:uppercase;">ANO:</label>
-        <select id="selAno"></select>
-      </div>
-      <button class="btn" id="btnCarregar">CARREGAR LISTA</button>
-    </div>
-
-    <p style="margin:10px 0 0;font-size:12px;color:#cbd5e1;">
+    <h2>INFORMAÇÕES</h2>
+    <p style="margin:0;font-size:12px;color:#cbd5e1;">
       OBS: C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (jogou os dois) |
       <span class="pverde">P (verde)</span> pagou |
       <span class="pvermelho">P (vermelho)</span> não pagou.
     </p>
-    <div class="status" id="status">Selecione o ANO e clique CARREGAR LISTA.</div>
+    <div class="status" id="status">Atualizando automaticamente...</div>
   </div>
 
-  <div class="painel" id="wrapTabela" style="overflow-x:auto;">
+  <div class="painel" id="wrapTabela" style="overflow-x:auto; max-width:100%;">
     <h2>JOGADORES X DOMINGOS</h2>
     <table id="tblControle">
       <thead id="theadControle"></thead>
@@ -160,7 +136,7 @@
 <script src="app/js/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ===== CONEXÃO SUPABASE (sem conflitar com outras abas) =====
+  // ===== CONEXÃO SUPABASE =====
   const CFG = window.TESOURA_CONFIG || {};
   const SB_URL = CFG.SUPABASE_URL || "https://xuplzpispukvtggjasxx.supabase.co";
   const SB_KEY = CFG.SUPABASE_KEY || CFG.SUPABASE_ANON_KEY || "sb_publishable_uGvmPC40FfyxzS6Kh1gNHg_AO9wJ6kg";
@@ -168,27 +144,18 @@
   window.__TESOURA_SUPABASE__ = window.__TESOURA_SUPABASE__ || window.supabase.createClient(SB_URL, SB_KEY);
   const sb = window.__TESOURA_SUPABASE__;
 
-  const selAno = document.getElementById("selAno");
-  const btnCarregar = document.getElementById("btnCarregar");
   const statusEl = document.getElementById("status");
   const theadControle = document.getElementById("theadControle");
   const tbodyControle = document.getElementById("tbodyControle");
-
-  const hoje = new Date();
-  const anoAtual = hoje.getFullYear();
-  for (let a = anoAtual - 1; a <= anoAtual + 1; a++) {
-    const opt = document.createElement("option");
-    opt.value = a;
-    opt.textContent = a;
-    if (a === anoAtual) opt.selected = true;
-    selAno.appendChild(opt);
-  }
 
   const nomesMes = {
     1: "JANEIRO", 2: "FEVEREIRO", 3: "MARÇO", 4: "ABRIL",
     5: "MAIO", 6: "JUNHO", 7: "JULHO", 8: "AGOSTO",
     9: "SETEMBRO", 10: "OUTUBRO", 11: "NOVEMBRO", 12: "DEZEMBRO"
   };
+
+  // ====== PEDIDO: já deixar preparado 2026 ======
+  const ANO_PAINEL_FIXO = 2026;
 
   function getDomingosMes(ano, mes) {
     const domingos = [];
@@ -205,41 +172,65 @@
     return domingos;
   }
 
-  function buildMesesOrdem(anoSelecionado) {
-    const hoje = new Date();
-    const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth() + 1;
-
-    const meses = [];
-    // inclui NOV/DEZ do ano anterior só quando necessário para "últimos 3 meses"
-    if (anoSelecionado === anoAtual && mesAtual <= 2) {
-      meses.push({ ano: anoAtual - 1, mes: 11 });
-      meses.push({ ano: anoAtual - 1, mes: 12 });
-    }
-    for (let m = 1; m <= 12; m++) meses.push({ ano: anoSelecionado, mes: m });
-    return meses;
+  function lastDayOfMonth(ano, mes){
+    return new Date(ano, mes, 0).getDate(); // mes 1..12
   }
 
-  function scrollUltimos3Meses(anoSelecionado) {
-    const wrap = document.getElementById("wrapTabela");
-    if (!wrap) return;
-
+  // ====== PEDIDO: mês vigente + 2 anteriores (sempre visível) ======
+  function buildUltimos3Meses(){
     const hoje = new Date();
-    let alvoAno = anoSelecionado;
-    let alvoMes = 10; // padrão (anos antigos)
-
-    if (anoSelecionado === hoje.getFullYear()) {
-      alvoMes = (hoje.getMonth() + 1) - 2;
-      if (alvoMes <= 0) { alvoAno = anoSelecionado - 1; alvoMes = 12 + alvoMes; }
+    const mesAtual = hoje.getMonth() + 1; // usa o mês do computador
+    const arr = [];
+    for(let k=2; k>=0; k--){
+      let m = mesAtual - k;
+      let a = ANO_PAINEL_FIXO;
+      if(m <= 0){
+        a = ANO_PAINEL_FIXO - 1;
+        m = 12 + m;
+      }
+      arr.push({ano:a, mes:m});
     }
+    return arr;
+  }
 
-    const doms = getDomingosMes(alvoAno, alvoMes);
-    if (!doms.length) return;
+  function snapshotControleGeral(columns, rows){
+    return { columns, rows };
+  }
 
-    const th = wrap.querySelector(`th[data-iso="${doms[0].iso}"]`);
-    if (!th) return;
+  // ====== SALVAR NO BANCO (mesmo vazio) ======
+  async function arquivarControleGeralVigente(conteudo){
+    try{
+      const painel = "controle geral";
+      const periodo = "unico";
+      const referencia = "vigente";
+      const titulo = "Controle Geral (vigente)";
 
-    wrap.scrollLeft = Math.max(0, th.offsetLeft - 220);
+      const { data: existing, error: e1 } = await sb
+        .from("arquivos_app")
+        .select("id")
+        .eq("painel", painel)
+        .eq("periodo", periodo)
+        .eq("referencia", referencia)
+        .order("criado_em", { ascending: false })
+        .limit(1);
+
+      if(e1) throw e1;
+
+      if(existing && existing.length){
+        const { error: e2 } = await sb
+          .from("arquivos_app")
+          .update({ titulo, conteudo })
+          .eq("id", existing[0].id);
+        if(e2) throw e2;
+      }else{
+        const { error: e2 } = await sb
+          .from("arquivos_app")
+          .insert([{ painel, periodo, referencia, titulo, conteudo }]);
+        if(e2) throw e2;
+      }
+    }catch(e){
+      console.error("Auto-arquivo Controle Geral falhou:", e);
+    }
   }
 
   async function carregarLista() {
@@ -248,9 +239,7 @@
       theadControle.innerHTML = "";
       tbodyControle.innerHTML = "";
 
-      const ano = Number(selAno.value);
-
-      const mesesOrdem = buildMesesOrdem(ano);
+      const mesesOrdem = buildUltimos3Meses();
       const domingosMes = mesesOrdem.map(mm => getDomingosMes(mm.ano, mm.mes));
 
       // ===== CABEÇALHO (2 LINHAS) =====
@@ -263,7 +252,7 @@
       thAtletaSpan.className = "col-atleta sticky-atleta";
       trMeses.appendChild(thAtletaSpan);
 
-      // pedido: TOTAL em cima e FALTAS em baixo
+      // TOTAL / FALTAS (2 linhas)
       const thFaltasTop = document.createElement("th");
       thFaltasTop.textContent = "TOTAL";
       thFaltasTop.className = "col-faltas sticky-faltas";
@@ -274,7 +263,7 @@
       thFaltasBottom.className = "col-faltas sticky-faltas";
       trDias.appendChild(thFaltasBottom);
 
-      // meses
+      // meses + domingos
       mesesOrdem.forEach((mm, idx) => {
         const listaDom = domingosMes[idx] || [];
         const thMes = document.createElement("th");
@@ -303,12 +292,15 @@
       if (errJog) {
         console.error(errJog);
         statusEl.textContent = "ERRO AO BUSCAR JOGADORES.";
+        // mesmo assim salva vazio no banco (com cabeçalho)
+        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
         return;
       }
 
-      const firstMM = mesesOrdem[0];
-      const iniIso = `${firstMM.ano}-${String(firstMM.mes).padStart(2, "0")}-01`;
-      const fimIso = `${ano}-12-31`;
+      const ini = mesesOrdem[0];
+      const fim = mesesOrdem[mesesOrdem.length - 1];
+      const iniIso = `${ini.ano}-${String(ini.mes).padStart(2, "0")}-01`;
+      const fimIso = `${fim.ano}-${String(fim.mes).padStart(2, "0")}-${String(lastDayOfMonth(fim.ano, fim.mes)).padStart(2,"0")}`;
 
       const { data: pres, error: errPres } = await sb
         .from("presencas")
@@ -319,6 +311,7 @@
       if (errPres) {
         console.error(errPres);
         statusEl.textContent = "ERRO AO BUSCAR PRESENÇAS.";
+        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
         return;
       }
 
@@ -334,6 +327,7 @@
       if (errEsc) {
         console.error(errEsc);
         statusEl.textContent = "ERRO AO BUSCAR ESCALAÇÃO.";
+        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
         return;
       }
 
@@ -343,6 +337,14 @@
         if (!mapaEsc[key]) mapaEsc[key] = new Set();
         if (e.tempo !== null && e.tempo !== undefined && e.tempo !== "") mapaEsc[key].add(e.tempo);
       });
+
+      // ===== COLUNAS PARA SNAPSHOT (download idêntico) =====
+      const columns = ["ATLETA","TOTAL FALTAS"];
+      mesesOrdem.forEach((mm, idx) => {
+        const listaDom = domingosMes[idx] || [];
+        listaDom.forEach(d => columns.push(d.rotulo));
+      });
+      const rows = [];
 
       // ===== LINHAS =====
       (jogadores || []).forEach(j => {
@@ -360,6 +362,7 @@
         tr.appendChild(tdFaltas);
 
         let totalFaltas = 0;
+        const row = [(apelido || "").toUpperCase(), "0"];
 
         mesesOrdem.forEach((mm, idx) => {
           const listaDom = domingosMes[idx] || [];
@@ -386,22 +389,31 @@
 
             td.textContent = valor;
             tr.appendChild(td);
+            row.push(valor);
           });
         });
 
         tdFaltas.textContent = String(totalFaltas);
+        row[1] = String(totalFaltas);
+
         tbodyControle.appendChild(tr);
+        rows.push(row);
       });
 
-      statusEl.textContent = "LISTA CARREGADA.";
-      scrollUltimos3Meses(ano);
+      statusEl.textContent = "ATUALIZADO AUTOMATICAMENTE.";
+      await arquivarControleGeralVigente(snapshotControleGeral(columns, rows));
     } catch (e) {
       console.error(e);
       statusEl.textContent = "ERRO (ver Console).";
+      // tenta salvar vazio mesmo em erro
+      try{
+        await arquivarControleGeralVigente(snapshotControleGeral(["ATLETA","TOTAL FALTAS"], []));
+      }catch(_){}
     }
   }
 
-  btnCarregar.addEventListener("click", carregarLista);
+  // ====== AUTO (sem botão) ======
+  carregarLista();
 </script>
 </body>
 </html>
