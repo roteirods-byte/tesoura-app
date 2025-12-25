@@ -845,9 +845,9 @@ function getDataJogoISO() {
       const fim = `${ano}-12-31`;
       const { data, error } = await supabase
         .from("presencas")
-        .select("id, data_jogo, apelido, status")
+        .select("id, data_jogo, apelido, obs")
         .eq("apelido", apelido)
-        .eq("status", "F")
+        .eq("obs", "F")
         .gte("data_jogo", ini)
         .lte("data_jogo", fim);
 
@@ -860,7 +860,7 @@ function getDataJogoISO() {
       const prev = domingoAnterior(dataISO);
       const { data, error } = await supabase
         .from("presencas")
-        .select("status")
+        .select("obs")
         .eq("apelido", apelido)
         .eq("data_jogo", prev)
         .limit(1);
@@ -873,14 +873,14 @@ function getDataJogoISO() {
       const ano = Number((dataISO||"").slice(0,4)) || (new Date()).getFullYear();
       const out = {};
       for (const ap of apelidos){
-        const [faltasAno, statusPrev] = await Promise.all([
+        const [faltasAno, obsPrev] = await Promise.all([
           getFaltasAno(ap, ano),
           getStatusDomingoAnterior(ap, dataISO),
         ]);
         out[ap] = {
           faltasAno,
-          faltouDomingoAnterior: statusPrev === "F",
-          jogouDoisDomingoAnterior: statusPrev === "1-2"
+          faltouDomingoAnterior: obsPrev === "F",
+          jogouDoisDomingoAnterior: obsPrev === "1-2"
         };
       }
       return out;
@@ -1227,59 +1227,35 @@ function calcularTotalPontos(lista){
       setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
     }
 
-    function baixarPresenca(){
-      const dia = getDataJogoISO();
+    function baixarPresenca() {
+        if (!dataJogo) return alert("Selecione a data do jogo.");
+        (async ()=>{
+          const { data: pres, error } = await supabase.from("presencas")
+            .select("id, ordem, apelido, hora, obs, nao_vai_jogar")
+            .eq("data_jogo", dataJogo)
+            .order("ordem", { ascending: true });
 
-      // Exporta somente a lista de presença (quem chegou)
-      const rows = (presentesHoje||[]).map((p,idx)=> {
-        const baseObs = String(p.obs||"").trim();
-        const pay = isPagoHoje(p.apelido) ? "P (verde)" : "P (vermelho)";
-        const obs = baseObs ? `${baseObs} | ${pay}` : pay;
+          if (error) return alert("Erro ao buscar presença: " + error.message);
 
-        return {
-          id: p.id ?? "",
-          ordem: idx+1,
-          apelido: (p.apelido||"").toUpperCase(),
-          hora: p.horaChegada || "",
-          obs,
-          nao_vai_jogar: p.naoVaiJogar ? "SIM" : "",
-        };
-      });
+          const header = ["ID","ORDEM","APELIDO","HORA","OBS","NÃO VAI JOGAR"];
+          const rows = (pres||[]).map(r => ([
+            r.id ?? "",
+            r.ordem ?? "",
+            r.apelido ?? "",
+            r.hora ?? "",
+            (r.obs ?? ""),
+            (r.nao_vai_jogar ? "SIM" : "")
+          ]));
 
-      const titulo = `Presença (${isoToBr(dia)})`;
-      const html = `
-      <html><head><meta charset="utf-8">
-      <style>
-        body{font-family:Arial,sans-serif}
-        h2{margin:0 0 10px 0}
-        table{border-collapse:collapse;width:100%}
-        th,td{border:1px solid #ccc;padding:6px;font-size:12px}
-        th{background:#ff7f27;color:#000;font-weight:900}
-      </style></head><body>
-      <h2>${titulo}</h2>
-      <table>
-        <thead><tr>
-          <th>ID</th><th>ORDEM</th><th>APELIDO</th><th>HORA</th><th>OBS</th><th>NÃO VAI JOGAR</th>
-        </tr></thead>
-        <tbody>
-          ${rows.map(r=>`<tr>
-            <td>${r.id}</td><td>${r.ordem}</td><td>${r.apelido}</td><td>${r.hora}</td><td>${r.obs}</td><td>${r.nao_vai_jogar}</td>
-          </tr>`).join("")}
-        </tbody>
-      </table>
-      </body></html>`;
+          const csv = [header, ...rows]
+            .map(line => line.map(v => `"${String(v).replace(/"/g,'""')}"`).join(";"))
+            .join("
+");
 
-      // Excel simples (.xls) — suficiente e rápido no dia do jogo
-      const blob = new Blob([html], {type:"application/vnd.ms-excel"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href=url;
-      a.download = `presenca_${dia}.xls`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 2000);
-    }
+          downloadTextFile(csv, `presenca_${dataJogo}.csv`, "text/csv;charset=utf-8");
+        })();
+      }
+
 
     function printEscalacao(tempo){
       const dia = getDataJogoISO();
