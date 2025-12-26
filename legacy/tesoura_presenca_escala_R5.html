@@ -594,19 +594,20 @@ function getDataJogoISO() {
 
       statusPresentesEl.textContent = "Carregando presenca...";
       try{
+                  
         const { data: rows, error } = await supabase
-          .from("presenca")
-          .select("apelido, presenca")
+          .from("presencas")
+          .select("apelido, presente")
           .eq("data_jogo", dia);
 
         if(error) throw error;
 
         const setPresentes = new Set(
           (rows || [])
-            .filter(r => r && (r.presenca === true || r.presenca === 1))
+            .filter(r => r && (r.presente === true || r.presente === 1))
             .map(r => String(r.apelido || "").trim())
         );
-
+ 
         presentesHoje = (todosJogadores || [])
           .filter(j => setPresentes.has(j.apelido))
           .map(j => ({
