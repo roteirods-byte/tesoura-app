@@ -30,16 +30,19 @@
     .badge{font-size:12px;color:var(--white);opacity:.95;background:var(--bg);border:1px solid var(--line);padding:4px 10px;border-radius:999px}
     .btn{border:none;border-radius:8px;padding:8px 12px;font-weight:900;cursor:pointer}
     .btn-logout{background:var(--red);color:#fff}
-    .btn-hide{display:none}
 
     .tabs{display:flex;background:var(--bar);border-bottom:2px solid var(--orange)}
     .tab-btn{flex:1;padding:10px;cursor:pointer;text-align:center;border:none;background:var(--bar);color:#fff;font-weight:900;font-size:14px}
     .tab-btn.active{background:#1f2937;color:var(--orange);border-bottom:3px solid var(--orange)}
 
-    .wrap{height:calc(100vh - 80px);background:var(--panel)}
+    .wrap{height:calc(100vh - 80px);background:var(--panel);position:relative}
     .empty{height:100%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-weight:800}
-    iframe{width:100%;height:100%;border:none;background:var(--panel);display:none}
-    iframe.show{display:block}
+
+    /* FIX CRÍTICO: só a ABA ATIVA aparece */
+    .tab-content{display:none;height:100%}
+    .tab-content.active{display:block}
+
+    iframe{width:100%;height:100%;border:none;background:var(--panel);display:block}
 
     /* Login */
     #loginOverlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.78)}
@@ -65,12 +68,12 @@
 
   <script>
     // =========================
-    // TESOURA INDEX (FIX 404 + ESTABILIDADE)
-    // BUILD: 2025-12-26 v6
+    // TESOURA INDEX (ESTÁVEL)
+    // BUILD: 2025-12-26 v7
     // =========================
-
-    const BUILD = "2025-12-26_v6"; // aparece no topo (para você confirmar que atualizou)
-    const SESSION_KEY = "TESOURA_SESSION_V3";
+    const BUILD = "2025-12-26_v7"; // aparece no topo (confirma atualização)
+    const SESSION_KEY = "TESOURA_SESSION_V4";
+    const LAST_BUILD_KEY = "TESOURA_LAST_BUILD";
 
     const DIR_MAP = {
       "1baidec": { email:"1baidec@gmail.com", perfil:"TUDO" },
@@ -81,44 +84,20 @@
     };
     const JOGADORES_SENHA = "TESOURA2026";
 
-    // Arquivos (tentamos ROOT e /legacy automaticamente)
+    // Arquivos (no seu ZIP, todos estão em /legacy)
     const PANEL_CANDIDATES = {
-      "aba-jogadores": [
-        "tesoura_jogadores_teste.html",
-        "legacy/tesoura_jogadores_teste.html"
-      ],
-      "aba-presenca": [
-        "tesoura_presenca_escala_R5_v8.html",
-        "tesoura_presenca_escala_R5_v7.html",
-        "tesoura_presenca_escala_R5.html",
-        "legacy/tesoura_presenca_escala_R5_v8.html",
-        "legacy/tesoura_presenca_escala_R5_v7.html",
-        "legacy/tesoura_presenca_escala_R5.html"
-      ],
-      "aba-controle": [
-        "tesoura_controle_geral_teste.html",
-        "legacy/tesoura_controle_geral_teste.html"
-      ],
-      "aba-mensalidade": [
-        "tesoura_mensalidade_R4.html",
-        "legacy/tesoura_mensalidade_R4.html"
-      ],
-      "aba-caixa": [
-        "tesoura_caixa_teste.html",
-        "legacy/tesoura_caixa_teste.html"
-      ],
-      "aba-gols": [
-        "tesoura_gols_teste.html",
-        "legacy/tesoura_gols_teste.html"
-      ],
-      "aba-banco": [
-        "tesoura_banco_dados_teste.html",
-        "legacy/tesoura_banco_dados_teste.html"
-      ],
+      "aba-jogadores":   ["legacy/tesoura_jogadores_teste.html",   "tesoura_jogadores_teste.html"],
+      "aba-presenca":    ["legacy/tesoura_presenca_escala_R5.html","tesoura_presenca_escala_R5.html"],
+      "aba-controle":    ["legacy/tesoura_controle_geral_teste.html","tesoura_controle_geral_teste.html"],
+      "aba-mensalidade": ["legacy/tesoura_mensalidade_R4.html",    "tesoura_mensalidade_R4.html"],
+      "aba-caixa":       ["legacy/tesoura_caixa_teste.html",       "tesoura_caixa_teste.html"],
+      "aba-gols":        ["legacy/tesoura_gols_teste.html",        "tesoura_gols_teste.html"],
+      "aba-banco":       ["legacy/tesoura_banco_dados_teste.html", "tesoura_banco_dados_teste.html"],
     };
 
-    function $(id){ return document.getElementById(id); }
+    const RESOLVED_URL = Object.create(null); // cache em memória
 
+    function $(id){ return document.getElementById(id); }
     function setMsg(t){ const el=$("msgLogin"); if(el) el.textContent = t || ""; }
 
     function setModoLabel(txt){
@@ -142,18 +121,16 @@
 
     function cacheBust(url){
       const sep = url.includes("?") ? "&" : "?";
-      return url + sep + "v=" + Date.now();
+      return url + sep + "v=" + BUILD; // bust por BUILD (não por Date.now)
     }
 
     async function disableServiceWorkerHard(){
-      // 1) unregister
       try{
         if("serviceWorker" in navigator){
           const regs = await navigator.serviceWorker.getRegistrations();
           for(const r of regs){ try{ await r.unregister(); }catch(e){} }
         }
       }catch(e){}
-      // 2) clear caches
       try{
         if("caches" in window){
           const keys = await caches.keys();
@@ -177,11 +154,6 @@
       $("loginOverlay").style.display = show ? "flex" : "none";
     }
 
-    function showFrame(frame, show){
-      frame.classList.toggle("show", !!show);
-      $("emptyState").style.display = show ? "none" : "flex";
-    }
-
     function setActiveTab(tabId){
       document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
       document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
@@ -195,7 +167,7 @@
 
     async function urlExists(url){
       try{
-        const r = await fetch(url, { method:"GET", cache:"no-store" });
+        const r = await fetch(url, { method:"GET", cache:"no-store", credentials:"omit" });
         return r.ok;
       }catch(e){
         return false;
@@ -203,11 +175,15 @@
     }
 
     async function resolvePanelUrl(tabId){
+      if(RESOLVED_URL[tabId]) return RESOLVED_URL[tabId];
+
       const list = PANEL_CANDIDATES[tabId] || [];
       for(const u of list){
-        // IMPORTANT: não usar cache aqui
         const ok = await urlExists(cacheBust(u));
-        if(ok) return u;
+        if(ok){
+          RESOLVED_URL[tabId] = u;
+          return u;
+        }
       }
       return null;
     }
@@ -220,37 +196,45 @@
           <div style="margin-top:8px;font-weight:900">Não foi possível carregar o painel: ${nice}</div>
           <div style="margin-top:10px;color:#94a3b8;font-size:12px">
             Motivo: arquivo não encontrado no GitHub (root ou legacy).<br/>
-            Corrija o nome/local do arquivo no repositório.
+            Verifique o nome/local do arquivo no repositório.
           </div>
         </div>
       `;
     }
 
     async function loadTab(tabId){
+      // trava se não tiver sessão
+      const sess = getSess();
+      if(!sess?.modo){ showOverlay(true); return; }
+
       setActiveTab(tabId);
 
-      // NÃO MOSTRAR 404: só carrega iframe depois de achar arquivo válido
       const frame = document.querySelector(`#${tabId} iframe`);
       if(!frame) return;
-
-      showFrame(frame, false);
-      frame.src = "about:blank";
 
       const url = await resolvePanelUrl(tabId);
       if(!url){
         setIframeError(frame, tabId);
-        showFrame(frame, true);
+        $("emptyState").style.display = "none";
         return;
       }
 
-      frame.src = cacheBust(url);
-      showFrame(frame, true);
+      // evita recarregar se já está no mesmo arquivo
+      const srcWanted = cacheBust(url);
+      if(frame.dataset.src === srcWanted){
+        $("emptyState").style.display = "none";
+        return;
+      }
+
+      frame.dataset.src = srcWanted;
+      frame.src = srcWanted;
+      $("emptyState").style.display = "none";
     }
 
     function lockForJogadores(){
-      // trava por CSS dentro do iframe (melhor esforço)
       const mode = localStorage.getItem("TESOURA_MODO");
       if(mode !== "JOGADORES") return;
+
       document.querySelectorAll("iframe").forEach((ifr)=>{
         ifr.addEventListener("load", ()=>{
           try{
@@ -276,7 +260,6 @@
 
     // ---------- LOGIN ----------
     let pickMode = null; // "JOG" | "DIR"
-
     function pickJog(){ pickMode="JOG"; setMsg("Jogadores selecionado."); $("inpSenha").focus(); }
     function pickDir(){ pickMode="DIR"; setMsg("Diretoria selecionado."); $("inpSenha").focus(); }
 
@@ -285,13 +268,11 @@
         if(!pickMode) throw new Error("Clique primeiro: ENTRAR JOGADORES ou ENTRAR DIRETORIA.");
         const senha = ($("inpSenha").value || "").trim();
         if(!senha) throw new Error("Digite a senha.");
-
         setMsg("Verificando...");
 
         if(pickMode === "JOG"){
           if(senha !== JOGADORES_SENHA) throw new Error("Senha de jogadores incorreta.");
           setSess({ modo:"JOGADORES", perfil:"LEITURA", ts:Date.now() });
-          localStorage.setItem("TESOURA_MODO","JOGADORES");
           showOverlay(false);
           setModoLabel("Modo: Jogadores (visual)");
           await loadTab("aba-jogadores");
@@ -309,9 +290,6 @@
         if(resp.error) throw resp.error;
 
         setSess({ modo:"DIRETORIA", perfil: info.perfil, email: info.email, ts:Date.now() });
-        localStorage.setItem("TESOURA_MODO","DIRETORIA");
-        localStorage.setItem("TESOURA_PERFIL", info.perfil);
-
         showOverlay(false);
         setModoLabel("Modo: Diretoria");
         await loadTab("aba-jogadores");
@@ -326,19 +304,16 @@
     async function doLogout(){
       try{ if(window.supabaseClient) await window.supabaseClient.auth.signOut(); }catch(e){}
       clearSess();
-      // recarrega SEM cache
-      location.href = location.origin + location.pathname + "?logout=" + Date.now();
+      location.href = location.origin + location.pathname + "?logout=" + BUILD;
     }
 
     async function boot(){
-      // 1) Mata Service Worker e caches (para parar de ficar mostrando versão velha)
-      await disableServiceWorkerHard();
-
-      // 2) Não carregar iframe nenhum antes do login (NUNCA mostrar 404 atrás)
-      document.querySelectorAll("iframe").forEach(ifr=>{
-        ifr.src = "about:blank";
-        ifr.removeAttribute("src");
-      });
+      // Roda a limpeza pesada SÓ quando muda o BUILD (evita instabilidade no celular)
+      const lastBuild = localStorage.getItem(LAST_BUILD_KEY);
+      if(lastBuild !== BUILD){
+        await disableServiceWorkerHard();
+        localStorage.setItem(LAST_BUILD_KEY, BUILD);
+      }
 
       $("btnJog").onclick = pickJog;
       $("btnDir").onclick = pickDir;
@@ -350,16 +325,10 @@
         btn.addEventListener("click", async ()=>{
           const tabId = btn.getAttribute("data-tab");
           if(!tabId) return;
-
-          // se não logou, não abre aba
-          const sess = getSess();
-          if(!sess?.modo){ showOverlay(true); return; }
-
           await loadTab(tabId);
         });
       });
 
-      // 3) Se já tiver sessão, entra direto (sem carregar tudo de uma vez)
       const sess = getSess();
       if(sess?.modo){
         showOverlay(false);
@@ -375,6 +344,7 @@
     window.addEventListener("load", boot);
   </script>
 </head>
+
 <body>
   <div id="loginOverlay">
     <div class="box">
@@ -397,8 +367,7 @@
 
       <div class="help">
         • Jogadores: somente visualização (senha: <b>TESOURA2026</b>).<br/>
-        • Diretoria: conforme senha (com ou sem Caixa).<br/>
-        • Se o painel não abrir, é arquivo com nome/local errado no GitHub.
+        • Diretoria: conforme senha (com ou sem Caixa).
       </div>
     </div>
   </div>
