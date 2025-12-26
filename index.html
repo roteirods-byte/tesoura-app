@@ -319,9 +319,15 @@
     if(!window.TESOURA_CONFIG || !window.TESOURA_CONFIG.SUPABASE_URL || !window.TESOURA_CONFIG.SUPABASE_KEY){
       throw new Error("Supabase não inicializado. Verifique app/js/config.js (SUPABASE_URL e SUPABASE_KEY).");
     }
-    if(!window.supabaseClient && typeof window.initSupabaseClient === "function") {
-      window.supabaseClient = window.initSupabaseClient();
-    }
+    
+    if(!window.supabaseClient) {
+  if (typeof window.initSupabaseClient === "function") {
+    window.supabaseClient = window.initSupabaseClient();
+  } else if (typeof window.getSupabase === "function") {
+    window.supabaseClient = window.getSupabase();
+  }
+}
+    
     if(!window.supabaseClient) throw new Error("Supabase não inicializado. Verifique app/js/supabaseClient.js");
     return window.supabaseClient;
   }
