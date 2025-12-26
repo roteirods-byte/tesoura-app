@@ -329,22 +329,15 @@
   }
 
   async function excluirLancamento(item) {
-  if (!confirm("Confirmar exclusão deste lançamento?")) return;
+    if (!confirm("Confirmar exclusão deste lançamento?")) return;
 
-  const id = (typeof item === "object" && item) ? item.id : item;
+    const id = (typeof item === "object" && item) ? item.id : item;
 
-  const { error } = await supabase
-    .from("caixa")
-    .delete()
-    .eq("id", id);
+    const { error } = await supabase
+      .from("caixa")
+      .delete()
+      .eq("id", id);
 
-  if (error) {
-    alert("Erro ao excluir lançamento: " + error.message);
-    return;
-  }
-
-  await carregarCaixaMes();
-}
     if (error) {
       alert("Erro ao excluir lançamento: " + error.message);
       return;
@@ -361,6 +354,7 @@
   preencherAnoMesPadrao();
   cxData.value = new Date().toISOString().slice(0, 10);
   carregarCaixaMes();
+  
 </script>
 </body>
 </html>
