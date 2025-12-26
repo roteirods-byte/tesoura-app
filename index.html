@@ -60,11 +60,23 @@
     }
 
     async function disableServiceWorker(){
+      let changed = false;
       try{
         if("serviceWorker" in navigator){
           const regs = await navigator.serviceWorker.getRegistrations();
+          if(regs && regs.length) changed = true;
           for(const r of regs){ await r.unregister(); }
         }
+      }catch(e){}
+      try{
+        if("caches" in window){
+          const keys = await caches.keys();
+          if(keys && keys.length) changed = true;
+          for(const k of keys){ await caches.delete(k); }
+        }
+      }catch(e){}
+      return changed;
+    }
       }catch(e){}
       try{
         if("caches" in window){
@@ -143,23 +155,18 @@
       const base = iframe.getAttribute("data-src");
       if(!base) return;
 
-      // evita o "flash" (mostra página velha por 1s)
+      // evita "flash" de versão antiga: esconde, limpa e carrega com cache-bust
       iframe.style.visibility = "hidden";
-      iframe.style.pointerEvents = "none";
-
-      // força limpar antes de carregar
       iframe.src = "about:blank";
-      const url = cacheBust(base);
 
-      iframe.onload = ()=>{
+      // remove listener antigo (se houver) e coloca um novo
+      iframe.onload = () => {
         iframe.style.visibility = "visible";
-        iframe.style.pointerEvents = "auto";
-        TESOURA_TRAVAR_IFRAMES();
+        try{ TESOURA_TRAVAR_IFRAMES(); }catch(e){}
       };
 
-      setTimeout(()=>{ iframe.src = url; }, 0);
+      setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
     }
-
 
     function abrirAba(id){
       const abas = document.querySelectorAll(".tab-content");
@@ -180,8 +187,16 @@
     window.abrirAba = abrirAba;
 
     window.addEventListener("load", async ()=>{
-      await disableServiceWorker();
-
+      const swChanged = await disableServiceWorker();
+      // Se havia Service Worker/cache antigo, recarrega 1x automaticamente para pegar tudo novo.
+      try{
+        const url = new URL(location.href);
+        if(swChanged && !url.searchParams.get("swcleared")){
+          url.searchParams.set("swcleared","1");
+          location.replace(url.toString());
+          return;
+        }
+      }catch(e){}
       // SEMPRE mostrar a tela inicial ao abrir o site
       window.TESOURA_ROLE = "";
       showTelaInicial(true);
@@ -267,31 +282,31 @@
   </div>
 
   <div id="aba-jogadores" class="tab-content active">
-    <iframe id="f-jogadores" data-src="legacy/tesoura_jogadores_teste.html"></iframe>
+    <iframe id="f-jogadores" data-src="tesoura_jogadores_teste.html"></iframe>
   </div>
 
   <div id="aba-presenca" class="tab-content">
-    <iframe id="f-presenca" data-src="legacy/tesoura_presenca_escala_R5.html"></iframe>
+    <iframe id="f-presenca" data-src="tesoura_presenca_escala_R5.html"></iframe>
   </div>
 
   <div id="aba-controle" class="tab-content">
-    <iframe id="f-controle" data-src="legacy/tesoura_controle_geral_teste.html"></iframe>
+    <iframe id="f-controle" data-src="tesoura_controle_geral_teste.html"></iframe>
   </div>
 
   <div id="aba-mensalidade" class="tab-content">
-    <iframe id="f-mensalidade" data-src="legacy/tesoura_mensalidade_R4.html"></iframe>
+    <iframe id="f-mensalidade" data-src="tesoura_mensalidade_R4.html"></iframe>
   </div>
 
   <div id="aba-caixa" class="tab-content">
-    <iframe id="f-caixa" data-src="legacy/tesoura_caixa_teste.html"></iframe>
+    <iframe id="f-caixa" data-src="tesoura_caixa_teste.html"></iframe>
   </div>
 
   <div id="aba-gols" class="tab-content">
-    <iframe id="f-gols" data-src="legacy/tesoura_gols_teste.html"></iframe>
+    <iframe id="f-gols" data-src="tesoura_gols_teste.html"></iframe>
   </div>
 
   <div id="aba-banco" class="tab-content">
-    <iframe id="f-banco" data-src="legacy/tesoura_banco_dados_teste.html"></iframe>
+    <iframe id="f-banco" data-src="tesoura_banco_dados_teste.html"></iframe>
   </div>
 
   <!-- Config do app (PIN, URL/KEY do Supabase etc) -->
@@ -330,20 +345,10 @@
     if(!window.TESOURA_CONFIG || !window.TESOURA_CONFIG.SUPABASE_URL || !window.TESOURA_CONFIG.SUPABASE_KEY){
       throw new Error("Supabase não inicializado. Verifique app/js/config.js (SUPABASE_URL e SUPABASE_KEY).");
     }
-
-    // 1) Preferir o client global criado em supabaseClient.js (getSupabase)
-    if(!window.supabaseClient && typeof window.getSupabase === "function"){
-      window.supabaseClient = window.getSupabase();
-    }
-
-    // 2) Fallback (se existir) para initSupabaseClient
-    if(!window.supabaseClient && typeof window.initSupabaseClient === "function"){
+    if(!window.supabaseClient && typeof window.initSupabaseClient === "function") {
       window.supabaseClient = window.initSupabaseClient();
     }
-
-    if(!window.supabaseClient){
-      throw new Error("Supabase não inicializado. Verifique app/js/supabaseClient.js");
-    }
+    if(!window.supabaseClient) throw new Error("Supabase não inicializado. Verifique app/js/supabaseClient.js");
     return window.supabaseClient;
   }
 
