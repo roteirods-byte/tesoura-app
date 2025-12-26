@@ -614,9 +614,14 @@ function getDataJogoISO() {
 
     
     // ===== CARREGAR PRESENÇA DO DIA (para estabilidade) =====
-    async function carregarPresencaHoje(){
-      const dia = getDataJogoISO();
-      dataJogoIso = dia; // habilita SALVAR
+
+async function carregarPresencaHoje(){
+
+  async function carregarBase(){
+    const dia = getDataJogoISO();
+    dataJogoIso = dia; // habilita SALVAR
+
+    try{
 
       statusPresentesEl.textContent = "Carregando presença...";
       try{
