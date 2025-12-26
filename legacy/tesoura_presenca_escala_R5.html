@@ -541,6 +541,14 @@ function getDataJogoISO() {
           };
         });
 
+        // monta mapa por APELIDO (chave normalizada) para cálculo de pontos
+        mapaJogadores = {};
+        todosJogadores.forEach(j => {
+          const k = keyApelido(j.apelido);
+          if(k) mapaJogadores[k] = j;
+        });
+
+
         // 2) Mensalidade (para regra de inadimplente) - SEM coluna status.
         //    Se não existir mensalidade do mês/ano e já passou do prazo, considera inadimplente.
         mensalidadesMap = {};
@@ -863,8 +871,12 @@ function renderJogadoresTodos(){
 
 
     // ===== ESCALAÇÃO (BALANCEAMENTO DE PONTOS) =====
+    function keyApelido(a){
+      return String(a || "").trim().toUpperCase();
+    }
+
     function pts(apelido){
-      const j = mapaJogadores[apelido];
+      const j = mapaJogadores[keyApelido(apelido)];
       if(!j) return 0;
 
       // se pontos vier vazio, calcula por HAB + VEL + MOV (mesma regra do painel Jogadores)
