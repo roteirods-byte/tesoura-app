@@ -507,7 +507,11 @@ function getDataJogoISO() {
     }
 
     // ===== LOAD BASE =====
+
         async function carregarBase(){
+      const dia = getDataJogoISO();
+      dataJogoIso = dia; // corrige inadimplência/faltas
+
       statusBaseEl.textContent = "Carregando base...";
       try{
         // 1) Jogadores: no banco o campo ATIVO pode ser "SIM" (texto) ou boolean.
@@ -523,7 +527,7 @@ function getDataJogoISO() {
           return (a === true) || (a === 1) || (a === "SIM") || (a === "sim") || (a === "S") || (a === "s");
         });
 
-        todosJogadores = jogadoresAtivos.map(j => {
+        todosJogadores = (jogadoresAtivos || []).map(j => {
           const apelido = (j.apelido || "").trim();
           const hab = (j.hab == null || j.hab === "") ? null : Number(j.hab);
           const vel = (j.vel == null || j.vel === "") ? null : Number(j.vel);
@@ -541,63 +545,33 @@ function getDataJogoISO() {
           };
         });
 
-        // monta mapa por APELIDO (chave normalizada) para cálculo de pontos
-        mapaJogadores = {};
-        todosJogadores.forEach(j => {
-          const k = keyApelido(j.apelido);
-          if(k) mapaJogadores[k] = j;
+        // 2) Mensalidades do ano corrente (para inadimplência)
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+
+        const { data: mensData, error: errM } = await supabase
+          .from("mensalidades")
+          .select("apelido, ano, mes, pago")
+          .eq("ano", anoAtual);
+
+        if(errM) throw errM;
+
+        mensPorApelido = {};
+        (mensData || []).forEach(r=>{
+          const ap = (r.apelido||"").trim();
+          if(!ap) return;
+          if(!mensPorApelido[ap]) mensPorApelido[ap]=[];
+          mensPorApelido[ap].push({ ano:Number(r.ano), mes:Number(r.mes), pago:!!r.pago });
         });
 
+        // 3) Presenças (para faltas do histórico)
+        const { data: presData, error: errP } = await supabase
+          .from("presencas")
+          .select("data_jogo, apelido, presente");
 
-        // 2) Mensalidade (para regra de inadimplente) - SEM coluna status.
-        //    Se não existir mensalidade do mês/ano e já passou do prazo, considera inadimplente.
-        mensalidadesMap = {};
-        try{
-          const d = new Date(dia);
-          const ano = d.getFullYear();
-          const mes = d.getMonth() + 1;
+        if(errP) throw errP;
 
-          const { data: mens, error: errM } = await supabase
-            .from("mensalidades")
-            .select("apelido, ano, mes, pago, data_pagamento")
-            .eq("ano", ano).eq("mes", mes);
-
-          if(errM) throw errM;
-
-          (mens || []).forEach(r=>{
-            const ap = (r.apelido || "").trim();
-            mensalidadesMap[ap] = !!(r.pago || r.data_pagamento);
-          });
-        }catch(e){
-          console.warn("Aviso: não consegui ler mensalidades (seguindo sem inadimplência).", e);
-          mensalidadesMap = {};
-        }
-
-        // 3) Faltas (histórico): usa presencas.obs = "F" (sem coluna status).
-        faltasMap = {};
-        try{
-          const d = new Date(dia);
-          const ano = d.getFullYear();
-
-          const { data: faltas, error: errF } = await supabase
-            .from("presencas")
-            .select("apelido, obs, data_jogo")
-            .gte("data_jogo", `${ano}-01-01`)
-            .lte("data_jogo", `${ano}-12-31`);
-
-          if(errF) throw errF;
-
-          (faltas || []).forEach(r=>{
-            const ap = (r.apelido || "").trim();
-            const obs = (r.obs || "").trim();
-            if(obs === "F"){
-              faltasMap[ap] = (faltasMap[ap] || 0) + 1;
-            }
-          });
-        }catch(e){
-          console.warn("Aviso: não consegui calcular faltas (seguindo com 0).", e);
-          faltasMap = {};
-        }
+        presencasHistorico = presData || [];
 
         // Render: jogadores e presença do dia
         renderJogadoresTodos();
@@ -612,7 +586,6 @@ function getDataJogoISO() {
       }
     }
 
-    
     // ===== CARREGAR PRESENÇA DO DIA (para estabilidade) =====
 
 async function carregarPresencaHoje(){
