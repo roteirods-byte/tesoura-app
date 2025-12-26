@@ -513,7 +513,7 @@ function getDataJogoISO() {
         // 1) Jogadores: no banco o campo ATIVO pode ser "SIM" (texto) ou boolean.
         const { data: jogadoresRaw, error: errJ } = await supabase
           .from("jogadores")
-          .select("id, apelido, pontos, ativo")
+          .select("id, apelido, posicao, hab, vel, mov, pontos, ativo")
           .order("apelido", { ascending: true });
 
         if(errJ) throw errJ;
@@ -523,11 +523,24 @@ function getDataJogoISO() {
           return (a === true) || (a === 1) || (a === "SIM") || (a === "sim") || (a === "S") || (a === "s");
         });
 
-        todosJogadores = jogadoresAtivos.map(j => ({
-          id: j.id,
-          apelido: (j.apelido || "").trim(),
-          pontos: Number(j.pontos || 0),
-        }));
+        todosJogadores = jogadoresAtivos.map(j => {
+          const apelido = (j.apelido || "").trim();
+          const hab = (j.hab == null || j.hab === "") ? null : Number(j.hab);
+          const vel = (j.vel == null || j.vel === "") ? null : Number(j.vel);
+          const mov = (j.mov == null || j.mov === "") ? null : Number(j.mov);
+          const pontosCalc = (hab || 0) + (vel || 0) + (mov || 0);
+          const pontos = (j.pontos != null && j.pontos !== "" && !Number.isNaN(Number(j.pontos)))
+            ? Number(j.pontos)
+            : pontosCalc;
+
+          return {
+            id: j.id,
+            apelido,
+            posicao: (j.posicao || "").trim(),
+            hab, vel, mov,
+            pontos
+          };
+        });
 
         // 2) Mensalidade (para regra de inadimplente) - SEM coluna status.
         //    Se não existir mensalidade do mês/ano e já passou do prazo, considera inadimplente.
@@ -853,24 +866,78 @@ function renderJogadoresTodos(){
     // ===== ESCALAÇÃO (BALANCEAMENTO DE PONTOS) =====
     function pts(apelido){
       const j = mapaJogadores[apelido];
-      return (j && j.pontos!=null) ? Number(j.pontos) : 0;
+      if(!j) return 0;
+
+      // se pontos vier vazio, calcula por HAB + VEL + MOV (mesma regra do painel Jogadores)
+      const pRaw = (j.pontos != null && j.pontos !== "") ? Number(j.pontos) : NaN;
+      if(!Number.isNaN(pRaw)) return pRaw;
+
+      const hab = (j.hab == null || j.hab === "") ? 0 : Number(j.hab);
+      const vel = (j.vel == null || j.vel === "") ? 0 : Number(j.vel);
+      const mov = (j.mov == null || j.mov === "") ? 0 : Number(j.mov);
+      return (hab || 0) + (vel || 0) + (mov || 0);
     }
 
     function balancearEmDoisTimes(listaApelidos){
-      // algoritmo guloso: ordena por pontos desc e vai colocando no time com menor soma (e respeita 10 vagas)
-      const ordenada = [...listaApelidos].sort((a,b)=>pts(b)-pts(a));
+      // Equilibra por POSIÇÃO + PONTOS (heurística simples e estável)
+      const normPos = (apelido)=>{
+        const raw = String(mapaJogadores[apelido]?.posicao || "").toUpperCase().trim();
+        if(!raw) return "OUT";
+
+        if(raw.includes("GOL") || raw === "G" || raw === "GK") return "GOL";
+        if(raw.includes("ZAG") || raw.includes("DEF") || raw === "D") return "DEF";
+        if(raw.includes("LAT") || raw.includes("ALA") || raw === "L") return "LAT";
+        if(raw.includes("MEI") || raw.includes("MID") || raw === "M") return "MEI";
+        if(raw.includes("ATA") || raw.includes("FWD") || raw === "A") return "ATA";
+        return "OUT";
+      };
+
+      const grupos = { GOL:[], DEF:[], LAT:[], MEI:[], ATA:[], OUT:[] };
+      (listaApelidos || []).forEach(ap=>{
+        const k = normPos(ap);
+        (grupos[k] || grupos.OUT).push(ap);
+      });
+
+      const ordenarPontosDesc = (arr)=> arr.sort((a,b)=>pts(b)-pts(a));
+
       const A=[], B=[];
       let sa=0, sb=0;
-      for(const ap of ordenada){
-        if (A.length>=10){ B.push(ap); sb+=pts(ap); continue; }
-        if (B.length>=10){ A.push(ap); sa+=pts(ap); continue; }
-        if (sa<=sb){ A.push(ap); sa+=pts(ap); } else { B.push(ap); sb+=pts(ap); }
-      }
+      const ca={GOL:0,DEF:0,LAT:0,MEI:0,ATA:0,OUT:0};
+      const cb={GOL:0,DEF:0,LAT:0,MEI:0,ATA:0,OUT:0};
+
+      const pushTeam = (team, ap, k)=>{
+        if(team === "A"){ A.push(ap); sa += pts(ap); ca[k]++; }
+        else { B.push(ap); sb += pts(ap); cb[k]++; }
+      };
+
+      const chooseTeam = (k, ap)=>{
+        // limites
+        if(A.length >= 10) return "B";
+        if(B.length >= 10) return "A";
+
+        // 1) balanceia quantidade da posição
+        if(ca[k] < cb[k]) return "A";
+        if(cb[k] < ca[k]) return "B";
+
+        // 2) balanceia pontos totais
+        if(sa <= sb) return "A";
+        return "B";
+      };
+
+      // Ordem de prioridade de posição
+      const ordem = ["GOL","DEF","LAT","MEI","ATA","OUT"];
+      ordem.forEach(k=>{
+        ordenarPontosDesc(grupos[k]);
+        grupos[k].forEach(ap=>{
+          const t = chooseTeam(k, ap);
+          pushTeam(t, ap, k);
+        });
+      });
+
       return { amarelo:A, azul:B, somaAm:sa, somaAz:sb };
     }
 
-    
-    // ===== Regras (REV 6) =====
+// ===== Regras (REV 6) =====
     const HORARIO_CORTE_1T = "06:15";
 
     function pad2(n){ return String(n).padStart(2,"0"); }
