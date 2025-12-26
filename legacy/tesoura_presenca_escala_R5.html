@@ -588,13 +588,9 @@ function getDataJogoISO() {
 
     // ===== CARREGAR PRESENÇA DO DIA (para estabilidade) =====
 
-async function carregarPresencaHoje(){
-
-  async function carregarBase(){
-    const dia = getDataJogoISO();
-    dataJogoIso = dia; // habilita SALVAR
-
-    try{
+    async function carregarPresencaHoje(){
+      const dia = getDataJogoISO();
+      dataJogoIso = dia; // habilita SALVAR
 
       statusPresentesEl.textContent = "Carregando presença...";
       try{
@@ -621,122 +617,44 @@ async function carregarPresencaHoje(){
             escalou1: false,
             escalou2: false,
             saiu: false,
-            obs: "",
-            pontos: Number(j.pontos || 0),
+            obs: ""
           }));
 
-        atualizarInfoPresentes();
-        renderPresentes();
-        syncEscalacoesComPresenca();
-        renderEscalacoes();
+        // Carrega flags do dia (naoVaiJogar / escalou / saiu / hora / obs)
+        const { data: metaRows, error: errMeta } = await supabase
+          .from("presencas_meta")
+          .select("apelido, hora, nao_vai_jogar, escalou1, escalou2, saiu, obs")
+          .eq("data_jogo", dia);
 
-        statusPresentesEl.textContent = "Presença carregada.";
+        if(errMeta && errMeta.code !== "42P01") throw errMeta; // se tabela não existir, ignora
+
+        const metaMap = new Map();
+        (metaRows || []).forEach(r=>{
+          metaMap.set(String(r.apelido||"").trim(), r);
+        });
+
+        presentesHoje = presentesHoje.map(p=>{
+          const m = metaMap.get(p.apelido);
+          if(!m) return p;
+          return {
+            ...p,
+            horaChegada: String(m.hora||"").trim(),
+            naoVaiJogar: !!m.nao_vai_jogar,
+            escalou1: !!m.escalou1,
+            escalou2: !!m.escalou2,
+            saiu: !!m.saiu,
+            obs: String(m.obs||"").trim()
+          };
+        });
+
       }catch(err){
-        console.error(err);
-        statusPresentesEl.textContent = "Erro ao carregar presença (ver Console).";
-        // não derruba a base toda
-      }
-    }
-
-function renderJogadoresTodos(){
-      tbodyJogadoresTodos.innerHTML = "";
-      todosJogadores.forEach(j=>{
-        const tr=document.createElement("tr");
-
-        const tdId=document.createElement("td");
-        tdId.textContent = j.id ?? "";
-        tr.appendChild(tdId);
-
-        const tdAp=document.createElement("td");
-        tdAp.textContent = (j.apelido||"").toUpperCase();
-        tr.appendChild(tdAp);
-
-        const tdBtn=document.createElement("td");
-        const bt=document.createElement("button");
-        bt.textContent="CHEGOU AGORA";
-        bt.className="btn-chegou";
-        bt.onclick=()=>marcarChegada(j);
-        tdBtn.appendChild(bt);
-        tr.appendChild(tdBtn);
-
-        tbodyJogadoresTodos.appendChild(tr);
-      });
-    }
-
-    function marcarChegada(j){
-      const apelido = j?.apelido;
-      if(!apelido) return;
-
-      if(presentesHoje.find(p=>p.apelido===apelido)){
-        alert("Este jogador já está na lista de presença hoje.");
-        return;
+        console.warn("Aviso: nao consegui carregar presença de hoje", err);
+        presentesHoje = [];
       }
 
-      const agora=new Date();
-      const registro = {
-        id: j.id,
-        apelido,
-        horaChegada: formatHora(agora),
-        naoVaiJogar: false,
-        escalou1: false,
-        escalou2: false,
-        saiu: false, // saiu do 1º tempo
-        obs: "",
-        pontos: j.pontos ?? 0
-      };
-      presentesHoje.push(registro);
-      presentesHoje.sort((a,b)=>comparaHoraStr(a.horaChegada,b.horaChegada));
-
-      // NÃO pode apagar a escalação quando chega mais gente.
-      syncEscalacoesComPresenca();
-      atualizarInfoPresentes();
       renderPresentes();
-      renderEscalacoes();
-    }
 
-    function toggleNaoVaiJogar(apelido){
-      const p=presentesHoje.find(x=>x.apelido===apelido);
-      if(!p) return;
-
-      p.naoVaiJogar=!p.naoVaiJogar;
-
-      // Se marcou "não vai jogar", remove da escalação (mas NÃO mexe na lista de presença).
-      if(p.naoVaiJogar){
-        removerApelidoDasEscalacoes(apelido);
-        p.saiu=false;
-      }
-
-      syncEscalacoesComPresenca();
-      renderPresentes();
-      renderEscalacoes();
-    }
-
-    function excluirPresente(apelido){
-      // remove da lista de presença
-      presentesHoje = presentesHoje.filter(p=>p.apelido!==apelido);
-
-      // remove também da escalação (se estava)
-      removerApelidoDasEscalacoes(apelido);
-
-      atualizarInfoPresentes();
-      syncEscalacoesComPresenca();
-      renderPresentes();
-      renderEscalacoes();
-    }
-
-    // ===== SINCRONIZAÇÃO (NÃO DESFAZER RISCOS AO CHEGAR NOVO JOGADOR) =====
-    function removerApelidoDasEscalacoes(apelido){
-      const filt = (arr)=> (arr||[]).filter(e=>e && e.apelido !== apelido);
-      escala1.amarelo = filt(escala1.amarelo);
-      escala1.azul   = filt(escala1.azul);
-      escala2.amarelo = filt(escala2.amarelo);
-      escala2.azul   = filt(escala2.azul);
-    }
-
-    function syncEscalacoesComPresenca(){
-      // Mantém escalação, mas remove:
-      // - quem não está mais presente hoje
-      // - quem está marcado como "não vai jogar"
+      // limpa escalação de quem não está presente / quem marcou não vai jogar
       const presentesSet = new Set((presentesHoje||[]).map(p=>p.apelido));
       const naoSet = new Set((presentesHoje||[]).filter(p=>p.naoVaiJogar).map(p=>p.apelido));
 
@@ -749,7 +667,7 @@ function renderJogadoresTodos(){
 
       atualizarObs(); // recalcula riscos/OBS com base na escalação atual
     }
-
+    
     function renderPresentes(){
       tbodyPresentesHoje.innerHTML="";
       presentesHoje.forEach((p,idx)=>{
