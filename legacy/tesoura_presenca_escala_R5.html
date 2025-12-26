@@ -566,7 +566,7 @@ function getDataJogoISO() {
 
         // 3) Presenças (para faltas do histórico)
         const { data: presData, error: errP } = await supabase
-          .from("presenca")
+          .from("presencas")
           .select("data_jogo, apelido, presente");
 
         if(errP) throw errP;
