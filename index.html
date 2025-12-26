@@ -151,19 +151,56 @@
     }
 
     function ensureIframeLoaded(iframe){
-      if(!iframe) return;
-      const base = iframe.getAttribute("data-src");
-      if(!base) return;
+      // Sempre recarrega ao abrir a aba (evita cache antigo)
+const raw = (iframe.dataset.src || "").trim();
+      if(!raw){ return; }
 
-      // evita "flash" de versão antiga: esconde, limpa e carrega com cache-bust
-      iframe.style.visibility = "hidden";
-      iframe.src = "about:blank";
+      // Tentativas de prefixo (para evitar 404 quando arquivos ficam em /legacy)
+      const prefixes = ["legacy/", ""];
 
-      // remove listener antigo (se houver) e coloca um novo
-      iframe.onload = () => {
-        iframe.style.visibility = "visible";
-        try{ TESOURA_TRAVAR_IFRAMES(); }catch(e){}
+      const version = window.__TESOURA_VERSION || Date.now().toString();
+      const withV = (u) => {
+        const sep = u.includes("?") ? "&" : "?";
+        return u + sep + "v=" + encodeURIComponent(version);
       };
+
+      const loadUrl = async () => {
+        // Resolve a URL existente via HEAD (no-store), caindo para o próximo prefixo se der 404.
+        for(const p of prefixes){
+          const candidate = p + raw;
+          try{
+            const resp = await fetch(candidate, { method:"HEAD", cache:"no-store" });
+            if(resp && resp.ok){
+              return withV(candidate);
+            }
+          }catch(e){}
+        }
+        // Se não conseguiu validar via HEAD, ainda tenta sem prefixo (último recurso)
+        return withV(raw);
+      };
+
+      // Mostra um "loading" simples enquanto carrega
+      try{
+        iframe.style.visibility = "hidden";
+      }catch(e){}
+
+      loadUrl().then((finalUrl) => {
+        iframe.src = finalUrl;
+
+        const t = setTimeout(() => {
+          try{
+            iframe.style.visibility = "visible";
+          }catch(e){}
+        }, 300);
+
+        iframe.addEventListener("load", () => {
+          clearTimeout(t);
+          try{
+            iframe.style.visibility = "visible";
+          }catch(e){}
+        }, { once:true });
+      });
+    };
 
       setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
     }
