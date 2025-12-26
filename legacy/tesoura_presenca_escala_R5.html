@@ -566,8 +566,8 @@ function getDataJogoISO() {
 
         // 3) Presenças (para faltas do histórico)
         const { data: presData, error: errP } = await supabase
-          .from("presencas")
-          .select("data_jogo, apelido, presente");
+          .from("presenca")
+          .select("data_jogo, apelido, presenca");
 
         if(errP) throw errP;
 
@@ -592,10 +592,10 @@ function getDataJogoISO() {
       const dia = getDataJogoISO();
       dataJogoIso = dia; // habilita SALVAR
 
-      statusPresentesEl.textContent = "Carregando presença...";
+      statusPresentesEl.textContent = "Carregando presenca...";
       try{
         const { data: rows, error } = await supabase
-          .from("presencas")
+          .from("presenca")
           .select("apelido, presenca")
           .eq("data_jogo", dia);
 
@@ -1454,7 +1454,7 @@ function calcularTotalPontos(lista){
               apelido: j.apelido,
               posicao: (j.posicao||"").toUpperCase(),
               pontos: j.pontos ?? "",
-              presente: !!p,
+              presenca: !!p,
               hora_chegada: p ? (p.horaChegada||"") : "",
               nao_vai_jogar: p ? !!p.naoVaiJogar : false,
               pago: isPagoHoje(j.apelido)
@@ -1475,7 +1475,7 @@ function calcularTotalPontos(lista){
             mes_ref,
             ano_ref,
             referencia: isoToBr(dia),
-            titulo: `Presença (${isoToBr(dia)})`,
+            titulo: `Presenca (${isoToBr(dia)})`,
             conteudo: presConteudo
           }]);
           if(errArqPres) throw errArqPres;
