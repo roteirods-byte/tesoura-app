@@ -1487,6 +1487,53 @@ function calcularTotalPontos(lista){
     if(btnBaixarPresenca) btnBaixarPresenca.addEventListener("click", baixarPresenca);
     if(btnBaixar1T) btnBaixar1T.addEventListener("click", ()=>printEscalacao(1));
     if(btnBaixar2T) btnBaixar2T.addEventListener("click", ()=>printEscalacao(2));
+// ===== CARREGAR PRESENÇA DO DIA (FALTAVA) =====
+async function carregarPresencaHoje(){
+  const dia = getDataJogoISO();
+  dataJogoIso = dia; // libera o botão SALVAR
+
+  statusPresentesEl.textContent = "Carregando presença...";
+  try{
+    const { data: rows, error } = await supabase
+      .from("presencas")
+      .select("apelido, presenca")
+      .eq("data_jogo", dia);
+
+    if (error) throw error;
+
+    const setPresentes = new Set(
+      (rows || [])
+        .filter(r => r && (r.presenca === true || r.presenca === 1))
+        .map(r => (r.apelido || "").trim())
+    );
+
+    // monta presentesHoje a partir dos jogadores ativos
+    presentesHoje = (todosJogadores || [])
+      .filter(j => setPresentes.has(j.apelido))
+      .map(j => ({
+        id: j.id,
+        apelido: j.apelido,
+        horaChegada: "",
+        naoVaiJogar: false,
+        escalou1: false,
+        escalou2: false,
+        saiu: false,
+        obs: "",
+        pontos: Number(j.pontos || 0),
+      }));
+
+    atualizarInfoPresentes();
+    renderPresentes();
+    syncEscalacoesComPresenca();
+    renderEscalacoes();
+
+    statusPresentesEl.textContent = "Presença carregada.";
+  }catch(err){
+    console.error(err);
+    statusPresentesEl.textContent = "Erro ao carregar presença (ver Console).";
+    // não derruba a base toda
+  }
+}
 
     carregarBase();
 </script>
