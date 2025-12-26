@@ -567,7 +567,7 @@ function getDataJogoISO() {
         // 3) Presenças (para faltas do histórico)
         const { data: presData, error: errP } = await supabase
           .from("presenca")
-          .select("data_jogo, apelido, presenca");
+          .select("data_jogo, apelido, presente");
 
         if(errP) throw errP;
 
@@ -891,7 +891,7 @@ function getDataJogoISO() {
       const ini = `${ano}-01-01`;
       const fim = `${ano}-12-31`;
       const { data, error } = await supabase
-        .from("presencas")
+        .from("presentes")
         .select("id, data_jogo, apelido, obs")
         .eq("apelido", apelido)
         .eq("obs", "F")
@@ -906,7 +906,7 @@ function getDataJogoISO() {
     async function getStatusDomingoAnterior(apelido, dataISO){
       const prev = domingoAnterior(dataISO);
       const { data, error } = await supabase
-        .from("presencas")
+        .from("presentes")
         .select("obs")
         .eq("apelido", apelido)
         .eq("data_jogo", prev)
