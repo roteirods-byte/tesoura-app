@@ -529,9 +529,8 @@ function getDataJogoISO() {
           const vel = (j.vel == null || j.vel === "") ? null : Number(j.vel);
           const mov = (j.mov == null || j.mov === "") ? null : Number(j.mov);
           const pontosCalc = (hab || 0) + (vel || 0) + (mov || 0);
-          const pontos = (j.pontos != null && j.pontos !== "" && !Number.isNaN(Number(j.pontos)))
-            ? Number(j.pontos)
-            : pontosCalc;
+          const pontosDB = (j.pontos == null || j.pontos === "" || Number.isNaN(Number(j.pontos))) ? null : Number(j.pontos);
+          const pontos = (pontosDB != null && pontosDB > 0) ? pontosDB : pontosCalc;
 
           return {
             id: j.id,
@@ -884,11 +883,17 @@ function renderJogadoresTodos(){
         const raw = String(mapaJogadores[apelido]?.posicao || "").toUpperCase().trim();
         if(!raw) return "OUT";
 
+        // formatos esperados: GOL / DEF / MEI / ATA, ou abreviações: G, D, M, A, ou "D/M/A"
         if(raw.includes("GOL") || raw === "G" || raw === "GK") return "GOL";
-        if(raw.includes("ZAG") || raw.includes("DEF") || raw === "D") return "DEF";
-        if(raw.includes("LAT") || raw.includes("ALA") || raw === "L") return "LAT";
-        if(raw.includes("MEI") || raw.includes("MID") || raw === "M") return "MEI";
-        if(raw.includes("ATA") || raw.includes("FWD") || raw === "A") return "ATA";
+
+        // se vier "D/M/A" pega o primeiro caractere (prioridade)
+        const first = raw[0];
+
+        if(raw.includes("ZAG") || raw.includes("DEF") || first === "D") return "DEF";
+        if(raw.includes("LAT") || raw.includes("ALA") || first === "L") return "LAT";
+        if(raw.includes("MEI") || raw.includes("MID") || first === "M") return "MEI";
+        if(raw.includes("ATA") || raw.includes("FWD") || first === "A") return "ATA";
+
         return "OUT";
       };
 
@@ -1083,7 +1088,7 @@ function renderJogadoresTodos(){
       // balancear times por pontos
       const bal = balancearEmDoisTimes(selecionados);
 
-      const toObj = (ap)=>({ id: (mapaJogadores[ap]?.id ?? ""), apelido: ap });
+      const toObj = (ap)=>({ id: (mapaJogadores[ap]?.id ?? ""), apelido: ap, posicao: (mapaJogadores[ap]?.posicao ?? ""), pontos: pts(ap) });
 
       escala1 = {
         amarelo: (bal.amarelo||[]).map(toObj),
@@ -1211,7 +1216,7 @@ function toggleSaiu(apelido){
         else { B.push(ap); somaB += pa; }
       }
 
-      const toObj = (ap)=>({ id: (mapaJogadores[ap]?.id ?? ""), apelido: ap });
+      const toObj = (ap)=>({ id: (mapaJogadores[ap]?.id ?? ""), apelido: ap, posicao: (mapaJogadores[ap]?.posicao ?? ""), pontos: pts(ap) });
 
       escala2 = {
         amarelo: A.map(toObj),
@@ -1312,7 +1317,8 @@ function calcularTotalPontos(lista){
 
       const totalAm2=calcularTotalPontos(escala2.amarelo);
       const totalAz2=calcularTotalPontos(escala2.azul);
-      totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}`;
+      const dif2 = Math.abs(totalAm2-totalAz2);
+      totais2TEl.textContent = `TOTAL PONTOS: ${totalAm2} x ${totalAz2}  (DIF: ${dif2})`;
     }
 
     function limparPresentesHoje(){
