@@ -50,41 +50,7 @@
       const sep = url.includes("?") ? "&" : "?";
       return url + sep + "cb=" + Date.now();
     }
-    
-  function updateModoUI(){
-    const role = localStorage.getItem("TESOURA_ROLE");
-    const badge = document.getElementById("modeBadge");
-    const btnLogin = document.getElementById("btnLogin");
-    const btnLogout = document.getElementById("btnLogout");
-    if(role==="DIRETORIA"){
-      badge.textContent = "Modo: Diretoria";
-      btnLogout.style.display = "inline-block";
-      btnLogin.style.display = "none";
-    } else if(role==="JOGADOR"){
-      badge.textContent = "Modo: Jogadores";
-      btnLogout.style.display = "inline-block";
-      btnLogin.style.display = "none";
-    } else {
-      badge.textContent = "Modo: Visitante";
-      btnLogout.style.display = "none";
-      btnLogin.style.display = "inline-block";
-    }
-  }
-
-  function TESOURA_SAIR(){
-    try{
-      const role = localStorage.getItem("TESOURA_ROLE");
-      localStorage.removeItem("TESOURA_ROLE");
-      localStorage.removeItem("TESOURA_EMAIL");
-      if(role==="DIRETORIA" && window.__TESOURA_SB__){
-        window.__TESOURA_SB__.auth.signOut().catch(()=>{});
-      }
-    }catch(e){}
-    const base = location.origin + location.pathname;
-    location.href = base + "?v=" + Date.now();
-  }
-
-function showTelaInicial(v){
+    function showTelaInicial(v){
       const t = qs("telaInicial");
       if(t) t.style.display = v ? "flex" : "none";
     }
@@ -110,47 +76,27 @@ function showTelaInicial(v){
 
     // Entrar Jogadores
     function TESOURA_ENTRAR_JOGADORES(){
-    const pin = prompt("Senha Jogadores:");
-    if(!pin) return;
-    if(pin !== "TESOURA2026"){ alert("Senha incorreta."); return; }
-    localStorage.setItem("TESOURA_ROLE","JOGADOR");
-    localStorage.removeItem("TESOURA_EMAIL");
-    showTelaInicial(false);
-    updateModoUI();
-    abrirAba("aba-jogadores");
-  }
-
+      const cfg = window.TESOURA_CONFIG || {};
+      const pinCfg = String(cfg.APP_PIN || "").trim();
+      const pin = (prompt("Senha dos JOGADORES (visualização):") || "").trim();
+      if(pinCfg && pin !== pinCfg){
+        qs("msgTelaInicial").textContent = "Senha incorreta.";
+        return;
+      }
+      window.TESOURA_ROLE = "jogador";
+      showTelaInicial(false);
+      setBadge("Modo: Jogadores (visual)");
+      abrirAba("aba-jogadores");
+      setTimeout(()=>TESOURA_TRAVAR_IFRAMES(), 200);
+    }
 
     // Entrar Diretoria
     function TESOURA_ENTRAR_DIRETORIA(){
-    try{
-      if(!window.TESOURA_CONFIG || !window.TESOURA_CONFIG.SUPABASE_URL || !window.TESOURA_CONFIG.SUPABASE_KEY){
-        alert("Supabase não inicializado. Verifique app/js/config.js (SUPABASE_URL e SUPABASE_KEY).");
-        return;
-      }
-      const email = prompt("Login Diretoria (email):");
-      if(!email) return;
-      const senha = prompt("Senha Diretoria:");
-      if(!senha) return;
-
-      if(!window.__TESOURA_SB__){
-        window.__TESOURA_SB__ = supabase.createClient(window.TESOURA_CONFIG.SUPABASE_URL, window.TESOURA_CONFIG.SUPABASE_KEY);
-      }
-      window.__TESOURA_SB__.auth.signInWithPassword({ email: email.trim(), password: senha })
-        .then(({data, error})=>{
-          if(error){ alert("Falha no login: " + error.message); return; }
-          localStorage.setItem("TESOURA_ROLE","DIRETORIA");
-          localStorage.setItem("TESOURA_EMAIL", email.trim());
-          showTelaInicial(false);
-          updateModoUI();
-          abrirAba("aba-jogadores");
-        })
-        .catch((e)=> alert("Falha no login: " + (e?.message || e)));
-    }catch(e){
-      alert("Erro no login: " + (e?.message || e));
+      window.TESOURA_ROLE = "diretoria";
+      showTelaInicial(false);
+      setBadge("Modo: Diretoria");
+      abrirAba("aba-jogadores");
     }
-  }
-
 
     // Trava cliques dentro do iframe (modo jogador)
     function travarIframeJogador(iframe){
@@ -193,27 +139,16 @@ function showTelaInicial(v){
     }
 
     function ensureIframeLoaded(iframe){
-    const src = iframe.getAttribute("data-src");
-    const sendCfg = ()=>{
-      try{
-        if(window.TESOURA_CONFIG && window.TESOURA_CONFIG.SUPABASE_URL){
-          iframe.contentWindow.postMessage({
-            type:"TESOURA_SUPABASE_CONFIG",
-            url: window.TESOURA_CONFIG.SUPABASE_URL,
-            key: window.TESOURA_CONFIG.SUPABASE_KEY,
-            role: localStorage.getItem("TESOURA_ROLE") || "",
-            email: localStorage.getItem("TESOURA_EMAIL") || ""
-          }, "*");
-        }
-      }catch(e){}
-    };
+      if(!iframe) return;
+      const base = iframe.getAttribute("data-src");
+      if(!base) return;
 
-    iframe.style.visibility = "hidden";
-    iframe.onload = ()=>{ sendCfg(); iframe.style.visibility="visible"; };
-    iframe.src = "about:blank";
-    setTimeout(()=>{ iframe.src = cacheBust(src); }, 0);
-  }
+      // evita "flash" de versão antiga
+      iframe.src = "about:blank";
+      setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
 
+      iframe.addEventListener("load", ()=>TESOURA_TRAVAR_IFRAMES(), { once:false });
+    }
 
     function abrirAba(id){
       const abas = document.querySelectorAll(".tab-content");
@@ -236,23 +171,53 @@ function showTelaInicial(v){
     window.addEventListener("load", async ()=>{
       await disableServiceWorker();
 
-      // sempre começa DESLOGADO (pede senha ao abrir/atualizar)
+      // SEMPRE mostrar a tela inicial ao abrir o site
+      window.TESOURA_ROLE = "";
       showTelaInicial(true);
-      updateModoUI();
+      setBadge("Modo: —");
 
-      // pré-carrega a primeira aba (sem mostrar painel antigo)
+      // carrega a primeira aba já com versão nova
       abrirAba("aba-jogadores");
     });
   </script>
 
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <script src="app/js/supabaseClient.js"></script>
 </head>
 
 <body>
+
+  <!-- LOGIN OVERLAY (Senha somente) -->
+  <div id="tesouraLoginOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999;">
+    <div style="width:min(520px,92vw);background:#020617;border:1px solid rgba(249,115,22,.35);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.55);padding:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+        <div style="color:#f97316;font-weight:800;letter-spacing:.5px;">TESOURA – ACESSO</div>
+        <div id="tesouraLoginMsg" style="color:#f9fafb;font-size:12px;opacity:.85;"></div>
+      </div>
+
+      <div style="display:grid;gap:10px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="btnLoginJogadores" style="background:#0ea5e9;color:#022c22;border:none;border-radius:8px;padding:10px 12px;font-weight:800;cursor:pointer;min-width:160px;">ENTRAR (JOGADORES)</button>
+          <button id="btnLoginDiretoria" style="background:#22c55e;color:#022c22;border:none;border-radius:8px;padding:10px 12px;font-weight:800;cursor:pointer;min-width:160px;">ENTRAR (DIRETORIA)</button>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="color:#f9fafb;font-weight:700;">SENHA:</label>
+          <input id="inpSenha" type="password" autocomplete="current-password"
+                 style="flex:1;min-width:220px;background:#0b1220;border:1px solid rgba(249,115,22,.35);border-radius:8px;padding:10px;color:#f9fafb;outline:none;" />
+          <button id="btnOkSenha" style="background:#f97316;color:#0b1220;border:none;border-radius:8px;padding:10px 12px;font-weight:900;cursor:pointer;">OK</button>
+        </div>
+
+        <div style="color:#94a3b8;font-size:12px;line-height:1.35;">
+          • Jogadores: somente visualização.<br/>
+          • Diretoria: acesso conforme senha (com ou sem Caixa).<br/>
+          • Botão <b>SAIR</b> encerra a sessão e recarrega o site.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <noscript>Ative o JavaScript no navegador para usar o TESOURA.</noscript>
 
   <!-- TELA INICIAL -->
@@ -275,8 +240,8 @@ function showTelaInicial(v){
     <div>TESOURA – CONTROLE DO FUTEBOL</div>
     <div class="actions">
       <div class="mode" id="modeBadge">Modo: —</div>
-      <button class="btn-login" id="btnLogin" onclick="TESOURA_ENTRAR_DIRETORIA()">ENTRAR (DIRETORIA)</button>
-      <button class="btn-logout" id="btnLogout" onclick="TESOURA_SAIR()">SAIR</button>
+      <button class="btn-login" id="btnLogin">ENTRAR (DIRETORIA)</button>
+      <button class="btn-logout" id="btnLogout">SAIR</button>
     </div>
   </div>
 
@@ -320,5 +285,161 @@ function showTelaInicial(v){
 
   <!-- Config do app (PIN, URL/KEY do Supabase etc) -->
   <script src="app/js/config.js"></script>
+
+<script>
+/* TESOURA_LOGIN_V2 (20251225_pwonly) */
+(function(){
+  const STORAGE_KEY = "TESOURA_SESSION_V2";
+  function $(id){ return document.getElementById(id); }
+  function setMsg(t){ const el=$("tesouraLoginMsg"); if(el) el.textContent = t||""; }
+
+  // Password map (senha -> {email, perfil})
+  const DIR_MAP = {
+    "1baidec": { email: "1baidec@gmail.com", perfil: "TUDO" },
+    "2thiago": { email: "2thiago@gmail.com", perfil: "TUDO" },
+    "3love":   { email: "3love@gmail.com",   perfil: "SEM_CAIXA" },
+    "4le":     { email: "4le@gmail.com",     perfil: "SEM_CAIXA" },
+    "5titi":   { email: "5titi@gmail.com",   perfil: "SEM_CAIXA" },
+  };
+  const JOGADORES_SENHA = "TESOURA2026";
+
+  function getSess(){ try{ return JSON.parse(sessionStorage.getItem(STORAGE_KEY)||"null"); }catch(e){ return null; } }
+  function setSess(obj){
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+    localStorage.setItem("TESOURA_MODO", obj?.modo || "");
+    localStorage.setItem("TESOURA_PERFIL", obj?.perfil || "");
+  }
+  function clearSess(){
+    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("TESOURA_MODO");
+    localStorage.removeItem("TESOURA_PERFIL");
+  }
+
+  async function ensureSupabase(){
+    if(!window.TESOURA_CONFIG || !window.TESOURA_CONFIG.SUPABASE_URL || !window.TESOURA_CONFIG.SUPABASE_KEY){
+      throw new Error("Supabase não inicializado. Verifique app/js/config.js (SUPABASE_URL e SUPABASE_KEY).");
+    }
+    if(!window.supabaseClient && typeof window.initSupabaseClient === "function") {
+      window.supabaseClient = window.initSupabaseClient();
+    }
+    if(!window.supabaseClient) throw new Error("Supabase não inicializado. Verifique app/js/supabaseClient.js");
+    return window.supabaseClient;
+  }
+
+  function showOverlay(show){ const ov=$("tesouraLoginOverlay"); if(ov) ov.style.display = show ? "flex" : "none"; }
+  function showLogout(show){ const btn=document.getElementById("btnLogout"); if(btn) btn.style.display = show ? "inline-block" : "none"; }
+
+  function setBadge(modo) {
+    const badge = document.getElementById("modoBadge");
+    if(badge) {
+      badge.textContent = (modo === "DIRETORIA") ? "Modo: Diretoria" : "Modo: Jogadores";
+      badge.style.display = "inline-block";
+    }
+  }
+
+  function applyCacheBusterToIframes() {
+    document.querySelectorAll("iframe[data-src]").forEach(ifr => {
+      const base = ifr.getAttribute("data-src");
+      if(!base) return;
+      ifr.src = base + (base.includes("?") ? "&" : "?") + "v=" + Date.now();
+    });
+  }
+
+  const origAbrirAba = window.abrirAba;
+  if(typeof origAbrirAba === "function") {
+    window.abrirAba = function(nome) {
+      const r = origAbrirAba(nome);
+      try {
+        const ifr = document.querySelector("iframe.aba-ativa");
+        if(ifr && ifr.dataset && ifr.dataset.src) {
+          const base = ifr.dataset.src;
+          ifr.src = base + (base.includes("?") ? "&" : "?") + "v=" + Date.now();
+        }
+      } catch(e) {}
+      return r;
+    }
+  }
+
+  async function loginJogadores(senha) {
+    if(senha !== JOGADORES_SENHA) throw new Error("Senha de jogadores incorreta.");
+    setSess({ modo:"JOGADORES", perfil:"LEITURA", ts:Date.now() });
+    setBadge("JOGADORES");
+    showOverlay(false);
+    showLogout(true);
+    try{ if(typeof window.travarIframeJogador==="function") window.travarIframeJogador(); }catch(e){}
+    applyCacheBusterToIframes();
+  }
+
+  async function loginDiretoria(senha) {
+    const info = DIR_MAP[senha];
+    if(!info) throw new Error("Senha de diretoria inválida.");
+    const sb = await ensureSupabase();
+    const resp = await sb.auth.signInWithPassword({ email: info.email, password: senha });
+    if(resp.error) throw resp.error;
+    setSess({ modo:"DIRETORIA", perfil: info.perfil, email: info.email, ts:Date.now() });
+    setBadge("DIRETORIA");
+    showOverlay(false);
+    showLogout(true);
+    applyCacheBusterToIframes();
+  }
+
+  async function doLogout() {
+    try{ if(window.supabaseClient) await window.supabaseClient.auth.signOut(); }catch(e){}
+    clearSess();
+    const base = location.origin + location.pathname;
+    location.href = base + "?v=" + Date.now();
+  }
+
+  function boot() {
+    showLogout(false);
+    setMsg("");
+
+    const btnJog = $("btnLoginJogadores");
+    const btnDir = $("btnLoginDiretoria");
+    const btnOk  = $("btnOkSenha");
+    const inp    = $("inpSenha");
+    let modePick = null; // "JOG" | "DIR"
+
+    if(btnJog) btnJog.onclick = () => { modePick="JOG"; setMsg("Jogadores selecionado."); inp?.focus(); };
+    if(btnDir) btnDir.onclick = () => { modePick="DIR"; setMsg("Diretoria selecionado."); inp?.focus(); };
+
+    async function submit() {
+      try {
+        if(!modePick) throw new Error("Selecione Jogadores ou Diretoria.");
+        const senha = (inp?.value || "").trim();
+        if(!senha) throw new Error("Digite a senha.");
+        setMsg("Verificando...");
+        if(modePick==="JOG") await loginJogadores(senha);
+        else await loginDiretoria(senha);
+        setMsg("");
+        if(inp) inp.value="";
+      } catch(e) {
+        console.error(e);
+        setMsg(e?.message || "Erro no login.");
+      }
+    }
+
+    if(btnOk) btnOk.onclick = submit;
+    if(inp) inp.addEventListener("keydown", (ev)=>{ if(ev.key==="Enter") submit(); });
+
+    const btnLogout = document.getElementById("btnLogout");
+    if(btnLogout) btnLogout.onclick = doLogout;
+
+    const sess = getSess();
+    if(sess && sess.modo) {
+      setBadge(sess.modo);
+      showOverlay(false);
+      showLogout(true);
+      applyCacheBusterToIframes();
+      try{ if(sess.modo==="JOGADORES" && typeof window.travarIframeJogador==="function") window.travarIframeJogador(); }catch(e){}
+    } else {
+      showOverlay(true);
+    }
+  }
+
+  window.addEventListener("load", boot);
+})();
+</script>
+
 </body>
 </html>
