@@ -143,12 +143,23 @@
       const base = iframe.getAttribute("data-src");
       if(!base) return;
 
-      // evita "flash" de versão antiga
-      iframe.src = "about:blank";
-      setTimeout(()=>{ iframe.src = cacheBust(base); }, 0);
+      // evita o "flash" (mostra página velha por 1s)
+      iframe.style.visibility = "hidden";
+      iframe.style.pointerEvents = "none";
 
-      iframe.addEventListener("load", ()=>TESOURA_TRAVAR_IFRAMES(), { once:false });
+      // força limpar antes de carregar
+      iframe.src = "about:blank";
+      const url = cacheBust(base);
+
+      iframe.onload = ()=>{
+        iframe.style.visibility = "visible";
+        iframe.style.pointerEvents = "auto";
+        TESOURA_TRAVAR_IFRAMES();
+      };
+
+      setTimeout(()=>{ iframe.src = url; }, 0);
     }
+
 
     function abrirAba(id){
       const abas = document.querySelectorAll(".tab-content");
@@ -256,32 +267,32 @@
   </div>
 
   <div id="aba-jogadores" class="tab-content active">
-  <iframe id="f-jogadores" data-src="legacy/tesoura_jogadores_teste.html"></iframe>
-</div>
+    <iframe id="f-jogadores" data-src="legacy/tesoura_jogadores_teste.html"></iframe>
+  </div>
 
-<div id="aba-presenca" class="tab-content">
-  <iframe id="f-presenca" data-src="legacy/tesoura_presenca_escala_R5.html"></iframe>
-</div>
+  <div id="aba-presenca" class="tab-content">
+    <iframe id="f-presenca" data-src="legacy/tesoura_presenca_escala_R5.html"></iframe>
+  </div>
 
-<div id="aba-controle" class="tab-content">
-  <iframe id="f-controle" data-src="legacy/tesoura_controle_geral_teste.html"></iframe>
-</div>
+  <div id="aba-controle" class="tab-content">
+    <iframe id="f-controle" data-src="legacy/tesoura_controle_geral_teste.html"></iframe>
+  </div>
 
-<div id="aba-mensalidade" class="tab-content">
-  <iframe id="f-mensalidade" data-src="legacy/tesoura_mensalidade_R4.html"></iframe>
-</div>
+  <div id="aba-mensalidade" class="tab-content">
+    <iframe id="f-mensalidade" data-src="legacy/tesoura_mensalidade_R4.html"></iframe>
+  </div>
 
-<div id="aba-caixa" class="tab-content">
-  <iframe id="f-caixa" data-src="legacy/tesoura_caixa_teste.html"></iframe>
-</div>
+  <div id="aba-caixa" class="tab-content">
+    <iframe id="f-caixa" data-src="legacy/tesoura_caixa_teste.html"></iframe>
+  </div>
 
-<div id="aba-gols" class="tab-content">
-  <iframe id="f-gols" data-src="legacy/tesoura_gols_teste.html"></iframe>
-</div>
+  <div id="aba-gols" class="tab-content">
+    <iframe id="f-gols" data-src="legacy/tesoura_gols_teste.html"></iframe>
+  </div>
 
-<div id="aba-banco" class="tab-content">
-  <iframe id="f-banco" data-src="legacy/tesoura_banco_dados_teste.html"></iframe>
-</div>
+  <div id="aba-banco" class="tab-content">
+    <iframe id="f-banco" data-src="legacy/tesoura_banco_dados_teste.html"></iframe>
+  </div>
 
   <!-- Config do app (PIN, URL/KEY do Supabase etc) -->
   <script src="app/js/config.js"></script>
@@ -319,16 +330,20 @@
     if(!window.TESOURA_CONFIG || !window.TESOURA_CONFIG.SUPABASE_URL || !window.TESOURA_CONFIG.SUPABASE_KEY){
       throw new Error("Supabase não inicializado. Verifique app/js/config.js (SUPABASE_URL e SUPABASE_KEY).");
     }
-    
-    if(!window.supabaseClient) {
-  if (typeof window.initSupabaseClient === "function") {
-    window.supabaseClient = window.initSupabaseClient();
-  } else if (typeof window.getSupabase === "function") {
-    window.supabaseClient = window.getSupabase();
-  }
-}
-    
-    if(!window.supabaseClient) throw new Error("Supabase não inicializado. Verifique app/js/supabaseClient.js");
+
+    // 1) Preferir o client global criado em supabaseClient.js (getSupabase)
+    if(!window.supabaseClient && typeof window.getSupabase === "function"){
+      window.supabaseClient = window.getSupabase();
+    }
+
+    // 2) Fallback (se existir) para initSupabaseClient
+    if(!window.supabaseClient && typeof window.initSupabaseClient === "function"){
+      window.supabaseClient = window.initSupabaseClient();
+    }
+
+    if(!window.supabaseClient){
+      throw new Error("Supabase não inicializado. Verifique app/js/supabaseClient.js");
+    }
     return window.supabaseClient;
   }
 
