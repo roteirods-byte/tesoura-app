@@ -221,7 +221,12 @@ th,td{border:1px solid #334155;padding:2px 4px;text-align:center;text-transform:
 .painel-1t, .painel-2t{min-width:0}
 
 
-    <div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
+  </style>
+</head>
+<body>
+  <header>TESOURA - PRESENÇA / ESCALAÇÃO</header>
+
+  <div class="no-print" style="text-align:right; padding:6px 16px 0 16px;">
   </div>
 
   <div class="container">
@@ -376,8 +381,8 @@ C (compareceu e não jogou) | F (faltou) | 1 (jogou 1º) | 2 (jogou 2º) | 1-2 (
 
     // ===== DOM =====
     const statusJogadoresEl = document.getElementById("status-jogadores");
-    const statusTotalJogadoresEl = document.getElementById("status-total-jogadores");
     const statusBaseEl = statusJogadoresEl;
+    const statusTotalJogadoresEl = document.getElementById("status-total-jogadores");
     const tbodyJogadoresTodos = document.getElementById("tbody-jogadores-todos");
 
     const infoDataJogoEl = document.getElementById("info-data-jogo");
@@ -587,7 +592,55 @@ function getDataJogoISO() {
       }
     }
 
-    function renderJogadoresTodos(){
+    
+    // ===== CARREGAR PRESENÇA DO DIA (para estabilidade) =====
+    async function carregarPresencaHoje(){
+      const dia = getDataJogoISO();
+      dataJogoIso = dia; // habilita SALVAR
+
+      statusPresentesEl.textContent = "Carregando presença...";
+      try{
+        const { data: rows, error } = await supabase
+          .from("presencas")
+          .select("apelido, presenca")
+          .eq("data_jogo", dia);
+
+        if(error) throw error;
+
+        const setPresentes = new Set(
+          (rows || [])
+            .filter(r => r && (r.presenca === true || r.presenca === 1))
+            .map(r => String(r.apelido || "").trim())
+        );
+
+        presentesHoje = (todosJogadores || [])
+          .filter(j => setPresentes.has(j.apelido))
+          .map(j => ({
+            id: j.id,
+            apelido: j.apelido,
+            horaChegada: "",
+            naoVaiJogar: false,
+            escalou1: false,
+            escalou2: false,
+            saiu: false,
+            obs: "",
+            pontos: Number(j.pontos || 0),
+          }));
+
+        atualizarInfoPresentes();
+        renderPresentes();
+        syncEscalacoesComPresenca();
+        renderEscalacoes();
+
+        statusPresentesEl.textContent = "Presença carregada.";
+      }catch(err){
+        console.error(err);
+        statusPresentesEl.textContent = "Erro ao carregar presença (ver Console).";
+        // não derruba a base toda
+      }
+    }
+
+function renderJogadoresTodos(){
       tbodyJogadoresTodos.innerHTML = "";
       todosJogadores.forEach(j=>{
         const tr=document.createElement("tr");
@@ -1240,29 +1293,53 @@ function calcularTotalPontos(lista){
       setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
     }
 
+        
+        // ===== EXPORTAR (SEM POP-UP, NÃO QUEBRA O PAINEL) =====
+        function escapeHtml(s){
+          return String(s ?? "")
+            .replaceAll("&","&amp;")
+            .replaceAll("<","&lt;")
+            .replaceAll(">","&gt;")
+            .replaceAll('"',"&quot;")
+            .replaceAll("'","&#039;");
+        }
+
+        function downloadTextFile(filename, text, mime="text/html"){
+          const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+        }
+
         function baixarPresenca(){
-      // Baixa exatamente o que está no painel (colunas e ordem).
-      try{
-        const dataBR = isoToBr(dia);
-        const titulo = `Presença (${dataBR})`;
+          try{
+            const dia = getDataJogoISO();
+            const titulo = `Presença (${isoToBr(dia)})`;
+            const cols = ["ID","ORDEM","APELIDO","HORA","OBS","NÃO VAI JOGAR"];
 
-        // Pega os dados da memória (presencasHoje) para garantir lista completa.
-        const cols = ["ID","ORDEM","APELIDO","HORA","OBS","NÃO VAI JOGAR"];
-        const rows = (presencasHoje || []).map(p => ([
-          p.id ?? "",
-          p.ordem ?? "",
-          (p.apelido || ""),
-          (p.hora || ""),
-          (p.obs || ""),
-          p.nao_vai_jogar ? "SIM" : ""
-        ]));
+            const rows = (presentesHoje || []).map((p, idx) => ([
+              p.id ?? "",
+              String(idx+1),
+              (p.apelido || ""),
+              (p.horaChegada || ""),
+              (p.obs || ""),
+              p.naoVaiJogar ? "SIM" : ""
+            ]));
 
-        const htmlDoc = `
-<!doctype html>
+            const thead = "<tr>" + cols.map(c=>"<th>"+escapeHtml(c)+"</th>").join("") + "</tr>";
+            const tbody = rows.map(r=>"<tr>" + r.map(v=>"<td>"+escapeHtml(v)+"</td>").join("") + "</tr>").join("");
+
+            const htmlDoc =
+`<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"/>
-<title>${titulo}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${escapeHtml(titulo)}</title>
 <style>
   body{font-family:Arial, sans-serif; padding:18px;}
   h2{margin:0 0 12px 0;}
@@ -1272,84 +1349,76 @@ function calcularTotalPontos(lista){
 </style>
 </head>
 <body>
-<h2>${titulo}</h2>
+<h2>${escapeHtml(titulo)}</h2>
 <table>
-  <thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead>
-  <tbody>
-    ${rows.map(r=>`<tr>${r.map(v=>`<td>${String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}</td>`).join("")}</tr>`).join("")}
-  </tbody>
+  <thead>${thead}</thead>
+  <tbody>${tbody}</tbody>
 </table>
 </body>
 </html>`;
 
-        const blob = new Blob([htmlDoc], {type:"text/html;charset=utf-8"});
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `presenca_${dia}.html`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-      }catch(e){
-        console.error(e);
-        alert("Erro ao baixar presença.");
-      }
-    }
-
-    
-
-    function printEscalacao(tempo){
-      const dia = getDataJogoISO();
-      const titulo = tempo === 1 ? `Escalação 1º Tempo (${isoToBr(dia)})` : `Escalação 2º Tempo (${isoToBr(dia)})`;
-
-      const esc = (tempo===1) ? escala1 : escala2;
-      const maxLen = Math.max((esc.amarelo||[]).length, (esc.azul||[]).length, 10);
-
-      const rows = [];
-      for(let i=0;i<maxLen;i++){
-        const am = esc.amarelo[i]?.apelido ? esc.amarelo[i].apelido.toUpperCase() : "";
-        const az = esc.azul[i]?.apelido ? esc.azul[i].apelido.toUpperCase() : "";
-        rows.push({am, az});
-      }
-
-      const html = `
-      <html><head><meta charset="utf-8">
-      <title>${titulo}</title>
-      <style>
-        body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
-        .wrap{padding:16px}
-        h2{margin:0 0 10px 0;color:#ff7f27}
-        table{border-collapse:collapse;width:100%;background:#0b1220}
-        th,td{border:1px solid #334155;padding:8px;font-size:14px}
-        th{background:#ff7f27;color:#000;font-weight:900;text-align:center}
-        .am{color:#fbbf24;font-weight:900}
-        .az{color:#60a5fa;font-weight:900}
-        @media print{
-          body{background:#fff;color:#000}
-          th{background:#ff7f27 !important;color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+            downloadTextFile(`presenca_${dia}.html`, htmlDoc, "text/html");
+          }catch(e){
+            console.error(e);
+            alert("Erro ao baixar presença (ver Console).");
+          }
         }
-      </style></head>
-      <body><div class="wrap">
-        <h2>${titulo}</h2>
-        <table>
-          <thead><tr><th>AMARELO</th><th>AZUL</th></tr></thead>
-          <tbody>
-            ${rows.map(r=>`<tr><td class="am">${r.am}</td><td class="az">${r.az}</td></tr>`).join("")}
-          </tbody>
-        </table>
-      </div></body></html>`;
 
-      const w = window.open("", "_blank");
-      if(!w){ alert("Bloqueador de pop-up. Libere e tente novamente."); return; }
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-      try{ w.focus(); }catch(e){}
-      setTimeout(()=>{ try{ w.print(); }catch(e){} }, 250);
-    }
+        function printEscalacao(tempo){
+          try{
+            const dia = getDataJogoISO();
+            const titulo = tempo === 1 ? `Escalação 1º Tempo (${isoToBr(dia)})` : `Escalação 2º Tempo (${isoToBr(dia)})`;
+            const esc = (tempo===1) ? (escala1 || {amarelo:[],azul:[]}) : (escala2 || {amarelo:[],azul:[]});
 
+            const maxLen = Math.max((esc.amarelo||[]).length, (esc.azul||[]).length, 10);
+            let rowsHtml = "";
+            for(let i=0;i<maxLen;i++){
+              const am = esc.amarelo[i]?.apelido ? String(esc.amarelo[i].apelido).toUpperCase() : "";
+              const az = esc.azul[i]?.apelido ? String(esc.azul[i].apelido).toUpperCase() : "";
+              rowsHtml += "<tr><td class=\"am\">"+escapeHtml(am)+"</td><td class=\"az\">"+escapeHtml(az)+"</td></tr>";
+            }
 
-    // ===== SALVAR (SEM UPSERT, PARA NÃO DEPENDER DE CONSTRAINT) =====
+            const htmlDoc =
+`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${escapeHtml(titulo)}</title>
+<style>
+  body{margin:0;font-family:Arial,sans-serif;background:#0b1220;color:#fff}
+  .wrap{padding:16px}
+  h2{margin:0 0 10px 0;color:#ff7f27}
+  table{border-collapse:collapse;width:100%;background:#0b1220}
+  th,td{border:1px solid #334155;padding:8px;font-size:14px}
+  th{background:#ff7f27;color:#000;font-weight:900;text-align:center}
+  .am{color:#fbbf24;font-weight:900}
+  .az{color:#60a5fa;font-weight:900}
+  @media print{
+    body{background:#fff;color:#000}
+    th{background:#ff7f27 !important;color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>${escapeHtml(titulo)}</h2>
+    <table>
+      <thead><tr><th>AMARELO</th><th>AZUL</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>
+</body>
+</html>`;
+
+            downloadTextFile(`escalacao_${tempo}t_${dia}.html`, htmlDoc, "text/html");
+          }catch(e){
+            console.error(e);
+            alert("Erro ao baixar escalação (ver Console).");
+          }
+        }
+
+// ===== SALVAR (SEM UPSERT, PARA NÃO DEPENDER DE CONSTRAINT) =====
     async function salvarJogo(){
       try{
         if(!dataJogoIso){ alert("Base não carregada."); return; }
@@ -1482,53 +1551,6 @@ function calcularTotalPontos(lista){
     if(btnBaixarPresenca) btnBaixarPresenca.addEventListener("click", baixarPresenca);
     if(btnBaixar1T) btnBaixar1T.addEventListener("click", ()=>printEscalacao(1));
     if(btnBaixar2T) btnBaixar2T.addEventListener("click", ()=>printEscalacao(2));
-// ===== CARREGAR PRESENÇA DO DIA (FALTAVA) =====
-async function carregarPresencaHoje(){
-  const dia = getDataJogoISO();
-  dataJogoIso = dia; // libera o botão SALVAR
-
-  statusPresentesEl.textContent = "Carregando presença...";
-  try{
-    const { data: rows, error } = await supabase
-      .from("presencas")
-      .select("apelido, presenca")
-      .eq("data_jogo", dia);
-
-    if (error) throw error;
-
-    const setPresentes = new Set(
-      (rows || [])
-        .filter(r => r && (r.presenca === true || r.presenca === 1))
-        .map(r => (r.apelido || "").trim())
-    );
-
-    // monta presentesHoje a partir dos jogadores ativos
-    presentesHoje = (todosJogadores || [])
-      .filter(j => setPresentes.has(j.apelido))
-      .map(j => ({
-        id: j.id,
-        apelido: j.apelido,
-        horaChegada: "",
-        naoVaiJogar: false,
-        escalou1: false,
-        escalou2: false,
-        saiu: false,
-        obs: "",
-        pontos: Number(j.pontos || 0),
-      }));
-
-    atualizarInfoPresentes();
-    renderPresentes();
-    syncEscalacoesComPresenca();
-    renderEscalacoes();
-
-    statusPresentesEl.textContent = "Presença carregada.";
-  }catch(err){
-    console.error(err);
-    statusPresentesEl.textContent = "Erro ao carregar presença (ver Console).";
-    // não derruba a base toda
-  }
-}
 
     carregarBase();
 </script>
