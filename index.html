@@ -2,142 +2,186 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TESOURA — CONTROLE DO FUTEBOL</title>
 
-  <!-- CSS no root (puxa o CSS real de app/css/) -->
-  <link rel="stylesheet" href="ui.css?v=20251227" />
-  <link rel="stylesheet" href="tesoura_shell.css?v=20251227" />
-
-  <!-- Config no root (evita 404). Se você já usa app/js/config.js, também pode manter. -->
-  <script src="config.js?v=20251227"></script>
-  <script src="js/auth.js?v=20251227"></script>
-
   <style>
-    .page-wrap{min-height:100vh;display:flex;flex-direction:column;}
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
-    .brand{color:#ff8c1a;font-weight:800;letter-spacing:.5px}
-    .top-right{display:flex;gap:10px;align-items:center}
-    .pill{border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 10px;color:#cfd6e6;font-size:12px}
-
-    .card{max-width:760px;margin:48px auto 0 auto;background:rgba(8,18,40,.7);border:1px solid rgba(255,255,255,.10);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.35);padding:26px}
-    .title{font-size:36px;font-weight:800;margin:0 0 10px 0;color:#e9eefc}
-    .sub{margin:0 0 16px 0;color:#b8c2d8}
-
-    .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
-    .field{flex:1;min-width:260px}
-    label{display:block;color:#cfd6e6;font-weight:700;margin:10px 0 6px 0}
-    select,input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(2,10,24,.65);color:#e9eefc;outline:none}
-
-    .btns{display:flex;gap:12px;margin-top:16px}
-    .btn{padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.14);cursor:pointer;font-weight:800;letter-spacing:.3px}
-    .btn.enter{background:#00b36b;color:#041316}
-    .btn.clear{background:#ff8c1a;color:#1b0e00}
-
-    .msg{margin-top:12px;font-weight:800}
-    .msg.ok{color:#00d47a}
-    .msg.err{color:#ff4d4d}
-    .hint{margin-top:10px;color:#9fb0cf}
-
-    @media (max-width:720px){
-      .card{margin:22px 12px 0 12px;padding:18px}
-      .title{font-size:30px}
+    :root{
+      --bg1:#061027; --bg2:#030816;
+      --card:#0b1636cc; --line:#1f2b52;
+      --orange:#f59e0b; --green:#10b981; --white:#e5e7eb;
+      --muted:#9ca3af; --red:#ef4444; --shadow:0 16px 40px rgba(0,0,0,.45);
+      --radius:16px;
     }
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background: radial-gradient(1200px 600px at 30% 10%, #0f2457 0%, var(--bg1) 35%, var(--bg2) 100%);
+      color:var(--white);
+    }
+    header{
+      padding:18px 22px; border-bottom:1px solid rgba(245,158,11,.25);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .brand{ color:var(--orange); font-weight:800; letter-spacing:.6px; }
+    .chip{ color:#cbd5e1; font-size:12px; border:1px solid rgba(255,255,255,.12); padding:6px 10px; border-radius:999px; }
+    .wrap{ display:flex; justify-content:center; padding:42px 14px; }
+    .card{
+      width:min(860px, 96vw);
+      background:linear-gradient(180deg, rgba(13,26,60,.9) 0%, rgba(8,16,40,.85) 100%);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:26px 28px;
+    }
+    h1{ margin:0 0 6px 0; font-size:34px; }
+    .sub{ color:var(--muted); margin-bottom:18px; }
+    .row{ display:flex; gap:18px; flex-wrap:wrap; }
+    .field{ flex:1; min-width:260px; }
+    label{ display:block; font-size:12px; letter-spacing:.6px; color:#cbd5e1; margin:8px 0 6px; }
+    select,input{
+      width:100%; height:44px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(2,6,23,.55);
+      color:var(--white);
+      padding:0 12px; outline:none;
+    }
+    .btns{ display:flex; gap:12px; margin-top:14px; }
+    button{
+      height:44px; padding:0 18px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.10);
+      cursor:pointer; font-weight:700;
+    }
+    .b1{ background:var(--green); color:#062016; }
+    .b2{ background:var(--orange); color:#1b1203; }
+    .msg{ margin-top:10px; font-weight:700; }
+    .msg.err{ color:var(--red); }
+    .hint{ margin-top:10px; color:#cbd5e1; font-size:12px; }
   </style>
 </head>
-<body>
-  <div class="page-wrap">
-    <div class="topbar">
-      <div class="brand">TESOURA — CONTROLE DO FUTEBOL</div>
-      <div class="top-right">
-        <div class="pill" id="pillMode">Modo: —</div>
-        <div class="pill" id="pillBuild">BUILD: —</div>
-      </div>
-    </div>
 
+<body>
+  <header>
+    <div class="brand">TESOURA — CONTROLE DO FUTEBOL</div>
+    <div class="chip" id="buildChip">BUILD: —</div>
+  </header>
+
+  <div class="wrap">
     <div class="card">
-      <h1 class="title">Entrar</h1>
-      <p class="sub">Digite a senha e clique em ENTRAR.</p>
+      <h1>Entrar</h1>
+      <div class="sub">Digite a senha e clique em ENTRAR.</div>
 
       <div class="row">
         <div class="field">
-          <label for="mode">TIPO DE ACESSO</label>
-          <select id="mode">
-            <option value="diretoria">Diretoria</option>
-            <option value="jogadores">Jogadores (visual)</option>
+          <label for="tipo">TIPO DE ACESSO</label>
+          <select id="tipo">
+            <option>Diretoria</option>
+            <option>Jogadores</option>
           </select>
         </div>
         <div class="field">
           <label for="pin">SENHA</label>
-          <input id="pin" type="password" autocomplete="current-password" placeholder="Digite a senha" />
+          <input id="pin" type="password" placeholder="Digite a senha" autocomplete="current-password" />
         </div>
       </div>
 
       <div class="btns">
-        <button class="btn enter" id="btnEnter">ENTRAR</button>
-        <button class="btn clear" id="btnClear">LIMPAR</button>
+        <button class="b1" id="btnEntrar">ENTRAR</button>
+        <button class="b2" id="btnLimpar" type="button">LIMPAR</button>
       </div>
 
-      <div id="msg" class="msg"></div>
+      <div class="msg" id="msg"></div>
       <div class="hint">Dica: se abriu direto um painel, use o botão SAIR e volte aqui.</div>
     </div>
   </div>
 
-  <script>
-    // BUILD na tela (se vier por querystring ?build=...)
-    const qs = new URLSearchParams(location.search);
-    document.getElementById('pillBuild').textContent = 'BUILD: ' + (qs.get('build') || '—');
-
-    const elMode = document.getElementById('mode');
-    const elPin  = document.getElementById('pin');
-    const elMsg  = document.getElementById('msg');
-    const pillMode = document.getElementById('pillMode');
-
-    function setMsg(text, ok){
-      elMsg.textContent = text || '';
-      elMsg.className = 'msg ' + (ok ? 'ok' : 'err');
-    }
-
-    function goAfterLogin(mode){
-      // Salva sessão
-      window.TESOURA_AUTH.setSession(mode);
-
-      // Página inicial após login
-      // (começa no JOGADORES, porque de lá você navega para os demais painéis)
-      const build = qs.get('build') || 'noiframe_v1';
-      const target = window.TESOURA_AUTH.joinUrl('legacy/tesoura_jogadores_teste.html?build=' + encodeURIComponent(build));
-      location.href = target;
-    }
-
-    function tryLogin(){
-      const mode = elMode.value;
-      const pin = elPin.value || '';
-
-      pillMode.textContent = 'Modo: ' + (mode === 'diretoria' ? 'Diretoria' : 'Jogadores (visual)');
-
-      const ok = window.TESOURA_AUTH.validatePin(mode, pin);
-      if(!ok){
-        setMsg('Senha inválida.', false);
-        return;
+<script>
+(function(){
+  // 1) mata cache antigo (Service Worker) pra não prender versão quebrada
+  (async function killSW(){
+    try{
+      if("serviceWorker" in navigator){
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for(const r of regs){ try{ await r.unregister(); }catch(e){} }
       }
-      setMsg('OK. Abrindo painel...', true);
-      setTimeout(()=>goAfterLogin(mode), 120);
+    }catch(e){}
+    try{
+      if("caches" in window){
+        const keys = await caches.keys();
+        for(const k of keys){ try{ await caches.delete(k); }catch(e){} }
+      }
+    }catch(e){}
+  })();
+
+  // 2) BASE correto do GitHub Pages (/tesoura-app/)
+  const BASE = (function(){
+    const p = location.pathname;
+    const m = p.match(/^(.*\/tesoura-app\/)/);
+    if(m) return m[1];
+    return new URL("./", location.href).pathname;
+  })();
+
+  // 3) pins (case-insensitive)
+  const PINS_DIRETORIA = ["1baidec","2thiago","3love","4le","5titi"];
+  const PINS_JOGADORES = ["TESOURA2026"]; // senha única geral (ajuste aqui se quiser outra)
+
+  const qs = new URLSearchParams(location.search);
+  const build = qs.get("build") || "";
+  document.getElementById("buildChip").textContent = "BUILD: " + (build || "—");
+
+  // 4) logout
+  if(qs.get("logout") === "1"){
+    localStorage.removeItem("TESOURA_MODE");
+    localStorage.removeItem("TESOURA_VISUAL_ONLY");
+    qs.delete("logout");
+    const clean = location.origin + location.pathname + (qs.toString()?("?"+qs.toString()):"");
+    history.replaceState(null,"",clean);
+  }
+
+  function norm(s){ return String(s||"").trim().toLowerCase(); }
+  function setMsg(text, err){
+    const el = document.getElementById("msg");
+    el.textContent = text || "";
+    el.className = "msg" + (err ? " err" : "");
+  }
+
+  function okPin(tipo, pin){
+    const p = norm(pin);
+    if(!p) return false;
+    if(norm(tipo).includes("dire")){
+      return PINS_DIRETORIA.map(norm).includes(p);
+    }
+    return PINS_JOGADORES.map(norm).includes(p);
+  }
+
+  function go(){
+    const tipo = document.getElementById("tipo").value;
+    const pin  = document.getElementById("pin").value;
+
+    if(!okPin(tipo, pin)){
+      setMsg("Senha inválida.", true);
+      return;
     }
 
-    // UI
-    elMode.addEventListener('change', ()=>{
-      pillMode.textContent = 'Modo: ' + (elMode.value === 'diretoria' ? 'Diretoria' : 'Jogadores (visual)');
-      setMsg('', true);
-    });
+    // sessão simples
+    localStorage.setItem("TESOURA_MODE", tipo);
+    localStorage.setItem("TESOURA_VISUAL_ONLY", norm(tipo).includes("jog") ? "1" : "0");
 
-    document.getElementById('btnEnter').addEventListener('click', tryLogin);
-    document.getElementById('btnClear').addEventListener('click', ()=>{ elPin.value=''; elPin.focus(); setMsg('', true); });
-    elPin.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryLogin(); });
+    // entra sempre pelo Jogadores (menu leva aos demais)
+    const next = BASE + "legacy/tesoura_jogadores_teste.html" + (build ? ("?build="+encodeURIComponent(build)+"_noiframe_v1") : "");
+    location.href = next;
+  }
 
-    // Estado inicial
-    pillMode.textContent = 'Modo: Diretoria';
-    window.TESOURA_AUTH.applyLogoutIfRequested();
-    elPin.focus();
-  </script>
+  document.getElementById("btnEntrar").addEventListener("click", go);
+  document.getElementById("btnLimpar").addEventListener("click", function(){
+    document.getElementById("pin").value = "";
+    setMsg("");
+    document.getElementById("pin").focus();
+  });
+  document.getElementById("pin").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ go(); }
+  });
+
+})();
+</script>
 </body>
 </html>
