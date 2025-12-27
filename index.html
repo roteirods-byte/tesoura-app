@@ -173,7 +173,7 @@
     if(goto){
       if(goto.startsWith("/")) { location.replace(goto); return; }
       if(goto.startsWith(BASE)) { location.replace(goto); return; }
-      location.replace(BASE + goto.replace(/^\\/+/, ""));
+      location.replace(BASE + goto.replace(/^\/+/, ""));
       return;
     }
 
