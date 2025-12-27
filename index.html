@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TESOURA — CONTROLE DO FUTEBOL</title>
 
-  <!-- Tema do app (se existir no seu repo) -->
-  <link rel="stylesheet" href="css/tesoura_shell.css?v=20251227_1" />
-  <link rel="stylesheet" href="css/ui.css?v=20251227_1" />
+  <!-- ✅ arquivos estão dentro de /app/ -->
+  <link rel="stylesheet" href="app/css/tesoura_shell.css?v=20251227_1" />
+  <link rel="stylesheet" href="app/css/ui.css?v=20251227_1" />
 
   <style>
     body{background:linear-gradient(180deg,#050a18,#071225 40%,#06122a); color:#e8eefc; margin:0;}
@@ -62,30 +62,24 @@
       </div>
 
       <div id="msg"></div>
-
       <div class="hint">Dica: se abriu direto um painel, use o botão SAIR e volte aqui.</div>
     </div>
   </div>
 
-  <!-- Config (se existir no seu repo) -->
-  <script src="js/config.js?v=20251227_1"></script>
+  <!-- ✅ config está em /app/js/ -->
+  <script src="app/js/config.js?v=20251227_1"></script>
 
   <script>
     (function(){
       "use strict";
 
-      // ====== BASE (conserta seu erro: BASE is not defined) ======
       function getBasePath(){
         const p = location.pathname || "/";
-        // se já termina com "/", mantém; senão remove o nome do arquivo
         return p.endsWith("/") ? p : p.replace(/\/[^\/]*$/, "/");
       }
-      const BASE_PATH = getBasePath();                // ex: /tesoura-app/
-      const BASE = location.origin + BASE_PATH;       // ex: https://roteirods-byte.github.io/tesoura-app/
+      const BASE_PATH = getBasePath();         // /tesoura-app/
       window.BASE_PATH = BASE_PATH;
-      window.BASE = BASE;
 
-      // ====== parâmetros ======
       function qp(name){
         try{ return new URLSearchParams(location.search).get(name); }catch(e){ return null; }
       }
@@ -100,7 +94,6 @@
         return b ? ("?build=" + encodeURIComponent(b)) : "";
       }
 
-      // ====== mensagens ======
       function setMsg(txt, isErr){
         const el = document.getElementById("msg");
         if(!el) return;
@@ -110,81 +103,34 @@
         el.textContent = txt;
       }
 
-      // ====== SW OFF (evita cache te mantendo em versão velha) ======
-      async function disableServiceWorker(){
-        try{
-          if("serviceWorker" in navigator){
-            const regs = await navigator.serviceWorker.getRegistrations();
-            for(const r of regs){ try{ await r.unregister(); }catch(e){} }
-          }
-        }catch(e){}
-        try{
-          if("caches" in window){
-            const keys = await caches.keys();
-            for(const k of keys){ try{ await caches.delete(k); }catch(e){} }
-          }
-        }catch(e){}
-      }
-      disableServiceWorker();
-
-      // ====== auth ======
       const AUTH_KEY = "TESOURA_AUTH";
 
-      function cfg(){
-        return window.TESOURA_CONFIG || {};
-      }
+      function cfg(){ return window.TESOURA_CONFIG || {}; }
 
       function validatePin(mode, pin){
         const C = cfg();
         const p = (pin || "").trim();
         if(!p) return false;
 
-        // se você usa lista de senhas de diretoria (opcional)
         if(mode === "Diretoria" && Array.isArray(C.DIRECTOR_PINS) && C.DIRECTOR_PINS.length){
           return C.DIRECTOR_PINS.map(x=>String(x).trim()).includes(p);
         }
-
-        // padrão: APP_PIN único (vale para ambos)
         const appPin = (C.APP_PIN || "").trim();
         if(appPin) return p === appPin;
-
-        // se não tiver config, não deixa entrar (pra não ficar inseguro)
         return false;
       }
 
       function homeUrl(){
-        // depois do login vai direto para JOGADORES (as abas aparecem via tesoura_nav.js no painel)
         return BASE_PATH + "legacy/tesoura_jogadores_teste.html" + buildQS();
       }
 
-      function safeGoto(){
-        const g = qp("goto");
-        if(!g) return null;
-        // só permite voltar para páginas do próprio /tesoura-app/
-        try{
-          const u = new URL(g, location.origin);
-          if(!u.pathname.startsWith(BASE_PATH)) return null;
-          return u.pathname + u.search;
-        }catch(e){
-          return null;
-        }
-      }
-
-      function doLogoutIfAsked(){
-        if(qp("logout")){
-          try{ localStorage.removeItem(AUTH_KEY); }catch(e){}
-          setMsg("Você saiu. Digite a senha para entrar novamente.", false);
-        }
-      }
-
-      // UI
       const modeEl = document.getElementById("mode");
       const pinEl  = document.getElementById("pin");
       const btnEnter = document.getElementById("btnEnter");
       const btnClear = document.getElementById("btnClear");
 
       document.getElementById("buildBadge").textContent = "BUILD: " + (getBuild() || "—");
-      document.getElementById("modeBadge").textContent  = "Modo: —";
+      document.getElementById("modeBadge").textContent  = "Modo: " + modeEl.value;
 
       function enter(){
         const mode = modeEl.value;
@@ -200,23 +146,14 @@
           localStorage.setItem(AUTH_KEY, JSON.stringify({ ok:1, mode, ts: Date.now() }));
         }catch(e){}
 
-        const g = safeGoto();
-        location.href = g ? g : homeUrl();
+        location.href = homeUrl();
       }
 
       btnEnter.addEventListener("click", enter);
       btnClear.addEventListener("click", ()=>{ pinEl.value=""; pinEl.focus(); setMsg("", false); });
+      pinEl.addEventListener("keydown", (ev)=>{ if(ev.key==="Enter"){ ev.preventDefault(); enter(); }});
+      modeEl.addEventListener("change", ()=>{ document.getElementById("modeBadge").textContent  = "Modo: " + modeEl.value; });
 
-      pinEl.addEventListener("keydown", (ev)=>{
-        if(ev.key === "Enter"){ ev.preventDefault(); enter(); }
-      });
-
-      modeEl.addEventListener("change", ()=>{
-        document.getElementById("modeBadge").textContent  = "Modo: " + modeEl.value;
-      });
-      document.getElementById("modeBadge").textContent  = "Modo: " + modeEl.value;
-
-      doLogoutIfAsked();
       setMsg("", false);
     })();
   </script>
