@@ -508,7 +508,9 @@ function getDataJogoISO() {
 
     // ===== LOAD BASE =====
         async function carregarBase(){
-      statusBaseEl.textContent = "Carregando base...";
+      const dia = getDataJogoISO();
+      dataJogoIso = dia;
+          statusBaseEl.textContent = "Carregando base...";
       try{
         // 1) Jogadores: no banco o campo ATIVO pode ser "SIM" (texto) ou boolean.
         const { data: jogadoresRaw, error: errJ } = await supabase
