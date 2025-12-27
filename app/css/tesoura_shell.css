@@ -1,0 +1,103 @@
+:root{
+  --bg:#071427;
+  --bg2:#0a1b33;
+  --line:#ff7a18;
+  --txt:#e9f1ff;
+  --muted:#9fb4d3;
+  --pill:#0e2646;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  --radius: 14px;
+}
+
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#TESOURA_SHELL{
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: linear-gradient(180deg, rgba(7,20,39,0.98), rgba(7,20,39,0.92));
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,122,24,.35);
+}
+
+.tesouraTopbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 12px 18px;
+  gap: 12px;
+}
+
+.tesouraBrand{
+  font-weight: 900;
+  letter-spacing: .5px;
+  color: var(--line);
+  text-transform: uppercase;
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.tesouraRight{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tesouraPill{
+  background: var(--pill);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--txt);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  box-shadow: var(--shadow);
+}
+
+.tesouraBtnDanger{
+  background: #ff3b30;
+  border: 0;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.tesouraTabs{
+  display:flex;
+  gap: 10px;
+  padding: 10px 14px 12px 14px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.tesouraTab{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-decoration:none;
+  color: var(--txt);
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(10,27,51,.55);
+  box-shadow: var(--shadow);
+}
+
+.tesouraTabActive{
+  border-color: rgba(255,122,24,.55);
+  box-shadow: 0 0 0 2px rgba(255,122,24,.20), var(--shadow);
+}
+
+.tesouraPagePad{
+  padding-top: 12px;
+}
