@@ -1,0 +1,87 @@
+/* app_v2/css/ui.css */
+:root{
+  --bg:#071326;
+  --bg2:#0c1a2b;
+  --card:#0b1a30;
+  --line:rgba(255,255,255,.10);
+  --txt:#ffffff;
+  --muted:rgba(255,255,255,.70);
+  --orange:#ff9f1c;
+  --ok:#15c06a;
+  --warn:#ff9f1c;
+  --danger:#ff4d4d;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Arial, Helvetica, sans-serif;
+  color:var(--txt);
+  background: radial-gradient(1200px 500px at 50% 0%, rgba(255,159,28,.08), transparent),
+              linear-gradient(180deg, var(--bg2), var(--bg));
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+}
+
+.brand{
+  color:var(--orange);
+  font-weight:800;
+  letter-spacing:.3px;
+}
+
+.right{display:flex;gap:10px;align-items:center}
+
+.pill{
+  padding:6px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:rgba(255,255,255,.03);
+  font-size:12px;
+  color:var(--muted);
+}
+
+.wrap{padding:24px}
+
+.card{
+  margin:40px auto 0;
+  background:rgba(11,26,48,.72);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:22px;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);
+}
+
+h1{margin:0 0 8px 0;font-size:34px}
+.muted{margin:0 0 18px 0;color:var(--muted)}
+
+.grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+}
+
+.btn{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.02);
+  color:var(--txt);
+  padding:12px 14px;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:700;
+  transition:transform .05s ease, background .15s ease;
+}
+.btn:hover{background:rgba(255,255,255,.06)}
+.btn:active{transform:scale(.99)}
+.btn-pill{min-width:180px}
+
+.btn-danger{
+  background:rgba(255,77,77,.85);
+  border:0;
+}
