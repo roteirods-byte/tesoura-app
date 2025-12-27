@@ -510,6 +510,9 @@ function getDataJogoISO() {
         async function carregarBase(){
       statusBaseEl.textContent = "Carregando base...";
       try{
+        const dia = getDataJogoISO();
+        dataJogoIso = dia; // habilita SALVAR e padroniza o dia
+
         // 1) Jogadores: no banco o campo ATIVO pode ser "SIM" (texto) ou boolean.
         const { data: jogadoresRaw, error: errJ } = await supabase
           .from("jogadores")
