@@ -98,87 +98,132 @@
   </div>
 
   <script>
-    (function(){
-      "use strict";
+(function(){
+  "use strict";
 
-      const SESSION_KEY = "TESOURA_SESSION_V1";
-      const LS_MODO = "TESOURA_MODO";
-      const LS_PERFIL = "TESOURA_PERFIL";
-      const LS_BUILD = "TESOURA_BUILD";
+  const AUTH_KEY = "TESOURA_AUTH"; // {ok:1, mode:"Diretoria"|"Jogadores (visual)", ts:number}
+  const LS_BUILD = "TESOURA_BUILD";
 
-      const PIN_UNICO = (window.TESOURA_CONFIG && window.TESOURA_CONFIG.APP_PIN) || "TESOURA2026";
-      // Obs: se você usa as 5 senhas da diretoria, deixe essa lista aqui:
-      const PIN_LISTA = ["TESOURA2026","1baidec","2thiago","3love","4le","5titi","123456"]; // ajuste se quiser
+  function qp(name){
+    try{ return new URLSearchParams(location.search).get(name); }catch(e){ return null; }
+  }
 
-      function qp(name){
-        try{ return new URL(location.href).searchParams.get(name) || ""; }catch(e){ return ""; }
-      }
+  function getBase(){
+    const p = location.pathname;
+    const marker = "/tesoura-app/";
+    const i = p.indexOf(marker);
+    if(i >= 0) return p.slice(0, i + marker.length);
+    const parts = p.split("/");
+    parts.pop();
+    return parts.join("/") + "/";
+  }
 
-      function getBuild(){
-        const b = qp("build") || qp("logout") || localStorage.getItem(LS_BUILD) || "2025-12-27_noiframe_v1";
-        localStorage.setItem(LS_BUILD, b);
-        return b;
-      }
+  function getBuild(){
+    const b = qp("build") || localStorage.getItem(LS_BUILD) || "";
+    if(b) localStorage.setItem(LS_BUILD, b);
+    return b;
+  }
 
-      function setChips(){
-        const b = getBuild();
-        document.getElementById("buildChip").textContent = "BUILD: " + b;
-        const modo = localStorage.getItem(LS_MODO) || "—";
-        document.getElementById("modeChip").textContent = "Modo: " + modo;
-      }
+  function getGoto(){
+    const g = qp("goto");
+    return g ? decodeURIComponent(g) : "";
+  }
 
-      function goPainelInicial(){
-        const b = getBuild();
-        location.href = "legacy/tesoura_jogadores_teste.html?build=" + encodeURIComponent(b);
-      }
+  function setAuth(mode){
+    const payload = { ok: 1, mode, ts: Date.now() };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(payload));
+    localStorage.setItem("TESOURA_MODE", mode);
+  }
 
-      function isLogged(){
-        return !!sessionStorage.getItem(SESSION_KEY);
-      }
+  function getAuth(){
+    try{
+      const raw = localStorage.getItem(AUTH_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
 
-      function acceptPin(pin){
-        if(!pin) return false;
-        if(pin === PIN_UNICO) return true;
-        if(PIN_LISTA.includes(pin)) return true;
-        return false;
-      }
+  function isLogged(){
+    const a = getAuth();
+    return !!(a && a.ok === 1 && a.mode);
+  }
 
-      function doLogin(){
-        const pin = (document.getElementById("pin").value || "").trim();
-        const err = document.getElementById("errBox");
-        err.style.display = "none";
+  function acceptPin(pin){
+    const p = String(pin || "").trim();
 
-        if(!acceptPin(pin)){
-          err.style.display = "block";
-          return;
-        }
+    // Jogadores (visual): PIN único
+    const PIN_JOGADOR = "TESOURA2026";
 
-        // modo/perfil simples
-        const modo = (pin === "TESOURA2026" || pin === "123456") ? "Jogadores (visual)" : "Diretoria";
-        localStorage.setItem(LS_MODO, modo);
-        localStorage.setItem(LS_PERFIL, modo);
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ok:true, ts: Date.now(), modo }));
+    // Diretoria: 5 senhas (sem email)
+    const PINS_DIRETORIA = new Set(["1baidec","2thiago","3love","4le","5titi"]);
 
-        setChips();
-        goPainelInicial();
-      }
+    if(p === PIN_JOGADOR) return { ok:true, mode:"Jogadores (visual)" };
+    if(PINS_DIRETORIA.has(p)) return { ok:true, mode:"Diretoria" };
+    return { ok:false, mode:"" };
+  }
 
-      function clearAll(){
-        document.getElementById("pin").value = "";
-        document.getElementById("errBox").style.display = "none";
-      }
+  function buildQS(){
+    const b = getBuild();
+    return b ? ("?build=" + encodeURIComponent(b)) : "";
+  }
 
-      // init
-      setChips();
-      document.getElementById("btnEntrar").addEventListener("click", doLogin);
-      document.getElementById("btnLimpar").addEventListener("click", clearAll);
-      document.getElementById("pin").addEventListener("keydown", (e)=>{ if(e.key === "Enter") doLogin(); });
+  function goAfterLogin(){
+    const BASE = getBase();
+    const goto = getGoto();
 
-      if(isLogged()){
-        // já logado na mesma aba
-        goPainelInicial();
-      }
-    })();
-  </script>
+    if(goto){
+      if(goto.startsWith("/")) { location.replace(goto); return; }
+      if(goto.startsWith(BASE)) { location.replace(goto); return; }
+      location.replace(BASE + goto.replace(/^\\/+/, ""));
+      return;
+    }
+
+    location.replace(BASE + "legacy/tesoura_jogadores_teste.html" + buildQS());
+  }
+
+  // UI
+  const elPin = document.getElementById("pin");
+  const elBtn = document.getElementById("btnEntrar");
+  const elClear = document.getElementById("btnLimpar");
+  const elMsg = document.getElementById("msg");
+
+  function setMsg(txt){
+    elMsg.textContent = txt || "";
+    elMsg.style.display = txt ? "block" : "none";
+  }
+
+  function onEnter(){
+    const v = (elPin.value || "").trim();
+    const r = acceptPin(v);
+    if(!r.ok){
+      setMsg("Senha inválida.");
+      elPin.focus();
+      return;
+    }
+    setAuth(r.mode);
+    setMsg("");
+    goAfterLogin();
+  }
+
+  function onClear(){
+    elPin.value = "";
+    setMsg("");
+    elPin.focus();
+  }
+
+  elBtn.addEventListener("click", onEnter);
+  elClear.addEventListener("click", onClear);
+  elPin.addEventListener("keydown", (e)=>{ if(e.key === "Enter") onEnter(); });
+
+  // Se já estiver logado, manda direto pro painel
+  if(isLogged()){
+    goAfterLogin();
+  }else{
+    const b = getBuild();
+    const badge = document.getElementById("buildBadge");
+    if(badge) badge.textContent = b ? ("BUILD: " + b) : "BUILD: —";
+  }
+})();
+
+</script>
 </body>
 </html>
