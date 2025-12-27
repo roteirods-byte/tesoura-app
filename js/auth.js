@@ -1,53 +1,62 @@
-/* TESOURA - Auth local (PIN no navegador)
-   - Funciona no GitHub Pages (base /<repo>/)
-   - Evita erro de BASE undefined
-*/
-(function(){
-  const KEY = 'TESOURA_SESSION_V2';
-
-  function getBaseRoot(){
-    // GitHub Pages: /<repo>/...
-    // Local/servidor... fallback: /
-    try{
-      const parts = (location.pathname||'/').split('/').filter(Boolean);
-      if(parts.length >= 1) return '/' + parts[0] + '/';
-      return '/';
-    }catch(e){ return '/'; }
+// app/js/auth.js
+(function () {
+  function getBaseRoot() {
+    // /tesoura-app/ (GitHub Pages project)
+    const parts = (location.pathname || "/").split("/").filter(Boolean);
+    return "/" + (parts[0] || "") + "/";
   }
 
-  const BASE = getBaseRoot();
-  window.TESOURA_BASE = BASE;
-
-  function nowISO(){ try{ return new Date().toISOString(); }catch(e){ return '' } }
-  function setSession(role){
-    const obj = { ok:true, role: role||'jogadores', ts: nowISO() };
-    try{ localStorage.setItem(KEY, JSON.stringify(obj)); }catch(e){}
-    return obj;
-  }
-  function getSession(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
-  function clearSession(){ try{ localStorage.removeItem(KEY); }catch(e){} }
-  function hasSession(){ const s=getSession(); return !!(s && s.ok); }
-  function role(){ const s=getSession(); return (s && s.role) ? s.role : null; }
-
-  function goLogin(nextUrl){
-    const next = encodeURIComponent(nextUrl || (location.href||''));
-    location.href = BASE + 'index.html?next=' + next;
+  function getCfg() {
+    return window.TESOURA_CONFIG || {};
   }
 
-  function guardOrRedirect(){
-    if(!hasSession()) goLogin(location.href);
+  function normalizePin(s) {
+    return String(s || "").trim();
   }
 
-  function logout(){
-    clearSession();
-    // evita cache do SW (se existir)
-    try{
-      if('serviceWorker' in navigator){
-        navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
-      }
-    }catch(e){}
-    location.href = BASE + 'index.html?logout=1';
+  function getAllowedPins(mode) {
+    const cfg = getCfg();
+
+    // Se você quiser controlar tudo por config.js, use:
+    // window.TESOURA_CONFIG.PINS = { diretoria:[...], jogadores:[...] }
+    if (cfg.PINS && cfg.PINS[mode] && Array.isArray(cfg.PINS[mode])) {
+      return cfg.PINS[mode].map(normalizePin);
+    }
+
+    // fallback seguro (pra não travar se config.js falhar)
+    if (mode === "diretoria") {
+      return ["1baidec", "2thiago", "3love", "4le", "5titi", "TESOURA2026"].map(normalizePin);
+    }
+    if (mode === "jogadores") {
+      return ["TESOURA2026"].map(normalizePin);
+    }
+
+    // fallback final
+    if (cfg.APP_PIN) return [normalizePin(cfg.APP_PIN)];
+    return [];
   }
 
-  window.TESOURA_AUTH = { BASE, setSession, getSession, clearSession, hasSession, role, goLogin, guardOrRedirect, logout };
+  function validatePin(mode, pin) {
+    const p = normalizePin(pin);
+    const allowed = getAllowedPins(mode);
+    return allowed.includes(p);
+  }
+
+  function applyLogoutIfRequested() {
+    const url = new URL(location.href);
+    if (url.searchParams.get("logout") === "1") {
+      try {
+        localStorage.removeItem("TESOURA_MODE");
+        localStorage.removeItem("TESOURA_LOGIN_AT");
+      } catch (e) {}
+      url.searchParams.delete("logout");
+      history.replaceState({}, "", url.toString());
+    }
+  }
+
+  window.TESOURA_AUTH = {
+    getBaseRoot,
+    validatePin,
+    applyLogoutIfRequested,
+  };
 })();
