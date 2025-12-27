@@ -167,17 +167,19 @@
   }
 
   function goAfterLogin(){
-    const BASE = getBase();
-    const goto = getGoto();
+    // destino padrão: página com TODAS as abas (shell)
+    const url = new URL(location.href);
+    const next = url.searchParams.get("next"); // opcional: retornar para uma página específica
+    const build = url.searchParams.get("build") || "2025-12-27_noiframe_v1";
 
-    if(goto){
-      if(goto.startsWith("/")) { location.replace(goto); return; }
-      if(goto.startsWith(BASE)) { location.replace(goto); return; }
-      location.replace(BASE + goto.replace(/^\/+/, ""));
+    // Se veio de um painel e guardou "next", respeita.
+    if(next){
+      location.href = next;
       return;
     }
 
-    location.replace(BASE + "legacy/tesoura_jogadores_teste.html" + buildQS());
+    // Shell oficial (aba com todos os painéis)
+    location.href = BASE + "legacy/tesoura_app_abas_R10.html?build=" + encodeURIComponent(build);
   }
 
   // UI
@@ -187,10 +189,16 @@
   // Mensagens (alguns layouts não têm #msg; usamos #errBox como fallback)
   const elMsg = document.getElementById("msg") || document.getElementById("errBox");
 
-  function setMsg(txt){
-    if(!elMsg) return;
-    elMsg.textContent = txt || "";
-    elMsg.style.display = txt ? "block" : "none";
+  function setMsg(text){
+    const el = document.getElementById("msg");
+    if(!el) return;
+    if(!text){
+      el.textContent = "";
+      el.style.display = "none";
+      return;
+    }
+    el.textContent = String(text);
+    el.style.display = "block";
   }
 
   function onEnter(){
