@@ -212,12 +212,7 @@
       .lte("data", isoFim)
       .order("data", { ascending: true });
 
-    if (error) {
-      alert("Erro ao carregar caixa: " + error.message);
-      return;
-    }
-
-    renderizarCaixa(data || []);
+        renderizarCaixa(data || []);
   }
 
   function renderizarCaixa(lista) {
