@@ -184,9 +184,11 @@
   const elPin = document.getElementById("pin");
   const elBtn = document.getElementById("btnEntrar");
   const elClear = document.getElementById("btnLimpar");
-  const elMsg = document.getElementById("msg");
+  // Mensagens (alguns layouts não têm #msg; usamos #errBox como fallback)
+  const elMsg = document.getElementById("msg") || document.getElementById("errBox");
 
   function setMsg(txt){
+    if(!elMsg) return;
     elMsg.textContent = txt || "";
     elMsg.style.display = txt ? "block" : "none";
   }
