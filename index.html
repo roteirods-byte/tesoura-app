@@ -1,161 +1,143 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TESOURA — CONTROLE DO FUTEBOL</title>
 
-  <!-- ✅ arquivos estão dentro de /app/ -->
-  <link rel="stylesheet" href="app/css/tesoura_shell.css?v=20251227_1" />
-  <link rel="stylesheet" href="app/css/ui.css?v=20251227_1" />
+  <!-- CSS no root (puxa o CSS real de app/css/) -->
+  <link rel="stylesheet" href="ui.css?v=20251227" />
+  <link rel="stylesheet" href="tesoura_shell.css?v=20251227" />
+
+  <!-- Config no root (evita 404). Se você já usa app/js/config.js, também pode manter. -->
+  <script src="config.js?v=20251227"></script>
+  <script src="js/auth.js?v=20251227"></script>
 
   <style>
-    body{background:linear-gradient(180deg,#050a18,#071225 40%,#06122a); color:#e8eefc; margin:0;}
-    .wrap{max-width:1200px;margin:0 auto;padding:14px 16px;}
-    .top{position:sticky;top:0;z-index:99;background:rgba(5,10,24,.92);border-bottom:1px solid rgba(255,140,0,.35);backdrop-filter:blur(6px);}
-    .brand{font-weight:900;letter-spacing:.5px;color:#ff8c00}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .badge{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);font-weight:800;font-size:12px}
-    .card{margin-top:28px;max-width:720px;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);box-shadow:0 10px 40px rgba(0,0,0,.35);padding:18px}
-    h1{margin:0 0 6px 0}
-    label{display:block;font-weight:800;margin:10px 0 6px}
-    input,select{width:100%;max-width:520px;padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:#e8eefc;outline:none}
-    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);font-weight:900;cursor:pointer}
-    .ok{background:rgba(0,255,120,.18);border-color:rgba(0,255,120,.35);color:#cffff0}
-    .warn{background:rgba(255,140,0,.18);border-color:rgba(255,140,0,.35);color:#ffe7c6}
-    #msg{margin-top:10px;font-weight:900;display:none}
-    .hint{margin-top:8px;opacity:.9}
+    .page-wrap{min-height:100vh;display:flex;flex-direction:column;}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .brand{color:#ff8c1a;font-weight:800;letter-spacing:.5px}
+    .top-right{display:flex;gap:10px;align-items:center}
+    .pill{border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 10px;color:#cfd6e6;font-size:12px}
+
+    .card{max-width:760px;margin:48px auto 0 auto;background:rgba(8,18,40,.7);border:1px solid rgba(255,255,255,.10);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.35);padding:26px}
+    .title{font-size:36px;font-weight:800;margin:0 0 10px 0;color:#e9eefc}
+    .sub{margin:0 0 16px 0;color:#b8c2d8}
+
+    .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+    .field{flex:1;min-width:260px}
+    label{display:block;color:#cfd6e6;font-weight:700;margin:10px 0 6px 0}
+    select,input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(2,10,24,.65);color:#e9eefc;outline:none}
+
+    .btns{display:flex;gap:12px;margin-top:16px}
+    .btn{padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.14);cursor:pointer;font-weight:800;letter-spacing:.3px}
+    .btn.enter{background:#00b36b;color:#041316}
+    .btn.clear{background:#ff8c1a;color:#1b0e00}
+
+    .msg{margin-top:12px;font-weight:800}
+    .msg.ok{color:#00d47a}
+    .msg.err{color:#ff4d4d}
+    .hint{margin-top:10px;color:#9fb0cf}
+
+    @media (max-width:720px){
+      .card{margin:22px 12px 0 12px;padding:18px}
+      .title{font-size:30px}
+    }
   </style>
 </head>
-
 <body>
-  <div class="top">
-    <div class="wrap">
-      <div class="row">
-        <div class="brand">TESOURA — CONTROLE DO FUTEBOL</div>
-        <div style="margin-left:auto" class="row">
-          <div class="badge" id="modeBadge">Modo: —</div>
-          <div class="badge" id="buildBadge">BUILD: —</div>
-        </div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <div class="brand">TESOURA — CONTROLE DO FUTEBOL</div>
+      <div class="top-right">
+        <div class="pill" id="pillMode">Modo: —</div>
+        <div class="pill" id="pillBuild">BUILD: —</div>
       </div>
     </div>
-  </div>
 
-  <div class="wrap">
     <div class="card">
-      <h1>Entrar</h1>
-      <div class="hint">Digite a senha e clique em ENTRAR.</div>
+      <h1 class="title">Entrar</h1>
+      <p class="sub">Digite a senha e clique em ENTRAR.</p>
 
-      <label for="mode">TIPO DE ACESSO</label>
-      <select id="mode">
-        <option value="Jogadores (visual)">Jogador</option>
-        <option value="Diretoria">Diretoria</option>
-      </select>
-
-      <label for="pin">SENHA</label>
-      <input id="pin" type="password" placeholder="Digite a senha" autocomplete="current-password" />
-
-      <div class="btns">
-        <button class="ok" id="btnEnter" type="button">ENTRAR</button>
-        <button class="warn" id="btnClear" type="button">LIMPAR</button>
+      <div class="row">
+        <div class="field">
+          <label for="mode">TIPO DE ACESSO</label>
+          <select id="mode">
+            <option value="diretoria">Diretoria</option>
+            <option value="jogadores">Jogadores (visual)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pin">SENHA</label>
+          <input id="pin" type="password" autocomplete="current-password" placeholder="Digite a senha" />
+        </div>
       </div>
 
-      <div id="msg"></div>
+      <div class="btns">
+        <button class="btn enter" id="btnEnter">ENTRAR</button>
+        <button class="btn clear" id="btnClear">LIMPAR</button>
+      </div>
+
+      <div id="msg" class="msg"></div>
       <div class="hint">Dica: se abriu direto um painel, use o botão SAIR e volte aqui.</div>
     </div>
   </div>
 
-  <!-- ✅ config está em /app/js/ -->
-  <script src="app/js/config.js?v=20251227_1"></script>
-
   <script>
-    (function(){
-      "use strict";
+    // BUILD na tela (se vier por querystring ?build=...)
+    const qs = new URLSearchParams(location.search);
+    document.getElementById('pillBuild').textContent = 'BUILD: ' + (qs.get('build') || '—');
 
-      function getBasePath(){
-        const p = location.pathname || "/";
-        return p.endsWith("/") ? p : p.replace(/\/[^\/]*$/, "/");
+    const elMode = document.getElementById('mode');
+    const elPin  = document.getElementById('pin');
+    const elMsg  = document.getElementById('msg');
+    const pillMode = document.getElementById('pillMode');
+
+    function setMsg(text, ok){
+      elMsg.textContent = text || '';
+      elMsg.className = 'msg ' + (ok ? 'ok' : 'err');
+    }
+
+    function goAfterLogin(mode){
+      // Salva sessão
+      window.TESOURA_AUTH.setSession(mode);
+
+      // Página inicial após login
+      // (começa no JOGADORES, porque de lá você navega para os demais painéis)
+      const build = qs.get('build') || 'noiframe_v1';
+      const target = window.TESOURA_AUTH.joinUrl('legacy/tesoura_jogadores_teste.html?build=' + encodeURIComponent(build));
+      location.href = target;
+    }
+
+    function tryLogin(){
+      const mode = elMode.value;
+      const pin = elPin.value || '';
+
+      pillMode.textContent = 'Modo: ' + (mode === 'diretoria' ? 'Diretoria' : 'Jogadores (visual)');
+
+      const ok = window.TESOURA_AUTH.validatePin(mode, pin);
+      if(!ok){
+        setMsg('Senha inválida.', false);
+        return;
       }
-      const BASE_PATH = getBasePath();         // /tesoura-app/
-      window.BASE_PATH = BASE_PATH;
+      setMsg('OK. Abrindo painel...', true);
+      setTimeout(()=>goAfterLogin(mode), 120);
+    }
 
-      function qp(name){
-        try{ return new URLSearchParams(location.search).get(name); }catch(e){ return null; }
-      }
-      const LS_BUILD = "TESOURA_BUILD";
-      function getBuild(){
-        const b = qp("build") || localStorage.getItem(LS_BUILD) || "";
-        if(b) localStorage.setItem(LS_BUILD, b);
-        return b;
-      }
-      function buildQS(){
-        const b = getBuild();
-        return b ? ("?build=" + encodeURIComponent(b)) : "";
-      }
+    // UI
+    elMode.addEventListener('change', ()=>{
+      pillMode.textContent = 'Modo: ' + (elMode.value === 'diretoria' ? 'Diretoria' : 'Jogadores (visual)');
+      setMsg('', true);
+    });
 
-      function setMsg(txt, isErr){
-        const el = document.getElementById("msg");
-        if(!el) return;
-        if(!txt){ el.style.display="none"; el.textContent=""; return; }
-        el.style.display="block";
-        el.style.color = isErr ? "#ff6b6b" : "#9be09b";
-        el.textContent = txt;
-      }
+    document.getElementById('btnEnter').addEventListener('click', tryLogin);
+    document.getElementById('btnClear').addEventListener('click', ()=>{ elPin.value=''; elPin.focus(); setMsg('', true); });
+    elPin.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryLogin(); });
 
-      const AUTH_KEY = "TESOURA_AUTH";
-
-      function cfg(){ return window.TESOURA_CONFIG || {}; }
-
-      function validatePin(mode, pin){
-        const C = cfg();
-        const p = (pin || "").trim();
-        if(!p) return false;
-
-        if(mode === "Diretoria" && Array.isArray(C.DIRECTOR_PINS) && C.DIRECTOR_PINS.length){
-          return C.DIRECTOR_PINS.map(x=>String(x).trim()).includes(p);
-        }
-        const appPin = (C.APP_PIN || "").trim();
-        if(appPin) return p === appPin;
-        return false;
-      }
-
-      function homeUrl(){
-        return BASE_PATH + "legacy/tesoura_jogadores_teste.html" + buildQS();
-      }
-
-      const modeEl = document.getElementById("mode");
-      const pinEl  = document.getElementById("pin");
-      const btnEnter = document.getElementById("btnEnter");
-      const btnClear = document.getElementById("btnClear");
-
-      document.getElementById("buildBadge").textContent = "BUILD: " + (getBuild() || "—");
-      document.getElementById("modeBadge").textContent  = "Modo: " + modeEl.value;
-
-      function enter(){
-        const mode = modeEl.value;
-        const pin = pinEl.value;
-
-        if(!validatePin(mode, pin)){
-          const hasCfg = !!(cfg().APP_PIN || (Array.isArray(cfg().DIRECTOR_PINS) && cfg().DIRECTOR_PINS.length));
-          setMsg(hasCfg ? "Senha inválida." : "Config não encontrada (APP_PIN). Abra app/js/config.js.", true);
-          return;
-        }
-
-        try{
-          localStorage.setItem(AUTH_KEY, JSON.stringify({ ok:1, mode, ts: Date.now() }));
-        }catch(e){}
-
-        location.href = homeUrl();
-      }
-
-      btnEnter.addEventListener("click", enter);
-      btnClear.addEventListener("click", ()=>{ pinEl.value=""; pinEl.focus(); setMsg("", false); });
-      pinEl.addEventListener("keydown", (ev)=>{ if(ev.key==="Enter"){ ev.preventDefault(); enter(); }});
-      modeEl.addEventListener("change", ()=>{ document.getElementById("modeBadge").textContent  = "Modo: " + modeEl.value; });
-
-      setMsg("", false);
-    })();
+    // Estado inicial
+    pillMode.textContent = 'Modo: Diretoria';
+    window.TESOURA_AUTH.applyLogoutIfRequested();
+    elPin.focus();
   </script>
 </body>
 </html>

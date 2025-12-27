@@ -88,10 +88,8 @@
       color: #fff;
     }
   </style>
-  <script defer src="../app/js/tesoura_nav.js"></script>
 </head>
 <body>
-  <div id="tesouraNav"></div>
 <div class="container">
   <h1>Livro Caixa</h1>
 
@@ -347,13 +345,6 @@
 
   await carregarCaixaMes();
 }
-    if (error) {
-      alert("Erro ao excluir lançamento: " + error.message);
-      return;
-    }
-
-    await carregarCaixaMes();
-  }
 
   btnCarregar.addEventListener("click", carregarCaixaMes);
   btnAdicionar.addEventListener("click", adicionarLancamento);
