@@ -88,10 +88,10 @@
       color: #fff;
     }
   </style>
+  <script defer src="../app/js/tesoura_nav.js"></script>
 </head>
-  <script src="../app/js/tesoura_shell_noiframe.js"></script>
 <body>
-  <div id="tesoura-shell-mount"></div>
+  <div id="tesouraNav"></div>
 <div class="container">
   <h1>Livro Caixa</h1>
 
@@ -331,15 +331,22 @@
   }
 
   async function excluirLancamento(item) {
-    if (!confirm("Confirmar exclusão deste lançamento?")) return;
+  if (!confirm("Confirmar exclusão deste lançamento?")) return;
 
-    const id = (typeof item === "object" && item) ? item.id : item;
+  const id = (typeof item === "object" && item) ? item.id : item;
 
-    const { error } = await supabase
-      .from("caixa")
-      .delete()
-      .eq("id", id);
+  const { error } = await supabase
+    .from("caixa")
+    .delete()
+    .eq("id", id);
 
+  if (error) {
+    alert("Erro ao excluir lançamento: " + error.message);
+    return;
+  }
+
+  await carregarCaixaMes();
+}
     if (error) {
       alert("Erro ao excluir lançamento: " + error.message);
       return;
@@ -359,5 +366,3 @@
 </script>
 </body>
 </html>
-
-
