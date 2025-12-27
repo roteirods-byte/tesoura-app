@@ -4,148 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TESOURA — CONTROLE DO FUTEBOL</title>
-
-  <!-- caminhos corretos (dentro da pasta /app) -->
-  <link rel="stylesheet" href="css/ui.css?v=1" />
-  <link rel="stylesheet" href="css/tesoura_shell.css?v=1" />
+  <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="pragma" content="no-cache" />
+  <meta http-equiv="expires" content="0" />
 </head>
-
-<body>
-  <header class="topbar">
-    <div class="brand">TESOURA — CONTROLE DO FUTEBOL</div>
-    <div class="topbar-right">
-      <span id="modePill" class="pill">Modo: —</span>
-      <span id="buildPill" class="pill">BUILD: —</span>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section class="card">
-      <h1>Entrar</h1>
-      <p class="muted">Digite a senha e clique em ENTRAR.</p>
-
-      <div class="grid">
-        <div class="field">
-          <label>TIPO DE ACESSO</label>
-          <select id="selMode">
-            <option value="diretoria">Diretoria</option>
-            <option value="jogadores">Jogadores (visual)</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>SENHA</label>
-          <input id="txtPin" type="password" placeholder="Digite a senha" autocomplete="current-password" />
-        </div>
-      </div>
-
-      <div class="actions">
-        <button id="btnEnter" class="btn btn-ok">ENTRAR</button>
-        <button id="btnClear" class="btn btn-warn">LIMPAR</button>
-      </div>
-
-      <div id="msg" class="msg"></div>
-      <p class="hint">Dica: se abriu direto um painel, use o botão SAIR e volte aqui.</p>
-    </section>
-  </main>
-
-  <!-- scripts corretos (dentro da pasta /app/js) -->
-  <script src="js/config.js?v=1"></script>
-  <script src="js/auth.js?v=1"></script>
-
+<body style="font-family: Arial, Helvetica, sans-serif;">
   <script>
-    (function () {
-      const BUILD = "2025-12-27_noiframe_v1";
-      const msg = document.getElementById("msg");
-      const selMode = document.getElementById("selMode");
-      const txtPin = document.getElementById("txtPin");
-      const btnEnter = document.getElementById("btnEnter");
-      const btnClear = document.getElementById("btnClear");
-
-      document.getElementById("buildPill").textContent = "BUILD: " + BUILD;
-
-      function setMsg(text, kind) {
-        msg.textContent = text || "";
-        msg.className = "msg" + (kind ? (" " + kind) : "");
-      }
-
-      function getBase() {
-        // /tesoura-app/ (GitHub Pages project)
-        return (window.TESOURA_AUTH && window.TESOURA_AUTH.getBaseRoot)
-          ? window.TESOURA_AUTH.getBaseRoot()
-          : ("/" + (location.pathname.split("/")[1] || "") + "/");
-      }
-
-      function normalizeMode(v) {
-        return (v || "").toLowerCase();
-      }
-
-      function goAfterLogin(mode) {
-        const base = getBase();
-        // página principal (abas) – mais estável que cair direto em teste isolado
-        const target = "legacy/tesoura_app_abas_R10.html";
-        const u = new URL(base + target, location.origin);
-        u.searchParams.set("build", BUILD);
-        u.searchParams.set("mode", mode);
-        location.href = u.toString();
-      }
-
-      // logout por URL (?logout=1) — compatível com painéis
-      try {
-        if (window.TESOURA_AUTH && window.TESOURA_AUTH.applyLogoutIfRequested) {
-          window.TESOURA_AUTH.applyLogoutIfRequested();
-        }
-      } catch (e) {}
-
-      function onEnter() {
-        setMsg("");
-        const mode = normalizeMode(selMode.value);
-        const pin = (txtPin.value || "").trim();
-
-        if (!pin) {
-          setMsg("Digite a senha.", "err");
-          txtPin.focus();
-          return;
-        }
-
-        if (!window.TESOURA_AUTH || !window.TESOURA_AUTH.validatePin) {
-          setMsg("Falha no login: auth.js não carregou.", "err");
-          return;
-        }
-
-        const ok = window.TESOURA_AUTH.validatePin(mode, pin);
-        if (!ok) {
-          setMsg("Senha inválida.", "err");
-          return;
-        }
-
-        // sessão simples
-        localStorage.setItem("TESOURA_MODE", mode);
-        localStorage.setItem("TESOURA_LOGIN_AT", String(Date.now()));
-        setMsg("Entrando...", "ok");
-        goAfterLogin(mode);
-      }
-
-      btnEnter.addEventListener("click", onEnter);
-      txtPin.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") onEnter();
-      });
-
-      btnClear.addEventListener("click", () => {
-        txtPin.value = "";
-        setMsg("");
-        txtPin.focus();
-      });
-
-      selMode.addEventListener("change", () => {
-        document.getElementById("modePill").textContent = "Modo: " + (selMode.value === "diretoria" ? "Diretoria" : "Jogadores");
-        setMsg("");
-      });
-
-      // init
-      document.getElementById("modePill").textContent = "Modo: Diretoria";
-      txtPin.focus();
-    })();
+    // Página oficial: sempre aponta para a V2 estável
+    location.replace("./app_v2/index.html?build=2025-12-27_v2");
   </script>
+  <noscript>Ative o JavaScript para usar o TESOURA.</noscript>
 </body>
 </html>
