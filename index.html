@@ -346,6 +346,15 @@
 </head>
 
 <body>
+  <script>
+  (function(){
+    const sp = new URLSearchParams(location.search);
+    const build = sp.get("build") || sp.get("logout") || "2025-12-27_noiframe_v1";
+    try{ localStorage.setItem("TESOURA_BUILD", build); }catch(e){}
+    location.replace("legacy/tesoura_jogadores_teste.html?build=" + encodeURIComponent(build));
+  })();
+</script>
+
   <div id="loginOverlay">
     <div class="box">
       <div class="t1">GRUPO TESOURA I</div>
