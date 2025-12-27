@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TESOURA — CONTROLE DO FUTEBOL</title>
+  <link rel="stylesheet" href="./css/ui.css?v=2">
+  <link rel="stylesheet" href="./css/tesoura_shell.css?v=2">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">TESOURA — CONTROLE DO FUTEBOL</div>
+    <div class="right">
+      <span id="modePill" class="pill">Modo: —</span>
+      <span class="pill">BUILD: v2</span>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="card" style="max-width: 780px; width: 100%;">
+      <h1>Painéis</h1>
+      <p class="muted">Escolha o painel.</p>
+
+      <div class="grid">
+        <button class="btn btn-pill" data-go="../legacy/tesoura_jogadores_teste.html">JOGADORES</button>
+        <button class="btn btn-pill" data-go="../legacy/tesoura_presenca_escala_R5.html">PRESENÇA / ESCALAÇÃO</button>
+        <button class="btn btn-pill" data-go="../legacy/tesoura_controle_geral_teste.html">CONTROLE GERAL</button>
+        <button class="btn btn-pill" data-go="../legacy/tesoura_mensalidade_R4.html">MENSALIDADE</button>
+        <button class="btn btn-pill" data-go="../legacy/tesoura_caixa_teste.html">CAIXA</button>
+        <button class="btn btn-pill" data-go="../legacy/tesoura_gols_teste.html">GOLS</button>
+        <button class="btn btn-pill" data-go="../legacy/tesoura_banco_dados_teste.html">BANCO DE DADOS</button>
+      </div>
+
+      <div style="margin-top:18px;">
+        <button id="btnLogout" class="btn btn-danger">SAIR</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="./js/config.js?v=2"></script>
+  <script src="./js/auth.js?v=2"></script>
+  <script>
+    (function(){
+      const pill = document.getElementById("modePill");
+      const mode = (window.TESOURA_AUTH && window.TESOURA_AUTH.getMode && window.TESOURA_AUTH.getMode()) || "—";
+      pill.textContent = "Modo: " + mode.charAt(0).toUpperCase() + mode.slice(1);
+
+      document.querySelectorAll("[data-go]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const url = btn.getAttribute("data-go");
+          window.location.href = url + "?build=v2&mode=" + encodeURIComponent(mode) + "&return=" + encodeURIComponent(location.href);
+        });
+      });
+
+      document.getElementById("btnLogout").addEventListener("click", ()=>{
+        if(window.TESOURA_AUTH && window.TESOURA_AUTH.logout){ window.TESOURA_AUTH.logout(); }
+        else { location.reload(); }
+      });
+    })();
+  </script>
+</body>
+</html>
