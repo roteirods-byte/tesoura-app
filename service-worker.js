@@ -1,24 +1,11 @@
-/* TESOURA - service worker (SAFE NO-CACHE)
-   Motivo: evitar travas e cache velho no GitHub Pages.
-   Versão: 2025-12-27_noiframe_v5
-*/
-const VERSION = "2025-12-27_noiframe_v5";
-
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    try{
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }catch(e){}
-    await self.clients.claim();
+// TESOURA SW (desativado): evita cache travando versões.
+self.addEventListener('install', (e)=>{ self.skipWaiting(); });
+self.addEventListener('activate', (e)=>{
+  e.waitUntil((async()=>{
+    try{ const keys = await caches.keys(); for(const k of keys){ await caches.delete(k); } }catch(e){}
+    try{ await self.clients.claim(); }catch(e){}
   })());
 });
-
-// Sem cache: deixa o navegador buscar sempre do servidor
-self.addEventListener("fetch", (event) => {
-  return; // passthrough
+self.addEventListener('fetch', (e)=>{
+  // NÃO intercepta nada.
 });

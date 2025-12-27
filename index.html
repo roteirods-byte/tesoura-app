@@ -2,238 +2,190 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TESOURA - CONTROLE DO FUTEBOL</title>
-  <meta name="theme-color" content="#0b1630" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TESOURA — CONTROLE DO FUTEBOL</title>
+  <link rel="stylesheet" href="app/css/tesoura_shell.css?v=2025-12-27_fix" />
   <style>
-    :root{
-      --bg:#071428;
-      --card:#0b1630;
-      --card2:#0a142a;
-      --line:#243a63;
-      --txt:#ffffff;
-      --muted:#b9c7e6;
-      --orange:#ff8a00;
-      --green:#00c67a;
-      --red:#ff4d4d;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 500px at 20% 0%, #0f2350 0%, var(--bg) 60%) fixed;
-      color:var(--txt);
-    }
-    .top{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:14px 16px;
-      border-bottom:1px solid rgba(255,138,0,.35);
-      background: linear-gradient(180deg, rgba(11,22,48,.98), rgba(11,22,48,.72));
-      position:sticky;top:0;z-index:50;
-    }
-    .brand{font-weight:900;letter-spacing:.8px;color:var(--orange)}
-    .build{
-      display:flex;gap:10px;align-items:center;
-      font-weight:700;font-size:12px;color:#d8e4ff;
-    }
-    .chip{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
-
-    .wrap{max-width:860px;margin:24px auto;padding:0 16px}
-    .card{
-      background: linear-gradient(180deg, rgba(11,22,48,.95), rgba(11,22,48,.78));
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;
-      box-shadow: 0 16px 40px rgba(0,0,0,.35);
-      padding:18px;
-    }
-    h1{margin:0 0 10px 0;font-size:22px}
-    .muted{color:var(--muted);font-size:13px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    label{font-size:12px;color:#d8e4ff;font-weight:800}
-    input{
-      width:260px;max-width:100%;
-      padding:10px 12px;border-radius:10px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.20);
-      color:var(--txt);
-      outline:none;
-    }
-    input:focus{border-color:rgba(255,138,0,.65)}
-    .btn{
-      padding:10px 14px;border-radius:10px;border:0;
-      font-weight:900;cursor:pointer;
-    }
-    .btn-ok{background:var(--green);color:#052014}
-    .btn-warn{background:var(--orange);color:#2a1400}
-    .btn:active{transform:scale(.99)}
-    .err{margin-top:10px;color:#ffd2d2;font-weight:800;display:none}
+    /* fallback se o css não carregar */
+    body{margin:0;background:#050b16;color:#e7eefc;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .brand{color:#ff7a1a;font-weight:800;letter-spacing:.5px}
+    .pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:6px 10px;font-size:12px}
+    .wrap{max-width:980px;margin:40px auto;padding:0 16px}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .label{font-size:12px;opacity:.85;margin:12px 0 6px}
+    input{height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.20);color:#fff;padding:0 12px;min-width:260px;outline:none}
+    button{height:40px;border-radius:10px;border:0;padding:0 14px;font-weight:800;cursor:pointer}
+    .btnEnter{background:#14c26e;color:#06120b}
+    .btnClear{background:#ff7a1a;color:#1b0f05}
+    .msg{min-height:18px;margin-top:10px;font-size:13px;color:#ffb38a}
+    .hint{margin-top:10px;font-size:12px;opacity:.8}
   </style>
 </head>
 <body>
-  <div class="top">
+  <div class="topbar">
     <div class="brand">TESOURA — CONTROLE DO FUTEBOL</div>
-    <div class="build">
-      <span class="chip" id="modeChip">Modo: —</span>
-      <span class="chip" id="buildChip">BUILD: —</span>
+    <div class="row">
+      <div class="pill" id="pillMode">Modo: —</div>
+      <div class="pill" id="pillBuild">BUILD: —</div>
     </div>
   </div>
 
   <div class="wrap">
     <div class="card">
-      <h1>Entrar</h1>
-      <div class="muted">Digite a senha e clique em ENTRAR.</div>
+      <h2 style="margin:0 0 6px">Entrar</h2>
+      <div style="opacity:.85;font-size:13px">Digite a senha e clique em ENTRAR.</div>
 
-      <div class="row" style="margin-top:16px;align-items:flex-end">
-        <div>
-          <label for="pin">SENHA</label><br/>
-          <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Digite a senha" />
-        </div>
-        <button class="btn btn-ok" id="btnEntrar">ENTRAR</button>
-        <button class="btn btn-warn" id="btnLimpar">LIMPAR</button>
+      <div class="label">SENHA</div>
+      <div class="row">
+        <input id="pin" type="password" inputmode="numeric" placeholder="Digite a senha" autocomplete="current-password" />
+        <button id="btnEnter" class="btnEnter" type="button">ENTRAR</button>
+        <button id="btnClear" class="btnClear" type="button">LIMPAR</button>
       </div>
 
-      <div class="err" id="errBox">Senha inválida.</div>
-      <div class="muted" style="margin-top:14px">Dica: se abriu direto uma página do painel, use o botão SAIR e volte aqui.</div>
+      <div id="msg" class="msg"></div>
+
+      <div class="hint">Dica: se abriu direto uma página do painel, use o botão SAIR e volte aqui.</div>
     </div>
   </div>
 
   <script>
-(function(){
-  "use strict";
-
-  const AUTH_KEY = "TESOURA_AUTH"; // {ok:1, mode:"Diretoria"|"Jogadores (visual)", ts:number}
-  const LS_BUILD = "TESOURA_BUILD";
-
-  function qp(name){
-    try{ return new URLSearchParams(location.search).get(name); }catch(e){ return null; }
-  }
-
-  function getBase(){
-    const p = location.pathname;
-    const marker = "/tesoura-app/";
-    const i = p.indexOf(marker);
-    if(i >= 0) return p.slice(0, i + marker.length);
-    const parts = p.split("/");
-    parts.pop();
-    return parts.join("/") + "/";
-  }
-
-  function getBuild(){
-    const b = qp("build") || localStorage.getItem(LS_BUILD) || "";
-    if(b) localStorage.setItem(LS_BUILD, b);
-    return b;
-  }
-
-  function getGoto(){
-    const g = qp("goto");
-    return g ? decodeURIComponent(g) : "";
-  }
-
-  function setAuth(mode){
-    const payload = { ok: 1, mode, ts: Date.now() };
-    localStorage.setItem(AUTH_KEY, JSON.stringify(payload));
-    localStorage.setItem("TESOURA_MODE", mode);
-  }
-
-  function getAuth(){
-    try{
-      const raw = localStorage.getItem(AUTH_KEY);
-      return raw ? JSON.parse(raw) : null;
-    }catch(e){ return null; }
-  }
-
-  function isLogged(){
-    const a = getAuth();
-    return !!(a && a.ok === 1 && a.mode);
-  }
-
-  function acceptPin(pin){
-    const p = String(pin || "").trim();
-
-    // Jogadores (visual): PIN único
-    const PIN_JOGADOR = "TESOURA2026";
-
-    // Diretoria: 5 senhas (sem email)
-    const PINS_DIRETORIA = new Set(["1baidec","2thiago","3love","4le","5titi"]);
-
-    if(p === PIN_JOGADOR) return { ok:true, mode:"Jogadores (visual)" };
-    if(PINS_DIRETORIA.has(p)) return { ok:true, mode:"Diretoria" };
-    return { ok:false, mode:"" };
-  }
-
-  function buildQS(){
-    const b = getBuild();
-    return b ? ("?build=" + encodeURIComponent(b)) : "";
-  }
-
-  function goAfterLogin(){
-    // destino padrão: página com TODAS as abas (shell)
-    const url = new URL(location.href);
-    const next = url.searchParams.get("next"); // opcional: retornar para uma página específica
-    const build = url.searchParams.get("build") || "2025-12-27_noiframe_v1";
-
-    // Se veio de um painel e guardou "next", respeita.
-    if(next){
-      location.href = next;
-      return;
+  (function(){
+    // 1) Evita travar por Service Worker antigo (cache).
+    async function killSW(){
+      try{
+        if("serviceWorker" in navigator){
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for(const r of regs){ try{ await r.unregister(); }catch(e){} }
+        }
+      }catch(e){}
+      try{
+        if("caches" in window){
+          const keys = await caches.keys();
+          for(const k of keys){ try{ await caches.delete(k); }catch(e){} }
+        }
+      }catch(e){}
     }
 
-    // Shell oficial (aba com todos os painéis)
-    location.href = BASE + "legacy/tesoura_app_abas_R10.html?build=" + encodeURIComponent(build);
-  }
-
-  // UI
-  const elPin = document.getElementById("pin");
-  const elBtn = document.getElementById("btnEntrar");
-  const elClear = document.getElementById("btnLimpar");
-  // Mensagens (alguns layouts não têm #msg; usamos #errBox como fallback)
-  const elMsg = document.getElementById("msg") || document.getElementById("errBox");
-
-  function setMsg(text){
-    const el = document.getElementById("msg");
-    if(!el) return;
-    if(!text){
-      el.textContent = "";
-      el.style.display = "none";
-      return;
+    function qs(name){
+      try{ return new URLSearchParams(location.search).get(name) || ""; }catch(e){ return ""; }
     }
-    el.textContent = String(text);
-    el.style.display = "block";
-  }
 
-  function onEnter(){
-    const v = (elPin.value || "").trim();
-    const r = acceptPin(v);
-    if(!r.ok){
-      setMsg("Senha inválida.");
-      elPin.focus();
-      return;
+    function setMsg(t){
+      const el = document.getElementById("msg");
+      if(el){ el.textContent = String(t||""); }
+      else if(t){ try{ alert(t); }catch(e){} }
     }
-    setAuth(r.mode);
-    setMsg("");
-    goAfterLogin();
-  }
 
-  function onClear(){
-    elPin.value = "";
-    setMsg("");
-    elPin.focus();
-  }
+    // 2) Configurações de senha: prioriza app/js/config.js (se existir), senão usa fallback.
+    //    - Jogadores: TESOURA2026 (visual)
+    //    - Diretoria: 1baidec / 2thiago / 3love / 4le / 5titi
+    const DEFAULT_PIN_JOGADORES = "TESOURA2026";
+    const DEFAULT_PINS_DIRETORIA = ["1baidec","2thiago","3love","4le","5titi"];
 
-  elBtn.addEventListener("click", onEnter);
-  elClear.addEventListener("click", onClear);
-  elPin.addEventListener("keydown", (e)=>{ if(e.key === "Enter") onEnter(); });
+    function validatePin(pin){
+      const p = String(pin||"").trim();
+      if(!p) return {ok:false, role:""};
 
-  // Se já estiver logado, manda direto pro painel
-  if(isLogged()){
-    goAfterLogin();
-  }else{
-    const b = getBuild();
-    const badge = document.getElementById("buildBadge");
-    if(badge) badge.textContent = b ? ("BUILD: " + b) : "BUILD: —";
-  }
-})();
+      // Se existir TESOURA_CONFIG.APP_PIN, usa como senha única (modo simples).
+      // Caso contrário, usa as regras acima.
+      const cfg = window.TESOURA_CONFIG || {};
+      if(cfg.APP_PIN){
+        if(p === String(cfg.APP_PIN)) return {ok:true, role:"jogadores"};
+        return {ok:false, role:""};
+      }
 
-</script>
+      if(p === DEFAULT_PIN_JOGADORES) return {ok:true, role:"jogadores"};
+      if(DEFAULT_PINS_DIRETORIA.includes(p)) return {ok:true, role:"diretoria"};
+      return {ok:false, role:""};
+    }
+
+    function saveSession(role){
+      const sess = {
+        role,
+        ts: Date.now(),
+        v: 1
+      };
+      try{ localStorage.setItem("TESOURA_SESSION", JSON.stringify(sess)); }catch(e){}
+    }
+
+    function buildHomeUrl(){
+      // Página central (tabs) — se não existir, cai em Jogadores.
+      // Ajuste aqui caso você mude o nome.
+      const build = qs("build");
+      const base = "legacy/tesoura_app_abas_R10.html";
+      const fall = "legacy/tesoura_jogadores_teste.html";
+      // tenta abrir a página central; se der 404, o usuário só verá erro no navegador,
+      // então mantemos o fallback rápido via query.
+      const target = base;
+      const params = [];
+      if(build) params.push("build="+encodeURIComponent(build));
+      return target + (params.length? ("?"+params.join("&")) : "");
+    }
+
+    function goHome(){
+      location.href = buildHomeUrl();
+    }
+
+    async function onLoad(){
+      // atualiza pills
+      const b = qs("build") || "—";
+      const pMode = document.getElementById("pillMode");
+      const pBuild = document.getElementById("pillBuild");
+      if(pMode) pMode.textContent = "Modo: —";
+      if(pBuild) pBuild.textContent = "BUILD: " + b;
+
+      // mata SW antes para evitar carregar JS antigo
+      await killSW();
+
+      // logout => limpa sessão
+      if(qs("logout")){
+        try{ localStorage.removeItem("TESOURA_SESSION"); }catch(e){}
+      }
+
+      const pin = document.getElementById("pin");
+      const btnEnter = document.getElementById("btnEnter");
+      const btnClear = document.getElementById("btnClear");
+
+      function doClear(){
+        if(pin) pin.value = "";
+        setMsg("");
+        try{ pin && pin.focus(); }catch(e){}
+      }
+
+      function doEnter(){
+        try{
+          const v = validatePin(pin ? pin.value : "");
+          if(!v.ok){
+            setMsg("Senha incorreta.");
+            return;
+          }
+          saveSession(v.role);
+          setMsg("");
+          goHome();
+        }catch(err){
+          // nunca deixa o botão “morrer”
+          console.error(err);
+          setMsg("Erro interno no login (veja o Console).");
+        }
+      }
+
+      if(btnClear) btnClear.addEventListener("click", doClear);
+      if(btnEnter) btnEnter.addEventListener("click", doEnter);
+      if(pin) pin.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); doEnter(); }});
+
+      // foco
+      try{ pin && pin.focus(); }catch(e){}
+    }
+
+    // garante DOM pronto
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", onLoad);
+    else onLoad();
+  })();
+  </script>
+
+  <!-- (Opcional) Se existir este arquivo, ele só define TESOURA_CONFIG; não quebra se faltar. -->
+  <script src="app/js/config.js?v=2025-12-27_fix" defer></script>
 </body>
 </html>
